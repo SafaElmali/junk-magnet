@@ -308,6 +308,7 @@ function spawn(
   s: State,
   angle = random(s) * Math.PI * 2,
   radius = 23 + random(s) * 3,
+  center: Vec = s.player,
 ) {
   if (s.enemies.length >= ENTITY_LIMITS.enemies) return;
   const roll = random(s);
@@ -325,8 +326,8 @@ function spawn(
               : "can";
   const e: Enemy = {
     id: s.nextId++,
-    x: s.player.x + Math.cos(angle) * radius,
-    z: s.player.z + Math.sin(angle) * radius,
+    x: center.x + Math.cos(angle) * radius,
+    z: center.z + Math.sin(angle) * radius,
     hp:
       (type === "brute"
         ? 15
@@ -348,8 +349,8 @@ function spawn(
   s.enemies.push(e);
   s.spawned++;
 }
-function offerUpgrade(s: State) {
-  if (s.xp < s.xpNeeded) return;
+export function offerUpgrade(s: State) {
+  if (s.choices.length || s.hp <= 0 || s.xp < s.xpNeeded) return;
   s.xp -= s.xpNeeded;
   s.level++;
   s.xpNeeded = 5 + (s.level - 1) * 4;
@@ -392,7 +393,10 @@ export function chooseUpgrade(s: State, id: UpgradeId): boolean {
   offerUpgrade(s);
   return true;
 }
-export function orbitPosition(s: State, index: number): Vec {
+export function orbitPosition(
+  s: Pick<State, "time" | "upgrades" | "scrap" | "player">,
+  index: number,
+): Vec {
   const rank = Math.max(0, s.upgrades.saw - 1);
   const a =
       s.time * (2.3 + rank * 0.25) +
@@ -608,10 +612,16 @@ function abilities(s: State, dt: number) {
   }
   s.turrets = s.turrets.filter((t) => t.life > 0);
 }
-function collectPickups(s: State, dt: number) {
+function collectPickups(s: State, dt: number, players: State[] = [s]) {
   // Keep the first scraps still briefly; then pull them slowly enough to read the magnet effect.
   if (s.openingRemaining > OPENING_DURATION - 0.7) return;
   s.pickups = s.pickups.filter((p) => {
+    const collector = players
+      .filter((a) => a.hp > 0 && (p.kind === "xp" || a.scrap < MAX_SCRAP))
+      .reduce<
+        State | undefined
+      >((best, a) => (!best || distance(a.player, p) < distance(best.player, p) ? a : best), undefined);
+    if (collector !== s) return true;
     const d = distance(p, s.player),
       canCollect = p.kind === "xp" || s.scrap < MAX_SCRAP;
     if (
@@ -642,7 +652,21 @@ function collectPickups(s: State, dt: number) {
     return true;
   });
 }
-export function update(s: State, dt: number, movement: Vec) {
+export type UpdateOptions = {
+  world?: boolean;
+  players?: State[];
+  deferUpgrade?: boolean;
+  deferDiscovery?: boolean;
+  spawnMultiplier?: number;
+};
+export function update(
+  s: State,
+  dt: number,
+  movement: Vec,
+  options: UpdateOptions = {},
+) {
+  const players = options.players ?? [s];
+  const world = options.world !== false;
   if (s.phase !== "playing") return;
   dt = Math.min(0.05, Math.max(0, dt));
   if (!dt) return;
@@ -668,15 +692,26 @@ export function update(s: State, dt: number, movement: Vec) {
     if (s.openingRemaining < 1e-8) s.openingRemaining = 0;
   }
   const encounter = encounterHooks(s);
-  updateEncounters(s, dt, encounter);
+  if (world) updateEncounters(s, dt, encounter, players);
   if (s.hp <= 0) {
     s.phase = "lost";
     return;
   }
-  s.spawnTimer -= dt;
-  if (s.spawnTimer <= 0) {
-    for (let i = 0; i < Math.min(5, 1 + Math.floor(s.time / 60)); i++) spawn(s);
-    s.spawnTimer = Math.max(0.22, 1.35 / (1 + s.time / 80));
+  if (world) {
+    s.spawnTimer -= dt;
+    if (s.spawnTimer <= 0) {
+      const alive = players.filter((a) => a.hp > 0);
+      for (let i = 0; i < Math.min(5, 1 + Math.floor(s.time / 60)); i++)
+        spawn(
+          s,
+          undefined,
+          undefined,
+          alive[s.spawned % alive.length]?.player ?? s.player,
+        );
+      s.spawnTimer =
+        Math.max(0.22, 1.35 / (1 + s.time / 80)) /
+        (options.spawnMultiplier ?? 1);
+    }
   }
   // Local buckets bound separation work in a dense horde.
   const buckets = new Map<string, Enemy[]>();
@@ -688,49 +723,63 @@ export function update(s: State, dt: number, movement: Vec) {
   }
   for (const e of s.enemies) {
     if (e.hp <= 0) continue;
-    e.hit = Math.max(0, e.hit - dt);
-    let d = distance(e, s.player);
-    if (d > 42) {
-      s.encounters.brains.delete(e.id);
-      s.encounters.warnings = s.encounters.warnings.filter(
-        (w) => w.owner !== e.id,
+    if (world) {
+      const target = players
+        .filter((a) => a.hp > 0)
+        .reduce(
+          (best, a) =>
+            distance(a.player, e) < distance(best.player, e) ? a : best,
+          s,
+        );
+      e.hit = Math.max(0, e.hit - dt);
+      let d = distance(e, target.player);
+      if (d > 42) {
+        s.encounters.brains.delete(e.id);
+        s.encounters.warnings = s.encounters.warnings.filter(
+          (w) => w.owner !== e.id,
+        );
+        const a = random(s) * Math.PI * 2;
+        e.x = target.player.x + Math.cos(a) * 26;
+        e.z = target.player.z + Math.sin(a) * 26;
+        d = 26;
+      }
+      const customMovement = updateEnemyBehavior(
+        target,
+        e,
+        dt,
+        encounterHooks(target),
       );
-      const a = random(s) * Math.PI * 2;
-      e.x = s.player.x + Math.cos(a) * 26;
-      e.z = s.player.z + Math.sin(a) * 26;
-      d = 26;
-    }
-    const customMovement = updateEnemyBehavior(s, e, dt, encounter);
-    if (s.hp <= 0) {
-      s.phase = "lost";
-      return;
-    }
-    const speed =
-      (e.type === "runner" ? 2.5 : e.type === "brute" ? 0.95 : 1.25) *
-      (1 + Math.min(0.85, s.time / 600));
-    if (!customMovement && d > 0.01) {
-      e.x += ((s.player.x - e.x) / d) * speed * dt;
-      e.z += ((s.player.z - e.z) / d) * speed * dt;
-    }
-    const cx = Math.floor(e.x / 1.5),
-      cz = Math.floor(e.z / 1.5);
-    for (let x = cx - 1; x <= cx + 1; x++)
-      for (let z = cz - 1; z <= cz + 1; z++)
-        for (const other of buckets.get(`${x},${z}`) ?? []) {
-          if (other.id <= e.id || other.hp <= 0) continue;
-          const dx = e.x - other.x,
-            dz = e.z - other.z,
-            ed = Math.hypot(dx, dz),
-            spacing = enemyRadius(e) + enemyRadius(other);
-          if (ed < spacing && ed > 0) {
-            const push = (spacing - ed) * 0.5;
-            e.x += (dx / ed) * push;
-            e.z += (dz / ed) * push;
-            other.x -= (dx / ed) * push;
-            other.z -= (dz / ed) * push;
+      if (s.hp <= 0) {
+        s.phase = "lost";
+        return;
+      }
+      const speed =
+        (e.type === "runner" ? 2.5 : e.type === "brute" ? 0.95 : 1.25) *
+        (1 + Math.min(0.85, s.time / 600));
+      if (!customMovement && d > 0.01) {
+        e.x += ((target.player.x - e.x) / d) * speed * dt;
+        e.z += ((target.player.z - e.z) / d) * speed * dt;
+      }
+      const cx = Math.floor(e.x / 1.5),
+        cz = Math.floor(e.z / 1.5);
+      for (let x = cx - 1; x <= cx + 1; x++)
+        for (let z = cz - 1; z <= cz + 1; z++)
+          for (const other of buckets.get(`${x},${z}`) ?? []) {
+            if (other.id <= e.id || other.hp <= 0) continue;
+            const dx = e.x - other.x,
+              dz = e.z - other.z,
+              ed = Math.hypot(dx, dz),
+              spacing = enemyRadius(e) + enemyRadius(other);
+            if (ed < spacing && ed > 0) {
+              const push = (spacing - ed) * 0.5;
+              e.x += (dx / ed) * push;
+              e.z += (dz / ed) * push;
+              other.x -= (dx / ed) * push;
+              other.z -= (dz / ed) * push;
+            }
           }
-        }
-    resolveObstacles(e, enemyRadius(e));
+      resolveObstacles(e, enemyRadius(e));
+    }
     if (distance(e, s.player) < enemyRadius(e) + 0.3 && !s.immunity) {
       damagePlayer(
         s,
@@ -762,7 +811,13 @@ export function update(s: State, dt: number, movement: Vec) {
     const target = nearestEnemy(s, s.player, 3.3);
     if (target) {
       hurt(s, target, 2);
-      emit(s, { kind: "pulse", x: target.x, z: target.z });
+      emit(s, {
+        kind: "pulse",
+        x: target.x,
+        z: target.z,
+        fromX: s.player.x,
+        fromZ: s.player.z,
+      });
     }
   }
   abilities(s, dt);
@@ -823,9 +878,9 @@ export function update(s: State, dt: number, movement: Vec) {
   }
   s.enemies = s.enemies.filter((e) => e.hp > 0);
   s.shots = s.shots.filter((p) => p.life > 0);
-  collectPickups(s, dt);
-  updateDiscovery(s, dt);
-  offerUpgrade(s);
+  collectPickups(s, dt, players);
+  if (!options.deferDiscovery) updateDiscovery(s, dt);
+  if (!options.deferUpgrade) offerUpgrade(s);
 }
 
 export function enemyRadius(e: Enemy): number {
@@ -870,8 +925,8 @@ function encounterHooks(s: State): EncounterHooks {
       s.spawned++;
       return e;
     },
-    damagePlayer(amount) {
-      damagePlayer(s, amount);
+    damagePlayer(amount, _source, target = s) {
+      damagePlayer(target, amount);
     },
     reward(reward, enemy) {
       s.earnedParts += reward.parts;

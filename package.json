@@ -11,19 +11,24 @@
     "assets:abilities": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_ability_assets.py",
     "assets": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_assets.py",
     "assets:robots": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_robot_assets.py",
-    "assets:discoveries": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_discovery_assets.py"
+    "assets:discoveries": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_discovery_assets.py",
+    "serve": "tsx server/index.ts",
+    "start": "tsx server/index.ts",
+    "test:coop": "tsx --test src/coop-session.test.ts server/coop.test.ts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.2.6",
     "@fontsource/dm-sans": "^5.2.6",
-    "three": "^0.183.0"
+    "three": "^0.183.0",
+    "ws": "^8.21.3",
+    "tsx": "^4.20.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
     "@types/three": "^0.183.0",
-    "tsx": "^4.20.0",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.9.3",
-    "vite": "^7.1.0",
-    "@playwright/test": "^1.55.0"
+    "vite": "^7.1.0"
   }
 }

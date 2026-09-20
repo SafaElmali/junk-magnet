@@ -1,7 +1,11 @@
 import type { Enemy, State, Vec } from "./simulation";
 
 export type EncounterEnemyType =
-  "charger" | "spitter" | "warden" | "miniboss" | "boss";
+  | "charger"
+  | "spitter"
+  | "warden"
+  | "miniboss"
+  | "boss";
 export const ENCOUNTER_LIMITS = {
   brains: 140,
   warnings: 32,
@@ -40,7 +44,7 @@ export type EncounterHooks = {
     hp: number,
   ): Enemy | undefined;
   /** The caller applies armor, shared invulnerability, damage feedback, and death. */
-  damagePlayer(amount: number, source: Vec): void;
+  damagePlayer(amount: number, source: Vec, target?: State): void;
   reward(
     reward: { xp: number; scrap: number; healing: number; parts: number },
     enemy: Enemy,
@@ -69,7 +73,12 @@ const isSpecial = (e: Enemy) =>
 const canRun = (s: State) => s.phase === "playing";
 
 /** Scheduling and persistent hazards use simulation time; no browser timers. */
-export function updateEncounters(s: State, dt: number, hooks: EncounterHooks) {
+export function updateEncounters(
+  s: State,
+  dt: number,
+  hooks: EncounterHooks,
+  players: State[] = [s],
+) {
   if (!canRun(s) || dt <= 0) return;
   const c = s.encounters;
   const living = new Set(s.enemies.filter((e) => e.hp > 0).map((e) => e.id));
@@ -107,27 +116,36 @@ export function updateEncounters(s: State, dt: number, hooks: EncounterHooks) {
     p.life -= dt;
     const dx = p.x - old.x,
       dz = p.z - old.z;
-    const t = Math.max(
-      0,
-      Math.min(
-        1,
-        ((s.player.x - old.x) * dx + (s.player.z - old.z) * dz) /
-          (dx * dx + dz * dz || 1),
-      ),
-    );
-    if (
-      Math.hypot(s.player.x - old.x - t * dx, s.player.z - old.z - t * dz) <
-      0.65
-    ) {
-      hooks.damagePlayer(p.damage, p);
-      return false;
+    for (const target of players.filter((a) => a.hp > 0)) {
+      const t = Math.max(
+        0,
+        Math.min(
+          1,
+          ((target.player.x - old.x) * dx + (target.player.z - old.z) * dz) /
+            (dx * dx + dz * dz || 1),
+        ),
+      );
+      if (
+        Math.hypot(
+          target.player.x - old.x - t * dx,
+          target.player.z - old.z - t * dz,
+        ) < 0.65
+      ) {
+        hooks.damagePlayer(p.damage, p, target);
+        return false;
+      }
     }
-    return p.life > 0 && dist(p, s.player) < 40;
+    return p.life > 0 && players.some((a) => dist(p, a.player) < 40);
   });
   c.zones = c.zones.filter((z) => {
     z.life -= dt;
-    if (z.life > 0 && dist(z, s.player) < z.radius + 0.3)
-      hooks.damagePlayer(z.damage, z);
+    for (const target of players)
+      if (
+        target.hp > 0 &&
+        z.life > 0 &&
+        dist(z, target.player) < z.radius + 0.3
+      )
+        hooks.damagePlayer(z.damage, z, target);
     return z.life > 0;
   });
 }

@@ -110,10 +110,24 @@ function point(
       retired(d, sector) || Boolean((d.consumed.get(sector) ?? 0) & bits[kind]),
   };
 }
-function stream(d: DiscoveryState, x: number, z: number) {
+function stream(
+  d: DiscoveryState,
+  x: number,
+  z: number,
+  players?: DiscoveryGameState[],
+) {
   const cx = Math.floor((x + CHUNK_SIZE / 2) / CHUNK_SIZE);
   const cz = Math.floor((z + CHUNK_SIZE / 2) / CHUNK_SIZE);
-  const chunk = `${cx},${cz}`;
+  const centers = players
+    ? players.map((a) => [
+        Math.floor((a.player.x + CHUNK_SIZE / 2) / CHUNK_SIZE),
+        Math.floor((a.player.z + CHUNK_SIZE / 2) / CHUNK_SIZE),
+      ])
+    : [[cx, cz]];
+  const chunk = centers
+    .map((c) => c.join(","))
+    .sort()
+    .join("|");
   if (chunk === d.chunk) return;
   d.chunk = chunk;
   // Monotonic retirement, rather than LRU reward history, means revisiting an
@@ -124,35 +138,40 @@ function stream(d: DiscoveryState, x: number, z: number) {
     if (retired(d, sector)) d.consumed.delete(sector);
   const old = new Map(d.points.map((p) => [p.id, p]));
   const next: DiscoveryPoint[] = [];
-  for (let dx = -1; dx <= 1; dx++)
-    for (let dz = -1; dz <= 1; dz++) {
-      const px = cx + dx,
-        pz = cz + dz;
-      const points =
-        px === 0 && pz === 0
-          ? [
-              point(d, px, pz, "chest", 4, 0),
-              point(d, px, pz, "repair", -4, 0),
-              point(d, px, pz, "salvage", 0, -8),
-            ]
-          : [
-              point(
-                d,
-                px,
-                pz,
-                (["chest", "repair", "salvage"] as const)[
-                  sectorOrdinal(px, pz) % 3
-                ],
-              ),
-            ];
-      for (const p of points) {
-        const previous = old.get(p.id);
-        if (previous && !p.completed) p.progress = previous.progress;
-        if (previous?.completedAt !== undefined)
-          p.completedAt = previous.completedAt;
-        next.push(p);
+  const seen = new Set<string>();
+  for (const [cx, cz] of centers)
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++) {
+        const px = cx + dx,
+          pz = cz + dz;
+        const key = `${px},${pz}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const points =
+          px === 0 && pz === 0
+            ? [
+                point(d, px, pz, "chest", 4, 0),
+                point(d, px, pz, "repair", -4, 0),
+                point(d, px, pz, "salvage", 0, -8),
+              ]
+            : [
+                point(
+                  d,
+                  px,
+                  pz,
+                  (["chest", "repair", "salvage"] as const)[
+                    sectorOrdinal(px, pz) % 3
+                  ],
+                ),
+              ];
+        for (const p of points) {
+          const previous = old.get(p.id);
+          if (previous && !p.completed) p.progress = previous.progress;
+          if (previous?.completedAt !== undefined)
+            p.completedAt = previous.completedAt;
+          next.push(p);
+        }
       }
-    }
   d.points = next;
 }
 export function createDiscoveryState(): DiscoveryState {
@@ -169,10 +188,26 @@ export function createDiscoveryState(): DiscoveryState {
   stream(d, 0, 0);
   return d;
 }
-export function updateDiscovery(s: DiscoveryGameState, dt: number) {
-  if (s.phase !== "playing" || dt <= 0) return;
-  stream(s.discovery, s.player.x, s.player.z);
-  for (const p of s.discovery.points) {
+export function updateDiscovery(
+  host: DiscoveryGameState,
+  dt: number,
+  players: DiscoveryGameState[] = [host],
+) {
+  if (host.phase !== "playing" || dt <= 0) return;
+  stream(
+    host.discovery,
+    host.player.x,
+    host.player.z,
+    players.length > 1 ? players : undefined,
+  );
+  for (const p of host.discovery.points) {
+    const s =
+      players
+        .filter((a) => a.hp > 0 && (p.kind !== "repair" || a.hp < 100))
+        .reduce<
+          DiscoveryGameState | undefined
+        >((best, a) => (!best || Math.hypot(a.player.x - p.x, a.player.z - p.z) < Math.hypot(best.player.x - p.x, best.player.z - p.z) ? a : best), undefined) ??
+      host;
     if (p.completed) continue;
     const inside =
       Math.hypot(s.player.x - p.x, s.player.z - p.z) <= discoveryRadius(p.kind);

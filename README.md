@@ -13,8 +13,8 @@ Open **http://127.0.0.1:5184/**. Choose **PLAY** (or **OYNA** in Turkish).
 
 - **Move:** WASD / arrow keys, or drag anywhere in the yard on a touch device.
 - **Attack:** automatic. Scrap targets the nearest living enemy within 8 units, with a 1.15-second cooldown. Collect wreckage to reload; the automatic close-range pulse keeps attacking when the orbit is empty.
-- **Upgrade:** collect blue energy nuts to level up; choose one of three modules with a tap, click, or keys 1–3. Combat freezes while choosing.
-- **Pause:** Escape or the pause button. Leaving the tab pauses; mobile browser focus changes do not interrupt a visible game.
+- **Upgrade:** collect blue energy nuts to level up; choose one of three modules with a tap, click, or keys 1–3. Solo combat freezes while choosing; co-op continues.
+- **Pause (solo):** Escape or the pause button. Leaving the tab pauses; mobile browser focus changes do not interrupt a visible game.
 - **Sound:** optional; toggle the speaker button. Audio is synthesized locally.
 
 Your orbit attacks automatically. Silver wreckage replenishes it; the automatic pulse can defeat enemies even with an empty orbit. Survive for as long as you can: enemy pressure grows with elapsed time, and death ends the run. Blue energy nuts grant XP and upgrade choices. The map continues as you move through streamed, deterministic scrapyard sections.
@@ -152,3 +152,34 @@ Level-up uses three framed, illustrated choices with prominent ability names, ne
 Supply chests, repair docks and salvage consoles now use original detailed Blender models. A chest opens on its rear hinge, releases a brief spark effect and remains open/empty; used stations switch their indicators off. Models and 768px preview art share the robots’ enamel/metal style. Rebuild with `npm run assets:discoveries`; editable sources and reward rules are documented in `art/DISCOVERY-ASSETS.md`.
 
 Nearby prompts preview the rewards. Supply-chest cards disappear immediately after collection, including after a level-up selection; rewards and the opening animation still apply. Repair and salvage rewards retain a compact five-second receipt of actual capped gains. It explains that parts are banked when the run ends. Level-up selection pauses the receipt timer, so it remains readable after choosing an ability. No extra reward dialog interrupts combat.
+
+## Online co-op (2 players)
+
+Choose **PLAY TOGETHER / BİRLİKTE OYNA**, create a room, and share its six-character code. A friend opens the same website and joins with that code. The host starts the match. Each player uses the robot selected in their own workshop.
+
+- The server owns the shared enemies, hazards, discoveries, rewards and simulation clock. Each robot has its own health, ammo, weapons and upgrade choices. XP and workshop parts are shared; an opened chest cannot pay twice.
+- **Co-op never pauses for upgrades, menus or a background tab.** The compact upgrade drawer can be collapsed; movement and auto-attacks keep working while it is open. Select with touch/click or 1–3. Unspent level choices remain available and additional XP queues up.
+- Stand within 2.3 metres of a fallen teammate for 3 uninterrupted seconds to revive them with 40 HP and 2 seconds of protection. Both robots down ends the run and banks its rewards. Leaving/disconnecting closes the room without banking an unfinished run.
+- A teammate marker, health, distance and direction help you stay together. Spawn pressure is 1.5× solo. The world remains endless, with discoveries streamed around both players.
+- Solo retains its existing pause and level-selection behavior.
+
+### Run the multiplayer server
+
+```sh
+npm ci
+npm run build
+npm run serve
+```
+
+Open `http://127.0.0.1:5185`. The Node process serves `dist/` and accepts WebSockets at `/coop`. `PORT` can override 5185. During development, run `npm run dev` separately; Vite proxies `/coop` to the server on 5185.
+
+The existing Cloudflare tunnel can forward port 5185. If the proxy rewrites the Host header, set `ALLOWED_ORIGINS` to the public origin (comma-separated for several), for example `ALLOWED_ORIGINS=https://your-game.example npm run serve`. A normal same-origin reverse proxy needs no override. Production requires an always-running Node service with WebSocket support; uploading `dist` alone provides solo play but cannot host co-op. Rooms live in this process's memory and close on restart or connection loss; there is no reconnect or cross-server room routing in this version.
+
+Limits: 12 concurrent rooms, 32 connected sockets, 2 players per room; idle lobbies expire after 10 minutes and finished rooms after 5 minutes. Inputs expire after 350 ms without an update. Invalid/oversized/rate-limited messages are rejected. Simulation ticks at 30 Hz, snapshots at 15 Hz with client visual smoothing. Workshop saves remain local; their numeric bonuses are bounded to existing progression limits, not authenticated accounts.
+
+```sh
+npm run test:coop
+node scripts/coop-browser.mjs
+```
+
+The browser check uses two independent sessions (desktop + touch mobile), real room creation/joining, real chest XP, movement and enemies during pending upgrades, separate choices, menus without pause, touch movement, disconnect handling and return to solo. No browser gameplay state is injected.

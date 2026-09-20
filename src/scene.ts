@@ -1,3 +1,4 @@
+import type { PartnerState } from "./coop-session";
 import * as THREE from "three";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
@@ -113,6 +114,144 @@ export class YardScene {
   }[] = [];
   ring!: THREE.Mesh;
   quality: GraphicsQuality = getGraphicsQuality();
+  private partnerRoot?: THREE.Group;
+  private partnerVariants = new Map<string, THREE.Group>();
+  private partnerOrbit: THREE.Group[] = [];
+  private partnerFill?: THREE.Mesh;
+  private partnerMarker?: THREE.Mesh;
+  private partnerBadge?: THREE.Sprite;
+  private partnerMaterials: {
+    material: THREE.MeshStandardMaterial;
+    emissive: THREE.Color;
+    intensity: number;
+  }[] = [];
+  renderPartner(p: PartnerState | null, dt: number) {
+    if (!p) {
+      if (this.partnerRoot) this.partnerRoot.visible = false;
+      if (this.partnerMarker) this.partnerMarker.visible = false;
+      if (this.partnerBadge) this.partnerBadge.visible = false;
+      for (const o of this.partnerOrbit) o.visible = false;
+      return;
+    }
+    if (!this.partnerRoot) {
+      this.partnerRoot = new THREE.Group();
+      this.partnerRoot.name = "coop-teammate";
+      for (const id of ["scrap", "scout", "volt"]) {
+        const model = instance(id === "scrap" ? "robot" : `robot-${id}`);
+        const materials = new Map<THREE.Material, THREE.Material>();
+        model.traverse((o) => {
+          if (!(o instanceof THREE.Mesh)) return;
+          const clone = (m: THREE.Material) => {
+            let copy = materials.get(m);
+            if (!copy) {
+              copy = m.clone();
+              materials.set(m, copy);
+              if (copy instanceof THREE.MeshStandardMaterial)
+                this.partnerMaterials.push({
+                  material: copy,
+                  emissive: copy.emissive.clone(),
+                  intensity: copy.emissiveIntensity,
+                });
+            }
+            return copy;
+          };
+          o.material = Array.isArray(o.material)
+            ? o.material.map(clone)
+            : clone(o.material);
+        });
+        this.partnerVariants.set(id, model);
+        this.partnerRoot.add(model);
+      }
+      this.scene.add(this.partnerRoot);
+      this.partnerMarker = new THREE.Mesh(
+        new THREE.RingGeometry(0.75, 0.8, 48),
+        new THREE.MeshBasicMaterial({
+          color: 0xa3eeb9,
+          side: THREE.DoubleSide,
+        }),
+      );
+      this.partnerMarker.rotation.x = -Math.PI / 2;
+      this.scene.add(this.partnerMarker);
+      const badge = document.createElement("canvas");
+      badge.width = 128;
+      badge.height = 64;
+      const ctx = badge.getContext("2d")!;
+      ctx.fillStyle = "#163a40";
+      ctx.fillRect(0, 0, 128, 64);
+      ctx.fillStyle = "#b5f5c9";
+      ctx.font = "bold 40px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("2P", 64, 45);
+      this.partnerBadge = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(badge),
+          depthTest: false,
+        }),
+      );
+      this.partnerBadge.scale.set(1, 0.5, 1);
+      this.scene.add(this.partnerBadge);
+      this.partnerFill = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.95, 0.09),
+        new THREE.MeshBasicMaterial({ color: 0xa3eeb9, depthTest: false }),
+      );
+      this.partnerBadge.add(this.partnerFill);
+      this.partnerFill.position.y = -0.65;
+      for (let i = 0; i < MAX_SCRAP; i++) {
+        const o = instance(
+          ["scrap-saw", "scrap-bolt", "scrap-nut"][i % 3],
+          0,
+          0.7,
+          0,
+          i % 3 === 0 ? 0.85 : 1.25,
+        );
+        this.partnerOrbit.push(o);
+        this.scene.add(o);
+      }
+      this.partnerRoot.position.set(p.player.x, 0, p.player.z);
+    }
+    const root = this.partnerRoot;
+    if (!root.visible) root.position.set(p.player.x, 0, p.player.z);
+    root.visible = true;
+    root.position.lerp(
+      new THREE.Vector3(p.player.x, 0, p.player.z),
+      Math.min(1, dt * 24),
+    );
+    const facing = Math.atan2(p.facing.x, p.facing.z);
+    root.rotation.y +=
+      Math.atan2(
+        Math.sin(facing - root.rotation.y),
+        Math.cos(facing - root.rotation.y),
+      ) * Math.min(1, dt * 14);
+    root.rotation.z = p.hp <= 0 ? -Math.PI / 2 : 0;
+    for (const [id, model] of this.partnerVariants)
+      model.visible = id === p.config.robotId;
+    for (const { material, emissive, intensity } of this.partnerMaterials) {
+      material.emissive.copy(emissive);
+      material.emissiveIntensity = intensity;
+      if (p.immunity > 0.55 && p.immunity < 0.86) {
+        material.emissive.setHex(0xff4b32);
+        material.emissiveIntensity = 0.7;
+      }
+    }
+    this.partnerMarker!.visible = true;
+    this.partnerMarker!.position.set(root.position.x, 0.05, root.position.z);
+    (this.partnerMarker!.material as THREE.MeshBasicMaterial).color.setHex(
+      p.hp <= 0 ? 0xf2bb55 : 0xa3eeb9,
+    );
+    this.partnerMarker!.scale.setScalar(p.hp <= 0 ? 1.5 + p.revive / 3 : 1);
+    this.partnerBadge!.visible = true;
+    this.partnerBadge!.position.set(root.position.x, 2.2, root.position.z);
+    this.partnerFill!.scale.x = Math.max(0.001, p.hp / 100);
+    for (let i = 0; i < this.partnerOrbit.length; i++) {
+      const o = this.partnerOrbit[i];
+      o.visible = p.hp > 0 && i < p.scrap;
+      if (o.visible) {
+        const at = orbitPosition(p, i);
+        o.position.set(at.x, 0.7, at.z);
+        o.rotation.y = p.time * 4 + i;
+      }
+    }
+  }
   private robotModels = new Map<State["config"]["robotId"], THREE.Group>();
   private hurtAt = -Infinity;
   private hurtDirection = new THREE.Vector2(0, -1);
@@ -328,7 +467,7 @@ export class YardScene {
       ),
     ];
     this.shotBatches = ["scrap-saw", "scrap-bolt", "scrap-nut"].map((name) =>
-      this.modelBatches(name, ENTITY_LIMITS.shots),
+      this.modelBatches(name, ENTITY_LIMITS.shots * 2),
     );
     this.robot = new THREE.Group();
     for (const id of ["scrap", "scout", "volt"] as const) {
@@ -414,12 +553,12 @@ export class YardScene {
     this.shotTrails = new THREE.InstancedMesh(
       beamGeometry,
       magnetic,
-      ENTITY_LIMITS.shots,
+      ENTITY_LIMITS.shots * 2,
     );
     this.shotHeads = new THREE.InstancedMesh(
       new THREE.IcosahedronGeometry(0.13, 0),
       hot,
-      ENTITY_LIMITS.shots,
+      ENTITY_LIMITS.shots * 2,
     );
     this.impactBatch = new THREE.InstancedMesh(
       new THREE.RingGeometry(0.7, 1, 16),
@@ -898,6 +1037,7 @@ export class YardScene {
     for (const [id, model] of this.robotModels)
       model.visible = id === s.config.robotId;
     this.renderRobotHurt(s.time);
+    if (s.hp <= 0) this.robot.rotation.z = -Math.PI / 2;
     for (let i = 0; i < this.orbit.length; i++) {
       const o = this.orbit[i];
       o.visible = i < s.scrap;
@@ -1145,6 +1285,7 @@ export class YardScene {
       }
   }
   clear() {
+    this.renderPartner(null, 0);
     this.lightning.clear();
     this.hurtAt = -Infinity;
     if (this.robot) this.renderRobotHurt(0);

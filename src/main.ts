@@ -1,3 +1,5 @@
+import { CoopClient } from "./coop-client";
+import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "@fontsource/dm-sans/latin-400.css";
@@ -188,6 +190,15 @@ function start() {
   beep(320, 0.12);
 }
 function returnToMenu() {
+  el("pause").innerHTML = svg("pause");
+  el("pause").setAttribute("aria-label", t("Pause game"));
+  if (coop.active) {
+    coop.leave();
+    s = createState(getRunConfig());
+    scene.clear();
+    el<HTMLButtonElement>("again").disabled = false;
+    el("again").querySelector("span")!.textContent = t("ONE MORE SHIFT");
+  }
   const canResume = s.phase !== "lost" && s.time > 0;
   keys.clear();
   stopStick();
@@ -205,6 +216,10 @@ function returnToMenu() {
   menu.enter(canResume);
 }
 function restart() {
+  if (coop.active) {
+    coop.again();
+    return;
+  }
   s = createState(getRunConfig());
   scene.clear();
   keys.clear();
@@ -244,6 +259,12 @@ function renderModalText(help: boolean) {
   el("pause-kills").textContent = String(s.kills);
 }
 function openModal(help = false) {
+  if (coop.active) {
+    keys.clear();
+    stopStick();
+    coop.openMenu();
+    return;
+  }
   if (!loaded || s.phase === "upgrade" || s.phase === "lost") return;
   if (s.phase !== "paused" || app.classList.contains("in-menu")) {
     modalBefore = app.classList.contains("in-menu") ? "ready" : "playing";
@@ -292,6 +313,16 @@ function toggleSound() {
 el("sound").addEventListener("click", toggleSound);
 window.addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement;
+  if (coop.lobbyOpen || ["INPUT", "TEXTAREA"].includes(target.tagName)) return;
+  if (coop.active && !e.repeat) {
+    const index = ["Digit1", "Digit2", "Digit3"].indexOf(e.code);
+    const numpad = ["Numpad1", "Numpad2", "Numpad3"].indexOf(e.code);
+    if (index >= 0 || numpad >= 0) {
+      e.preventDefault();
+      coop.chooseKey(Math.max(index, numpad));
+      return;
+    }
+  }
   if (
     app.classList.contains("in-menu") &&
     el("modal").classList.contains("hidden") &&
@@ -378,6 +409,10 @@ window.addEventListener("keyup", (e) => keys.delete(e.code));
 window.addEventListener("blur", () => {
   keys.clear();
   stopStick();
+  if (coop.active) {
+    coop.stopInput();
+    return;
+  }
   // Mobile browser chrome can take focus during a gesture without hiding the game.
   // Actual app/tab switches are handled by visibilitychange below.
   if (s.phase === "playing" && (!touch || document.hidden)) openModal();
@@ -386,7 +421,8 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     keys.clear();
     stopStick();
-    if (s.phase === "playing") openModal();
+    if (coop.active) coop.stopInput();
+    else if (s.phase === "playing") openModal();
   }
 });
 function trapFocus(e: KeyboardEvent) {
@@ -423,7 +459,9 @@ arena.addEventListener("pointerdown", (e) => {
     s.phase !== "playing" ||
     joystickId !== null ||
     (e.pointerType !== "touch" && e.target !== joy) ||
-    (e.target as Element).closest("button, .modal-backdrop, .result, .upgrade")
+    (e.target as Element).closest(
+      "button, .modal-backdrop, .result, .upgrade, .coop-lobby, .coop-upgrades",
+    )
   )
     return;
   e.preventDefault();
@@ -540,7 +578,7 @@ function renderUpgrades() {
       })
       .join("");
   }
-  if (s.phase !== "upgrade") return;
+  if (coop.active || s.phase !== "upgrade") return;
   const signature = `${s.level}:${s.choices.join(",")}:${loadout}`;
   if (signature === shownUpgrade) return;
   shownUpgrade = signature;
@@ -772,7 +810,8 @@ function loop(now: number) {
       Number(keys.has("KeyW") || keys.has("ArrowUp")) +
       stick.z,
   };
-  update(s, dt, m);
+  if (coop.active) coop.input(m, now);
+  else update(s, dt, m);
   if (s.events.length) {
     scene.events(s.events, s);
     if (s.events.some((event) => event.kind === "launch"))
@@ -785,7 +824,11 @@ function loop(now: number) {
     else if (e) beep(650, 0.025, "sine", 0.009);
     s.events = [];
   }
-  scene.render(s, s.phase === "playing" ? dt : 0);
+  scene.renderPartner(coop.active ? coop.partner : null, dt);
+  scene.render(
+    coop.active ? coop.presentation(s, dt) : s,
+    s.phase === "playing" ? dt : 0,
+  );
   hud();
   requestAnimationFrame(loop);
 }
@@ -820,6 +863,15 @@ async function boot() {
     Object.defineProperty(window, "__JUNK_MAGNET__", {
       value: {
         snapshot: () => ({
+          coop: {
+            active: coop.active,
+            code: coop.code,
+            index: coop.index,
+            down: coop.down,
+            partner: coop.partner
+              ? { player: { ...coop.partner.player }, hp: coop.partner.hp }
+              : null,
+          },
           phase: s.phase,
           time: s.time,
           openingRemaining: s.openingRemaining,
@@ -889,6 +941,7 @@ async function boot() {
   }
 }
 function applyLanguage() {
+  coop.refresh();
   menu.refresh();
   document.documentElement.lang = getLanguage();
   translateStatic();
@@ -949,6 +1002,44 @@ const menu = setupMenu({
   quality: chooseQuality,
   sound: toggleSound,
   soundEnabled: () => sound,
+});
+const coop = new CoopClient({
+  snapshot(packet, first) {
+    const events = [...s.events, ...packet.events].slice(-160);
+    s = packet.state;
+    s.events = events;
+    if (first) {
+      runId = packet.runId as typeof runId;
+      runReceipt = null;
+      showedResult = false;
+      shownUpgrade = "";
+      shownLoadout = "";
+      scene.clear();
+      keys.clear();
+      stopStick();
+      app.classList.remove("in-menu");
+      app.classList.add("in-run");
+      el("yard").classList.add("is-playing");
+      el("pause").innerHTML =
+        '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 6h14M5 12h14M5 18h14"/></svg>';
+      el("pause").setAttribute("aria-label", ct("menu"));
+      for (const id of ["intro", "modal", "result", "upgrade"])
+        el(id).classList.add("hidden");
+      if (touch) el("touch-stick").classList.remove("hidden");
+      el("yard").focus({ preventScroll: true });
+    }
+    el<HTMLButtonElement>("again").disabled = coop.index !== 0;
+    el("again").querySelector("span")!.textContent = ct(
+      coop.index === 0 ? "again" : "hostAgain",
+    );
+  },
+  leave() {
+    s = createState(getRunConfig());
+    scene.clear();
+    el<HTMLButtonElement>("again").disabled = false;
+    el("again").querySelector("span")!.textContent = t("ONE MORE SHIFT");
+    returnToMenu();
+  },
 });
 applyLanguage();
 void boot();
