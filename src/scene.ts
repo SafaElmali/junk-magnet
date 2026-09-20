@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { ExpansionView } from "./expansion-view";
+import { LightningView } from "./lightning-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -162,7 +163,7 @@ export class YardScene {
     side: THREE.DoubleSide,
     depthWrite: false,
   });
-  lightningMaterial = new THREE.LineBasicMaterial({ color: 0xa5ffff });
+  private lightning = new LightningView(this.scene);
   particles = new THREE.IcosahedronGeometry(0.065, 0);
   sparkMat = mat(0xffd56d, 0.35);
   xpMat = new THREE.MeshStandardMaterial({
@@ -713,8 +714,13 @@ export class YardScene {
       camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
       chunks: 9,
       renderedEnemies: this.renderedEnemies,
-      fx: this.fx.length + this.abilityFx.length + this.impacts.length,
+      fx:
+        this.fx.length +
+        this.abilityFx.length +
+        this.impacts.length +
+        this.lightning.diagnostics().arcs,
       attackFx: {
+        lightning: this.lightning.diagnostics(),
         pulseVisible: this.pulse?.visible ?? false,
         pulseLife: this.pulseLife,
         pulseWidth: 0.28,
@@ -789,36 +795,8 @@ export class YardScene {
           )
           .normalize();
       }
-      if (ev.kind === "lightning" && this.abilityFx.length < 40) {
-        const x = ev.fromX ?? s.player.x,
-          z = ev.fromZ ?? s.player.z;
-        const dx = ev.x - x,
-          dz = ev.z - z;
-        const line = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(x, 0.8, z),
-            new THREE.Vector3(
-              x + dx * 0.3 - dz * 0.09,
-              0.9,
-              z + dz * 0.3 + dx * 0.09,
-            ),
-            new THREE.Vector3(
-              x + dx * 0.65 + dz * 0.07,
-              0.65,
-              z + dz * 0.65 - dx * 0.07,
-            ),
-            new THREE.Vector3(ev.x, 0.55, ev.z),
-          ]),
-          this.lightningMaterial,
-        );
-        this.scene.add(line);
-        this.abilityFx.push({
-          o: line,
-          life: 0.19,
-          max: 0.19,
-          radius: 0,
-          dispose: true,
-        });
+      if (ev.kind === "lightning") {
+        this.lightning.strike(ev, s.player);
         continue;
       }
       if (ev.kind === "burst" && this.abilityFx.length < 40) {
@@ -1064,6 +1042,7 @@ export class YardScene {
         model.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
       model.scale.setScalar(turret.life < 1 ? Math.max(0.1, turret.life) : 1);
     }
+    this.lightning.update(dt, this.reduced);
     for (const f of this.abilityFx) {
       f.life -= dt;
       if (f.radius)
@@ -1153,6 +1132,7 @@ export class YardScene {
       }
   }
   clear() {
+    this.lightning.clear();
     this.hurtAt = -Infinity;
     if (this.robot) this.renderRobotHurt(0);
     this.renderedEnemies = 0;
