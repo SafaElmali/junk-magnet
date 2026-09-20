@@ -70,5 +70,21 @@ export const abilityGuide: Record<
 };
 export const abilityAsset = (id: UpgradeId) =>
   `${(import.meta.env?.BASE_URL ?? "/")}abilities/${id.startsWith("drone_") ? "drone" : id}.png`;
+
+export async function preloadAbilityArt(): Promise<void> {
+  const sources = new Set(
+    (Object.keys(UPGRADES) as UpgradeId[]).map(abilityAsset),
+  );
+  // Decode every page's art before opening the menu. Drone modes share one image.
+  // A missing decorative image must not prevent the game from opening.
+  await Promise.allSettled(
+    [...sources].map((src) => {
+      const image = new Image();
+      image.src = src;
+      return image.decode();
+    }),
+  );
+}
+
 export const abilityImage = (id: UpgradeId, className = "ability-art") =>
-  `<img class="${className}" src="${abilityAsset(id)}" width="384" height="384" alt="" decoding="async">`;
+  `<img class="${className}" src="${abilityAsset(id)}" width="384" height="384" alt="" decoding="sync">`;

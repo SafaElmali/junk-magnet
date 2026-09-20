@@ -3,6 +3,7 @@ import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 const browser = await chromium.launch({ channel: "chrome", headless: true });
+const url = process.env.GAME_URL ?? "http://127.0.0.1:5185/";
 const report = [];
 const sizes = [
   [1440, 900],
@@ -64,14 +65,15 @@ try {
       await held;
       await route.continue();
     });
-    await page.goto("http://127.0.0.1:5185/", {
+    await page.goto(url, {
       waitUntil: "domcontentloaded",
     });
-    await page.waitForFunction(
-      () =>
-        document.querySelector("#load-meter")?.getAttribute("aria-valuenow") ===
-        "78",
-    );
+    await page.waitForFunction(() => {
+      const progress = Number(
+        document.querySelector("#load-meter")?.getAttribute("aria-valuenow"),
+      );
+      return progress > 0 && progress < 90;
+    });
     const first = await page
       .locator(".loading-orbit")
       .evaluate((e) => getComputedStyle(e).transform);
@@ -119,7 +121,7 @@ try {
       await held;
       await route.continue();
     });
-    await page.goto("http://127.0.0.1:5185/", {
+    await page.goto(url, {
       waitUntil: "domcontentloaded",
     });
     await page.locator("#loading.has-error").waitFor();

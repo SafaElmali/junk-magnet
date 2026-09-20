@@ -29,6 +29,7 @@ import "./expansion.css";
 import "./level-up.css";
 import { upgradeChoicesMarkup } from "./level-up";
 import { abilityLoadoutMarkup } from "./ability-loadout";
+import { preloadAbilityArt } from "./ability-art";
 import { setupBuildInspector } from "./build-inspector";
 import {
   getRunConfig,
@@ -934,7 +935,7 @@ async function boot() {
         "Junk Magnet 3D scrapyard. Move with WASD, arrow keys, or touch. Attacks are automatic.",
       ),
     );
-    await scene.load((n) => {
+    const updateLoadProgress = (n: number) => {
       if (loadFailed) return;
       const percent = Math.round(n * 100);
       el("load-progress").style.transform = `scaleX(${n})`;
@@ -943,7 +944,12 @@ async function boot() {
       el("load-detail").textContent = t(
         n < 1 ? "Unpacking the good junk." : "Opening the yard…",
       );
-    });
+    };
+    await Promise.all([
+      scene.load((n) => updateLoadProgress(n * 0.9)),
+      preloadAbilityArt(),
+    ]);
+    updateLoadProgress(1);
     loaded = true;
     track("game_loaded", {
       ...analyticsContext(),
