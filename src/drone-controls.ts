@@ -45,10 +45,17 @@ export class DroneControls {
   private mode: DroneMode = "collector";
   private rendered = "";
   private choose = () => this.onSelect(DRONE_MODES[(DRONE_MODES.indexOf(this.mode) + 1) % DRONE_MODES.length]);
+  private touchChoose = (event: TouchEvent) => {
+    // A second finger may not generate a click while the joystick is held.
+    // Cancel the compatibility click so one touch cannot cycle twice.
+    event.preventDefault();
+    if (!this.button.disabled) this.choose();
+  };
   constructor(private root: HTMLElement, private onSelect: (mode: DroneMode) => void) {
     this.button.type = "button";
     this.button.className = "drone-control";
     this.button.addEventListener("click", this.choose);
+    this.button.addEventListener("touchstart", this.touchChoose, { passive: false });
     root.append(this.button);
   }
   update(s: DroneGameState) {
@@ -67,6 +74,7 @@ export class DroneControls {
   }
   dispose() {
     this.button.removeEventListener("click", this.choose);
+    this.button.removeEventListener("touchstart", this.touchChoose);
     this.button.remove();
   }
 }
