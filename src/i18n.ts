@@ -17,14 +17,15 @@ export const LANGUAGES = [
 export type Language = (typeof LANGUAGES)[number]["code"];
 export function resolveLanguage(
   saved: string | null,
-  browser = "en",
+  browser: string | readonly string[] = "en",
 ): Language {
   const match = (value: string | null) =>
     LANGUAGES.find(
       ({ code }) =>
         code === value?.toLowerCase().replace("_", "-").split("-")[0],
     )?.code;
-  return match(saved) ?? match(browser) ?? "en";
+  const preferences = typeof browser === "string" ? [browser] : browser;
+  return match(saved) ?? preferences.map(match).find(Boolean) ?? "en";
 }
 // Country flags are original SVG artwork, never emoji glyphs. Native names remain
 // the accessible language labels; these flags are decorative visual shortcuts.
@@ -47,7 +48,9 @@ try {
 }
 let language: Language = resolveLanguage(
   saved,
-  typeof navigator === "undefined" ? "en" : navigator.language,
+  typeof navigator === "undefined"
+    ? []
+    : [...(navigator.languages ?? []), navigator.language],
 );
 export function getLanguage() {
   return language;
