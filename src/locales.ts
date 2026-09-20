@@ -1,4 +1,5 @@
 import { expansionLocales } from "./expansion-locales";
+import { discoveryLocales } from "./discovery-locales";
 import { workshopLocales } from "./workshop-locales";
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
@@ -1045,4 +1046,5 @@ for (const language of ["tr", "de", "fr", "es", "pt"])
     locales[language],
     expansionLocales[language],
     workshopLocales[language],
+    discoveryLocales[language],
   );

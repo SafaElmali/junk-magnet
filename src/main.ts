@@ -27,6 +27,8 @@ import {
 } from "./progression";
 import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
 import { getDiscoveryHint } from "./discovery";
+import { discoveryFeedback, discoveryNames } from "./discovery-feedback";
+import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
@@ -588,6 +590,7 @@ function renderOpeningGuide() {
         : "Keep moving. Collect scrap to reload.",
   );
 }
+let worldHintMarkup = "";
 function renderExpansionHUD() {
   const playing = s.phase === "playing" && !app.classList.contains("in-menu");
   const boss =
@@ -611,26 +614,25 @@ function renderExpansionHUD() {
     el("boss-health").setAttribute("aria-valuenow", String(Math.ceil(boss.hp)));
   }
   let text = "";
-  const names = {
-    repair: "Repair station",
-    chest: "Supply chest",
-    salvage: "Salvage contract",
-  };
-  if (playing && s.evolutionNotice && s.evolutionNotice.until > s.time)
+  let markup = "";
+  let reward = false;
+  let hintProgress: number | undefined;
+  if (playing && s.evolutionNotice && s.evolutionNotice.until > s.time) {
     text = t("EVOLVED: {name}", {
       name: t(EVOLUTIONS[s.evolutionNotice.id].name),
     });
-  else if (
+  } else if (
     playing &&
     s.discovery.lastReward &&
     s.discovery.lastReward.until > s.time
-  )
-    text = `${t(names[s.discovery.lastReward.kind])} · ${t("Claimed")}`;
-  else if (playing && s.openingRemaining === 0) {
+  ) {
+    const receipt = s.discovery.lastReward;
+    markup = discoveryFeedback(receipt.kind, t("Claimed"), receipt);
+    reward = true;
+  } else if (playing) {
     const hint = getDiscoveryHint(s);
-    if (hint && (s.time >= 7 || hint.mode === "hold")) {
-      const name = t(names[hint.kind]);
-      text =
+    if (hint && (s.time >= 7 || hint.mode === "hold" || hint.distance <= 3)) {
+      const status =
         hint.mode === "hold"
           ? t("{name} · {seconds}s", {
               name: t(
@@ -641,17 +643,43 @@ function renderExpansionHUD() {
               seconds: hint.seconds,
             })
           : hint.mode === "full-health"
-            ? `${name} · ${t("Health is full")}`
+            ? t("Health is full")
             : t("{name} · {distance} m", {
-                name,
+                name: t(discoveryNames[hint.kind]),
                 distance: Math.ceil(hint.distance),
               });
+      hintProgress = hint.mode === "hold" ? hint.progress : undefined;
+      markup = discoveryFeedback(
+        hint.kind,
+        status,
+        undefined,
+        hint.mode === "hold" ? 0 : undefined,
+      );
     }
   }
-  el("world-hint").classList.toggle("hidden", !text);
-  if (el("world-hint").textContent !== text)
-    el("world-hint").textContent = text;
-  if (text) el("opening-guide").classList.add("hidden");
+  const worldHint = el("world-hint");
+  worldHint.classList.toggle("hidden", !text && !markup);
+  worldHint.classList.toggle("is-discovery", Boolean(markup));
+  worldHint.classList.toggle("is-reward", reward);
+  if (markup) {
+    if (worldHintMarkup !== markup) {
+      worldHint.innerHTML = markup;
+      worldHintMarkup = markup;
+    }
+    if (hintProgress !== undefined) {
+      const meter = worldHint.querySelector<HTMLElement>(".discovery-progress");
+      meter?.setAttribute(
+        "aria-valuenow",
+        String(Math.round(hintProgress * 100)),
+      );
+      const fill = meter?.querySelector<HTMLElement>("i");
+      if (fill) fill.style.transform = `scaleX(${hintProgress})`;
+    }
+  } else {
+    worldHintMarkup = "";
+    if (worldHint.textContent !== text) worldHint.textContent = text;
+  }
+  if (text || markup) el("opening-guide").classList.add("hidden");
 }
 function hud() {
   renderOpeningGuide();
@@ -802,6 +830,9 @@ async function boot() {
           hostileShots: s.encounters.projectiles.length,
           dangerZones: s.encounters.zones.length,
           discoveries: s.discovery.points.map((p) => ({ ...p })),
+          discoveryReward: s.discovery.lastReward
+            ? { ...s.discovery.lastReward }
+            : null,
           chestsOpened: s.discovery.chestsOpened,
           questsCompleted: s.discovery.questsCompleted,
           receipt: runReceipt ? { ...runReceipt } : null,

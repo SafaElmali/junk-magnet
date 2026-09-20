@@ -5,119 +5,108 @@ import {
   type DiscoveryGameState,
   type DiscoveryKind,
 } from "./discovery";
+export type DiscoveryModels = Record<DiscoveryKind, THREE.Group>;
 
-/** Fixed reusable meshes. Streaming never allocates GPU geometry or textures. */
+/** Clones share loaded GLB geometry/materials; streaming only changes transforms. */
 export class DiscoveryView {
   private root = new THREE.Group();
   private geometries: THREE.BufferGeometry[] = [];
   private materials: THREE.Material[] = [];
   private slots: {
     root: THREE.Group;
-    models: Record<DiscoveryKind, THREE.Group>;
+    models: DiscoveryModels;
+    lid?: THREE.Object3D;
+    loot?: THREE.Object3D;
+    lights: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[];
     ring: THREE.Mesh;
     ticks: THREE.Mesh[];
+    sparks: THREE.Mesh[];
   }[] = [];
-  constructor(scene: THREE.Scene) {
+  private spent = new THREE.MeshStandardMaterial({
+    color: 0x526766,
+    roughness: 0.8,
+  });
+  constructor(scene: THREE.Scene, templates: DiscoveryModels) {
     scene.add(this.root);
-    const material = (color: number, emissive = 0) => {
-      const m = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.6,
-        metalness: 0.15,
-        emissive,
-        emissiveIntensity: 0.35,
-      });
-      this.materials.push(m);
-      return m;
-    };
-    const teal = material(0x459b9c),
-      ink = material(0x173342),
-      gold = material(0xf4c558, 0x6b4b05),
-      cream = material(0xfff4d8),
-      red = material(0xcc654e);
+    const gold = new THREE.MeshBasicMaterial({
+      color: 0xf4c558,
+      depthWrite: false,
+    });
     const faded = new THREE.MeshBasicMaterial({
-      color: 0x459b9c,
+      color: 0x65bdb3,
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.35,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    this.materials.push(faded);
-    const box = new THREE.BoxGeometry(1, 1, 1),
-      cylinder = new THREE.CylinderGeometry(1, 1, 1, 12),
-      ring = new THREE.RingGeometry(0.97, 1, 48),
-      tick = new THREE.RingGeometry(
-        0.89,
-        0.96,
-        3,
-        1,
-        0,
-        ((Math.PI * 2) / 24) * 0.8,
-      );
-    this.geometries.push(box, cylinder, ring, tick);
-    const mesh = (
-      parent: THREE.Group,
-      geo: THREE.BufferGeometry,
-      mat: THREE.Material,
-      scale: number[],
-      pos: number[],
-    ) => {
-      const m = new THREE.Mesh(geo, mat);
-      m.scale.set(scale[0], scale[1], scale[2]);
-      m.position.set(pos[0], pos[1], pos[2]);
-      m.castShadow = true;
-      m.receiveShadow = true;
-      parent.add(m);
-      return m;
-    };
+    this.materials.push(gold, faded, this.spent);
+    const ring = new THREE.RingGeometry(0.97, 1, 48);
+    const tick = new THREE.RingGeometry(
+      0.89,
+      0.96,
+      3,
+      1,
+      0,
+      ((Math.PI * 2) / 24) * 0.8,
+    );
+    const spark = new THREE.IcosahedronGeometry(0.07, 0);
+    this.geometries.push(ring, tick, spark);
     for (let i = 0; i < DISCOVERY_LIMITS.points; i++) {
       const root = new THREE.Group();
       this.root.add(root);
-      const repair = new THREE.Group(),
-        chest = new THREE.Group(),
-        salvage = new THREE.Group();
-      root.add(repair, chest, salvage);
-      // Repair dock: teal station, cream face and a physical red cross.
-      mesh(repair, box, ink, [1.3, 0.2, 1.1], [0, 0.15, 0]);
-      mesh(repair, box, teal, [0.95, 1.05, 0.65], [0, 0.7, 0]);
-      mesh(repair, box, cream, [0.75, 0.7, 0.08], [0, 0.82, 0.36]);
-      mesh(repair, box, red, [0.15, 0.46, 0.1], [0, 0.82, 0.42]);
-      mesh(repair, box, red, [0.46, 0.15, 0.1], [0, 0.82, 0.42]);
-      mesh(repair, cylinder, gold, [0.1, 0.12, 0.1], [0, 1.3, 0]);
-      // Supply chest: brass banding and a bright central latch.
-      mesh(chest, box, ink, [1.35, 0.65, 0.95], [0, 0.4, 0]);
-      mesh(chest, box, teal, [1.4, 0.2, 1], [0, 0.83, 0]);
-      for (const x of [-0.44, 0.44])
-        mesh(chest, box, gold, [0.12, 0.9, 1.03], [x, 0.52, 0]);
-      mesh(chest, box, gold, [0.25, 0.25, 0.12], [0, 0.66, 0.53]);
-      // Salvage beacon: scrap collection platform with an amber signal.
-      mesh(salvage, cylinder, ink, [1.1, 0.15, 1.1], [0, 0.13, 0]);
-      mesh(salvage, box, teal, [1.05, 0.55, 0.85], [0, 0.47, 0]);
-      mesh(salvage, box, cream, [0.7, 0.12, 0.5], [0, 0.82, 0]);
-      mesh(salvage, cylinder, ink, [0.07, 1.4, 0.07], [0.7, 0.85, 0]);
-      mesh(salvage, cylinder, gold, [0.2, 0.28, 0.2], [0.7, 1.67, 0]);
+      const models = {} as DiscoveryModels;
+      const lights: (typeof this.slots)[number]["lights"] = [];
+      for (const kind of ["repair", "chest", "salvage"] as const) {
+        const model = templates[kind].clone(true);
+        models[kind] = model;
+        root.add(model);
+        model.traverse((o) => {
+          if (!(o instanceof THREE.Mesh)) return;
+          o.castShadow = true;
+          o.receiveShadow = true;
+          const material = Array.isArray(o.material)
+            ? o.material[0]
+            : o.material;
+          if (
+            kind !== "chest" &&
+            ["Electric ceramic", "Amber beacon"].includes(material.name)
+          )
+            lights.push({ mesh: o, material: o.material });
+        });
+      }
       const outline = new THREE.Mesh(ring, faded);
       outline.rotation.x = -Math.PI / 2;
-      outline.position.y = 0.05;
+      outline.position.y = 0.04;
       root.add(outline);
       const ticks: THREE.Mesh[] = [];
       for (let n = 0; n < 24; n++) {
         const t = new THREE.Mesh(tick, gold);
         t.rotation.set(-Math.PI / 2, 0, (n * Math.PI * 2) / 24);
-        t.position.y = 0.065;
+        t.position.y = 0.055;
         root.add(t);
         ticks.push(t);
+      }
+      const sparks: THREE.Mesh[] = [];
+      for (let n = 0; n < 6; n++) {
+        const m = new THREE.Mesh(spark, gold);
+        m.visible = false;
+        root.add(m);
+        sparks.push(m);
       }
       root.visible = false;
       this.slots.push({
         root,
-        models: { repair, chest, salvage },
+        models,
+        lights,
+        lid: models.chest.getObjectByName("Chest_Lid"),
+        loot: models.chest.getObjectByName("Chest_Loot"),
         ring: outline,
         ticks,
+        sparks,
       });
     }
   }
-  update(s: DiscoveryGameState) {
+  update(s: DiscoveryGameState, reduced = false) {
     for (let i = 0; i < this.slots.length; i++) {
       const slot = this.slots[i],
         p = s.discovery.points[i];
@@ -127,20 +116,41 @@ export class DiscoveryView {
       const radius = discoveryRadius(p.kind);
       slot.ring.scale.setScalar(radius);
       slot.ring.visible = !p.completed;
-      for (const kind of ["repair", "chest", "salvage"] as const) {
+      for (const kind of ["repair", "chest", "salvage"] as const)
         slot.models[kind].visible = kind === p.kind;
-        slot.models[kind].scale.y = p.completed ? 0.6 : 1;
-        slot.models[kind].position.y = p.completed ? -0.15 : 0;
-      }
+      const age =
+        p.completedAt === undefined
+          ? Infinity
+          : Math.max(0, s.time - p.completedAt);
+      const opening = p.completed ? (reduced ? 1 : Math.min(1, age / 0.55)) : 0;
+      if (slot.lid) slot.lid.rotation.x = -1.8 * (1 - (1 - opening) ** 3);
+      if (slot.loot) slot.loot.visible = !p.completed || age < 0.28;
+      for (const light of slot.lights)
+        light.mesh.material = p.completed ? this.spent : light.material;
       const fraction = p.progress / (p.kind === "salvage" ? 8 : 1.2);
       for (let n = 0; n < slot.ticks.length; n++) {
         slot.ticks[n].visible = !p.completed && n < Math.floor(fraction * 24);
         slot.ticks[n].scale.setScalar(radius);
       }
+      for (let n = 0; n < slot.sparks.length; n++) {
+        const spark = slot.sparks[n];
+        spark.visible = p.completed && !reduced && age < 0.85;
+        if (!spark.visible) continue;
+        const a = (n * Math.PI) / 3,
+          spread = 0.15 + age * 0.85;
+        spark.position.set(
+          Math.cos(a) * spread,
+          0.8 + age * 1.5,
+          Math.sin(a) * spread,
+        );
+        spark.rotation.set(age * 3, n, age * 2);
+        spark.scale.setScalar(Math.max(0.05, 1 - age / 0.85));
+      }
     }
   }
   dispose() {
     this.root.removeFromParent();
+    // GLB resources are shared with the asset cache, so only dispose our overlays.
     for (const g of this.geometries) g.dispose();
     for (const m of this.materials) m.dispose();
   }

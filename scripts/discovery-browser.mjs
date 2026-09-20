@@ -119,6 +119,11 @@ try {
       chestHint.visible && chestHint.fits && !chestHint.joystickOverlap,
     );
     assert.match(chestHint.text, /Alındı/);
+    assert.match(chestHint.text, /Deneyim/);
+    assert.match(chestHint.text, /Atölye parçası/);
+    assert.match(chestHint.text, /tur sonunda/);
+    assert.equal(chest.discoveryReward.xp, 5);
+    assert.equal(chest.discoveryReward.parts, 3);
     await page.screenshot({
       path: `.impeccable/review/discovery-chest-live-${width}.png`,
     });
@@ -130,7 +135,11 @@ try {
     ).progress;
     assert.ok(progress > 0 && progress < 8);
     // Wait out the previous reward notice before measuring the quest hint.
-    await waitPlayingTime(1.4);
+    const receiptRemaining = Math.max(
+      0,
+      ((await read()).discoveryReward?.until ?? 0) - (await read()).time,
+    );
+    await waitPlayingTime(receiptRemaining + 0.15);
     const questHint = await hintLayout();
     assert.ok(
       questHint.visible && questHint.fits && !questHint.joystickOverlap,

@@ -10,7 +10,8 @@
     "test": "tsx --test src/*.test.ts",
     "assets:abilities": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_ability_assets.py",
     "assets": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_assets.py",
-    "assets:robots": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_robot_assets.py"
+    "assets:robots": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_robot_assets.py",
+    "assets:discoveries": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_discovery_assets.py"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.2.6",

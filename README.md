@@ -146,3 +146,9 @@ Defeat banks discovered/boss parts plus one part per ten kills and per thirty su
 ### Clearer level-up choices
 
 Level-up uses three framed, illustrated choices with prominent ability names, new/rank-change labels and small rank markers. The focused choice receives a gold outline. Arrow Up/Down moves focus; Enter, a click/tap, or keys 1–3 select an ability. The simulation stays paused until selection. Desktop and portrait use rows, while short landscape fits three compact cards without scrolling. All six languages reuse the same choice renderer. The larger XP strip remains visible during level-up; Pause and Results use their existing run summaries instead.
+
+### Discovery props and clear reward receipts
+
+Supply chests, repair docks and salvage consoles now use original detailed Blender models. A chest opens on its rear hinge, releases a brief spark effect and remains open/empty; used stations switch their indicators off. Models and 768px preview art share the robots’ enamel/metal style. Rebuild with `npm run assets:discoveries`; editable sources and reward rules are documented in `art/DISCOVERY-ASSETS.md`.
+
+Nearby prompts preview the rewards. After collection, a compact five-second receipt shows actual experience, attack scrap, health and workshop-part gains, respecting caps. It explains that parts are banked when the run ends. Level-up selection pauses the receipt timer, so it remains readable after choosing an ability. No extra reward dialog interrupts combat.

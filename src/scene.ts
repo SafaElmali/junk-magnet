@@ -270,6 +270,9 @@ export class YardScene {
       "robot",
       "robot-scout",
       "robot-volt",
+      "discovery-chest",
+      "discovery-repair",
+      "discovery-salvage",
       "enemy-can",
       "container",
       "tire",
@@ -886,8 +889,12 @@ export class YardScene {
     );
     this.robot.rotation.y += diff * Math.min(1, dt * 14);
     this.robot.visible = true;
-    this.expansion ??= new ExpansionView(this.scene);
-    this.expansion.update(s);
+    this.expansion ??= new ExpansionView(this.scene, {
+      chest: models.get("discovery-chest")!,
+      repair: models.get("discovery-repair")!,
+      salvage: models.get("discovery-salvage")!,
+    });
+    this.expansion.update(s, this.reduced);
     for (const [id, model] of this.robotModels)
       model.visible = id === s.config.robotId;
     this.renderRobotHurt(s.time);

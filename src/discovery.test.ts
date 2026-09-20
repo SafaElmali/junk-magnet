@@ -145,8 +145,23 @@ test("retired reward history cannot be exploited by returning after eviction", (
   );
 });
 test("render pools retain geometry across streaming and detach cleanly", () => {
+  const sharedGeometry = new THREE.BoxGeometry(1, 1, 1);
+  const sharedMaterial = new THREE.MeshStandardMaterial();
+  let sharedDisposed = false;
+  sharedGeometry.addEventListener("dispose", () => {
+    sharedDisposed = true;
+  });
   const scene = new THREE.Scene(),
-    view = new DiscoveryView(scene),
+    view = new DiscoveryView(
+      scene,
+      Object.fromEntries(
+        (["chest", "repair", "salvage"] as const).map((kind) => {
+          const model = new THREE.Group();
+          model.add(new THREE.Mesh(sharedGeometry, sharedMaterial));
+          return [kind, model];
+        }),
+      ) as Record<DiscoveryKind, THREE.Group>,
+    ),
     s = state();
   const geometries = new Set<THREE.BufferGeometry>();
   scene.traverse((o) => {
@@ -165,6 +180,9 @@ test("render pools retain geometry across streaming and detach cleanly", () => {
   assert.equal(geometries.size, 4);
   view.dispose();
   assert.equal(scene.children.length, 0);
+  assert.equal(sharedDisposed, false);
+  sharedGeometry.dispose();
+  sharedMaterial.dispose();
 });
 
 test("reward feedback uses simulation time and resets for a fresh run", () => {
@@ -173,15 +191,70 @@ test("reward feedback uses simulation time and resets for a fresh run", () => {
   s.time = 12;
   approach(s, "chest");
   updateDiscovery(s, 1.3);
-  assert.deepEqual(s.discovery.lastReward, { kind: "chest", until: 15 });
+  assert.deepEqual(s.discovery.lastReward, {
+    kind: "chest",
+    until: 17,
+    xp: 5,
+    scrap: 6,
+    hp: 0,
+    parts: 3,
+  });
   s.phase = "paused";
   updateDiscovery(s, 20);
-  assert.deepEqual(s.discovery.lastReward, { kind: "chest", until: 15 });
+  assert.deepEqual(s.discovery.lastReward, {
+    kind: "chest",
+    until: 17,
+    xp: 5,
+    scrap: 6,
+    hp: 0,
+    parts: 3,
+  });
   s.phase = "playing";
   s.time = 18;
   s.hp = 60;
   approach(s, "repair");
   updateDiscovery(s, 0.05);
-  assert.deepEqual(s.discovery.lastReward, { kind: "repair", until: 21 });
+  assert.deepEqual(s.discovery.lastReward, {
+    kind: "repair",
+    until: 23,
+    xp: 0,
+    scrap: 0,
+    hp: 40,
+    parts: 0,
+  });
   assert.equal(createDiscoveryState().lastReward, null);
+});
+
+test("discovery receipts report capped actual gains and keep completion time on revisit", () => {
+  const s = state();
+  s.scrap = 10;
+  s.time = 8;
+  const chest = approach(s, "chest");
+  updateDiscovery(s, 1.3);
+  assert.equal(s.discovery.lastReward?.scrap, 2);
+  assert.equal(chest.completedAt, 8);
+  s.player = { x: 21, z: 0 };
+  updateDiscovery(s, 0.01);
+  s.player = { x: 4, z: 0 };
+  updateDiscovery(s, 0.01);
+  assert.equal(
+    s.discovery.points.find((p) => p.id === chest.id)?.completedAt,
+    8,
+  );
+  assert.equal(s.earnedParts, 3);
+  s.hp = 92;
+  approach(s, "repair");
+  updateDiscovery(s, 0.01);
+  assert.equal(s.discovery.lastReward?.hp, 8);
+  s.scrap = 12;
+  approach(s, "salvage");
+  updateDiscovery(s, 8.1);
+  assert.deepEqual(s.discovery.lastReward, {
+    kind: "salvage",
+    until: 13,
+    xp: 12,
+    scrap: 0,
+    hp: 0,
+    parts: 8,
+  });
 });

@@ -196,7 +196,7 @@ def export_model(kind):
     bpy.ops.export_scene.gltf(filepath=os.path.join(MODELS, 'robot-'+kind+'.glb'), export_format='GLB', use_selection=True, export_apply=True)
 
 
-def studio(scene, kind):
+def studio(scene, kind, focus=(0, 0, 1.05), scale=2.8):
     scene.render.engine = 'CYCLES'
     scene.cycles.samples = 48
     scene.cycles.use_denoising = True
@@ -222,23 +222,29 @@ def studio(scene, kind):
         o.rotation_euler=(Vector((0,0,1))-o.location).to_track_quat('-Z','Y').to_euler()
     bpy.ops.object.camera_add(location=(3.2,-6,3.0))
     cam=bpy.context.object
-    cam.rotation_euler=(Vector((0,0,1.05))-cam.location).to_track_quat('-Z','Y').to_euler()
+    cam.rotation_euler=(Vector(focus)-cam.location).to_track_quat('-Z','Y').to_euler()
     cam.data.type='ORTHO'
-    cam.data.ortho_scale=2.8
+    cam.data.ortho_scale=scale
     scene.camera=cam
     scene.render.filepath=os.path.join(PORTRAITS,kind+'.png')
     bpy.ops.render.render(write_still=True)
 
 
-for kind in ['scrap','scout','volt']:
-    scene=bpy.data.scenes.new('Robot — '+kind)
-    bpy.context.window.scene=scene
-    parts=[]
-    if kind=='scrap':
-        bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS,'robot.glb'))
-    else:
-        scout() if kind=='scout' else volt()
-        export_model(kind)
-    studio(scene,kind)
-    print('ROBOT_READY',kind,flush=True)
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','robot-kit.blend'))
+def build_assets():
+    global parts
+    for kind in ['scrap','scout','volt']:
+        scene=bpy.data.scenes.new('Robot — '+kind)
+        bpy.context.window.scene=scene
+        parts=[]
+        if kind=='scrap':
+            bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS,'robot.glb'))
+        else:
+            scout() if kind=='scout' else volt()
+            export_model(kind)
+        studio(scene,kind)
+        print('ROBOT_READY',kind,flush=True)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','robot-kit.blend'))
+
+
+if __name__ == '__main__':
+    build_assets()

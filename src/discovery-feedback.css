@@ -1,0 +1,129 @@
+.world-hint.is-discovery {
+  width: 344px;
+  padding: 10px 13px;
+  text-align: left;
+  border-color: #87b4a775;
+  box-shadow: 0 5px 24px #071d3033;
+}
+.world-hint.is-reward {
+  border-color: #e6bc64bb;
+}
+.discovery-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.discovery-heading img {
+  width: 43px;
+  height: 43px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.discovery-heading div {
+  min-width: 0;
+}
+.discovery-heading strong {
+  display: block;
+  font-size: 13px;
+  color: #fff2d4;
+}
+.discovery-heading span {
+  display: block;
+  font-size: 11px;
+  color: #bed5ca;
+  margin-top: 2px;
+}
+.is-reward .discovery-heading span {
+  color: #ecc466;
+}
+.discovery-rewards {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+}
+.discovery-rewards > span {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: 3px;
+  background: #6a999718;
+}
+.discovery-rewards b {
+  display: block;
+  font:
+    700 20px/1 "Barlow Condensed",
+    sans-serif;
+  color: #efcb7b;
+}
+.discovery-rewards small {
+  display: block;
+  color: #c0d4c9;
+  font-size: 10px;
+  line-height: 1.2;
+  margin-top: 3px;
+}
+.discovery-bank-note {
+  display: block;
+  color: #b0c6bb;
+  font-size: 10px;
+  line-height: 1.3;
+  margin-top: 7px;
+}
+.discovery-progress {
+  height: 3px;
+  margin-top: 8px;
+  background: #738e8655;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.discovery-progress i {
+  display: block;
+  height: 100%;
+  background: #edc569;
+  transform-origin: left;
+}
+@media (max-width: 600px) {
+  .world-hint.is-discovery {
+    width: 320px;
+    padding: 8px 10px;
+  }
+  .discovery-heading img {
+    width: 34px;
+    height: 34px;
+  }
+  .discovery-rewards {
+    gap: 5px;
+  }
+  .discovery-rewards small {
+    font-size: 9px;
+  }
+}
+@media (max-height: 430px) and (min-width: 521px) {
+  .world-hint.is-discovery {
+    width: 330px;
+    padding: 6px 10px;
+  }
+  .discovery-heading img {
+    width: 28px;
+    height: 28px;
+  }
+  .discovery-heading strong {
+    font-size: 11px;
+  }
+  .discovery-heading span,
+  .discovery-bank-note {
+    font-size: 9px;
+  }
+  .discovery-rewards {
+    margin-top: 3px;
+  }
+  .discovery-rewards > span {
+    padding: 3px 5px;
+  }
+  .discovery-rewards b {
+    font-size: 17px;
+  }
+  .discovery-rewards small {
+    font-size: 9px;
+  }
+}

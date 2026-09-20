@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { State } from "./simulation";
 import { ENTITY_LIMITS } from "./simulation";
 import { EncounterView } from "./encounters-view";
-import { DiscoveryView } from "./discovery-view";
+import { DiscoveryView, type DiscoveryModels } from "./discovery-view";
 /** Reused silhouettes give special enemies a readable shape, independent of color. */
 export class ExpansionView {
   encounters: EncounterView;
@@ -11,9 +11,9 @@ export class ExpansionView {
   private cyclone: THREE.Group;
   private transform = new THREE.Object3D();
   private color = new THREE.Color();
-  constructor(scene: THREE.Scene) {
+  constructor(scene: THREE.Scene, discoveryModels: DiscoveryModels) {
     this.encounters = new EncounterView(scene);
-    this.discovery = new DiscoveryView(scene);
+    this.discovery = new DiscoveryView(scene, discoveryModels);
     this.accents = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({
@@ -41,9 +41,9 @@ export class ExpansionView {
       this.cyclone.add(m);
     }
   }
-  update(s: State) {
+  update(s: State, reduced = false) {
     this.encounters.update(s);
-    this.discovery.update(s);
+    this.discovery.update(s, reduced);
     this.cyclone.visible = s.evolutions.vortex;
     this.cyclone.position.set(s.player.x, 0.6, s.player.z);
     this.cyclone.children.forEach((m, i) => {

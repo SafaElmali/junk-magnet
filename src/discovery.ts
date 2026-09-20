@@ -9,8 +9,17 @@ export type DiscoveryPoint = {
   z: number;
   progress: number;
   completed: boolean;
+  completedAt?: number;
 };
 export const DISCOVERY_LIMITS = { points: 11, sectors: 256 };
+export type DiscoveryReward = {
+  kind: DiscoveryKind;
+  until: number;
+  xp: number;
+  scrap: number;
+  hp: number;
+  parts: number;
+};
 export type DiscoveryState = {
   points: DiscoveryPoint[];
   consumed: Map<number, number>;
@@ -19,7 +28,7 @@ export type DiscoveryState = {
   chestsOpened: number;
   questsCompleted: number;
   repairsUsed: number;
-  lastReward: { kind: DiscoveryKind; until: number } | null;
+  lastReward: DiscoveryReward | null;
 };
 export type DiscoveryGameState = {
   phase: string;
@@ -139,6 +148,8 @@ function stream(d: DiscoveryState, x: number, z: number) {
       for (const p of points) {
         const previous = old.get(p.id);
         if (previous && !p.completed) p.progress = previous.progress;
+        if (previous?.completedAt !== undefined)
+          p.completedAt = previous.completedAt;
         next.push(p);
       }
     }
@@ -173,7 +184,8 @@ export function updateDiscovery(s: DiscoveryGameState, dt: number) {
     p.progress += dt;
     if (p.progress < durations[p.kind]) continue;
     p.completed = true;
-    s.discovery.lastReward = { kind: p.kind, until: s.time + 3 };
+    p.completedAt = s.time;
+    const before = { xp: s.xp, scrap: s.scrap, hp: s.hp, parts: s.earnedParts };
     s.discovery.highestSector = Math.max(s.discovery.highestSector, p.sector);
     for (const sector of s.discovery.consumed.keys())
       if (retired(s.discovery, sector)) s.discovery.consumed.delete(sector);
@@ -199,6 +211,15 @@ export function updateDiscovery(s: DiscoveryGameState, dt: number) {
       s.earnedParts += 8;
       s.discovery.questsCompleted++;
     }
+    // Report actual gains, including ammunition/health caps, after the award.
+    s.discovery.lastReward = {
+      kind: p.kind,
+      until: s.time + 5,
+      xp: s.xp - before.xp,
+      scrap: s.scrap - before.scrap,
+      hp: s.hp - before.hp,
+      parts: s.earnedParts - before.parts,
+    };
   }
 }
 export function getDiscoveryHint(s: DiscoveryGameState): {
