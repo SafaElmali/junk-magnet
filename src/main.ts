@@ -24,7 +24,6 @@ import "./help-art.css";
 import "./pause-menu.css";
 import "./opening-guide.css";
 import "./result-menu.css";
-import "./loading-screen.css";
 import "./expansion.css";
 import "./level-up.css";
 import { upgradeChoicesMarkup } from "./level-up";

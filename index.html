@@ -54,6 +54,7 @@
         background: #142f37;
       }
       .game-intro {
+        display: none;
         max-width: 680px;
         margin: auto;
         padding: 48px 24px;
@@ -62,10 +63,21 @@
       }
       .game-intro a { color: #edbb53; }
     </style>
+    <!-- loading-styles -->
+    <noscript>
+      <style>
+        #loading { display: none !important; }
+        .game-intro { display: block; }
+        html, body, #app { height: auto !important; overflow: auto !important; }
+        body { position: static !important; }
+        #app { display: block !important; padding: 0 !important; }
+      </style>
+    </noscript>
     <title>Junk Magnet — Free 3D Browser Survival Game</title>
   </head>
   <body>
     <div id="app">
+      <!-- loading-screen -->
       <main class="game-intro">
         <h1>Junk Magnet — Free 3D Browser Survival Game</h1>
         <p>A tiny robot. An endless scrapyard. Your enemies become your ammunition.</p>

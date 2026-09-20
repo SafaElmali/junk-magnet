@@ -12,7 +12,7 @@ const sizes = [
   [844, 390],
   [568, 320],
 ];
-const output = ".impeccable/review";
+const output = process.env.OUTPUT_DIR ?? ".impeccable/review";
 await fs.mkdir(output, { recursive: true });
 async function checkLayout(page) {
   const data = await page.evaluate(() => {
@@ -52,6 +52,43 @@ async function checkLayout(page) {
   return data;
 }
 try {
+  // A cold visit must show the loader before any game JavaScript executes.
+  const coldPage = await browser.newPage();
+  let releaseScripts;
+  const scriptsHeld = new Promise((resolve) => (releaseScripts = resolve));
+  await coldPage.route("**/*", async (route) => {
+    if (route.request().resourceType() === "script") await scriptsHeld;
+    await route.continue();
+  });
+  await coldPage.goto(url, { waitUntil: "commit" });
+  await coldPage.locator("#loading").waitFor();
+  assert.equal(await coldPage.locator(".game-intro").isVisible(), false);
+  assert.equal(await coldPage.locator("#reload").isVisible(), false);
+  for (const [width, height] of sizes) {
+    await coldPage.setViewportSize({ width, height });
+    const data = await checkLayout(coldPage);
+    assert.equal(data.percent, "0");
+    report.push({ mode: "before-javascript", width, height, ...data });
+  }
+  await coldPage.screenshot({ path: `${output}/loading-before-javascript.png` });
+  releaseScripts();
+  await coldPage.waitForFunction(() => window.__JUNK_MAGNET__);
+  assert.equal(await coldPage.locator("#intro").isVisible(), true);
+  assert.equal(await coldPage.locator("#loading").count(), 1);
+  assert.equal(await coldPage.locator("#loading").isVisible(), false);
+  await coldPage.close();
+
+  const noScriptPage = await browser.newPage({
+    javaScriptEnabled: false,
+    viewport: { width: 390, height: 844 },
+  });
+  await noScriptPage.goto(url);
+  assert.equal(await noScriptPage.locator("#loading").isVisible(), false);
+  assert.equal(await noScriptPage.locator(".game-intro").isVisible(), true);
+  assert.equal(await noScriptPage.locator('a[href="./guide/"]').isVisible(), true);
+  assert.equal(await noScriptPage.locator("#app").evaluate((el) => getComputedStyle(el).overflow), "auto");
+  await noScriptPage.close();
+
   for (const code of ["tr", "en", "de", "fr", "es", "pt"]) {
     const page = await browser.newPage({
       viewport: { width: 1440, height: 900 },
