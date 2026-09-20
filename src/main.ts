@@ -17,6 +17,8 @@ import "./opening-guide.css";
 import "./result-menu.css";
 import "./loading-screen.css";
 import "./expansion.css";
+import "./level-up.css";
+import { upgradeChoicesMarkup } from "./level-up";
 import {
   getRunConfig,
   recordRun,
@@ -30,7 +32,6 @@ import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
 import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
-import { abilityImage } from "./ability-art";
 import {
   t,
   LANGUAGES,
@@ -40,7 +41,6 @@ import {
   setLanguage,
   bindStaticTranslations,
   upgradeName,
-  localizedUpgradeDescription,
 } from "./i18n";
 import { YardScene } from "./scene";
 import {
@@ -83,7 +83,7 @@ app.innerHTML = `
  <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
 </header>
 <main id="yard" aria-label="Game arena" tabindex="-1">
- <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i></div>
+ <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i><span class="xp-meter-copy" aria-hidden="true"><strong id="xp-current-level"></strong><span id="xp-meter-count"></span><strong id="xp-next-level"></strong></span></div>
  <section class="hud" aria-label="Game status">
   <div class="health-panel"><div class="robot-badge">${svg("magnet")}</div><div class="health-copy"><div class="health-heading"><strong id="level">LV. 1</strong><span id="health-value">100 / 100</span></div></div></div>
   <div class="timer-panel"><strong id="timer">00:00</strong><span id="wave">PRESSURE 1</span></div>
@@ -99,7 +99,7 @@ app.innerHTML = `
  <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
  <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="pause-heading pause-only"><span class="pause-location">${svg("magnet")}<span>THE SCRAPYARD</span></span><span class="pause-badge">${svg("pause")}</span></div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div class="pause-summary pause-only"><div><span>SHIFT TIME</span><strong id="pause-time">00:00</strong></div><div><span>LEVEL REACHED</span><strong id="pause-level">1</strong></div><div><span>JUNK RECYCLED</span><strong id="pause-kills">0</strong></div></div><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><div class="pause-actions"><button class="primary-btn" id="resume"><span id="resume-label">CONTINUE</span><span id="resume-icon">${svg("play")}</span></button><button class="text-btn" id="restart">${svg("reset")}<span>NEW RUN</span></button><button id="pause-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div></div></div>
- <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
+ <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><header class="upgrade-heading"><span class="upgrade-emblem" aria-hidden="true">${svg("bolt")}</span><div><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p></div></header><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card">
  <header class="result-heading"><div class="result-stamp">${svg("magnet")}<span id="result-stamp">BACK TO THE WORKSHOP</span></div><span class="result-unit">SCRAP-01</span></header>
  <h2 id="result-title">SHIFT COMPLETE</h2><p id="result-copy"></p>
@@ -335,6 +335,22 @@ window.addEventListener("keydown", (e) => {
       (e.repeat || performance.now() < upgradeReadyAt)
     )
       e.preventDefault();
+    if (["ArrowUp", "ArrowDown"].includes(e.code)) {
+      e.preventDefault();
+      const choices = [
+        ...el("upgrade-choices").querySelectorAll<HTMLButtonElement>("button"),
+      ];
+      const current = choices.indexOf(
+        document.activeElement as HTMLButtonElement,
+      );
+      choices[
+        (current +
+          (e.code === "ArrowDown" ? 1 : choices.length - 1) +
+          choices.length) %
+          choices.length
+      ]?.focus({ preventScroll: true });
+      return;
+    }
     const index = ["Digit1", "Digit2", "Digit3"].indexOf(e.code);
     const numpad = ["Numpad1", "Numpad2", "Numpad3"].indexOf(e.code);
     if (index >= 0 || numpad >= 0) {
@@ -534,21 +550,7 @@ function renderUpgrades() {
   el("upgrade-copy").textContent = t("Level {level} · Choose one upgrade.", {
     level: s.level,
   });
-  el("upgrade-choices").innerHTML = s.choices
-    .map((id, index) => {
-      const rank = s.upgrades[id];
-      const label = !Number.isFinite(UPGRADES[id].maxRank)
-        ? id === "overclock"
-          ? t("20-SECOND BOOST")
-          : id === "repair"
-            ? t("INSTANT REPAIR")
-            : t("INSTANT REFILL")
-        : rank
-          ? t("RANK {rank} → {next}", { rank, next: rank + 1 })
-          : t("NEW ABILITY");
-      return `<button type="button" class="upgrade-choice" data-upgrade="${id}" data-choice="${index}"><span class="upgrade-icon">${abilityImage(id)}</span><span class="upgrade-text"><span class="upgrade-rank">${label}</span><strong>${upgradeName(id)}</strong><span class="upgrade-description">${localizedUpgradeDescription(s, id)}</span></span><kbd>${index + 1}</kbd></button>`;
-    })
-    .join("");
+  el("upgrade-choices").innerHTML = upgradeChoicesMarkup(s);
   el("upgrade").classList.remove("hidden");
   el("upgrade-choices")
     .querySelector<HTMLButtonElement>("button")
@@ -659,6 +661,12 @@ function hud() {
   el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
   el("level").textContent = t("LV. {level}", { level: s.level });
   el("xp-label").textContent = t("{xp} / {needed} XP", {
+    xp: s.xp,
+    needed: s.xpNeeded,
+  });
+  el("xp-current-level").textContent = t("LV. {level}", { level: s.level });
+  el("xp-next-level").textContent = t("LV. {level}", { level: s.level + 1 });
+  el("xp-meter-count").textContent = t("{xp} / {needed} XP", {
     xp: s.xp,
     needed: s.xpNeeded,
   });

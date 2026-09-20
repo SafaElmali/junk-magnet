@@ -32,7 +32,7 @@ Your orbit attacks automatically. Silver wreckage replenishes it; the automatic 
 
 ## Compact play screen
 
-The map fills the viewport during a run. A thin XP bar, small timer/level/kill counters and ability icons sit at the top. Health follows the centered robot. Combat has no launch button, ammunition panel, or manual aiming. Pause reveals language, sound and help. The lobby retains its title and instructions.
+The map fills the viewport during a run. A 26px framed XP bar shows the current level, collected/required energy and next level. Small timer/kill counters and ability icons sit below it. Health follows the centered robot. Combat has no launch button, ammunition panel, or manual aiming. Pause reveals language, sound and help. The lobby retains its title and instructions.
 
 ## Language / Dil
 
@@ -79,7 +79,7 @@ See `VERIFICATION.md` for measured results and limitations.
 
 The game is local, single-player, and has no server, accounts, ads or CrazyGames SDK integration. The endless survival loop is implemented; it is still a prototype requiring balance and physical-device profiling. Enemy and visual counts are bounded rather than retaining every object forever.
 
-Weapon evolutions, bosses, permanent progression and alternate characters are not included. Physical mobile/Chromebook profiling, broader browser coverage, further art work and platform integration are still needed before submission.
+Weapon evolutions, bosses, local permanent progression and alternate robots are implemented. Physical mobile/Chromebook profiling, broader browser coverage, further art work and platform integration are still needed before submission.
 
 Font and Three.js licenses are included in `public/licenses/`. Game geometry and UI icons are original to this prototype; generated reference provenance is recorded alongside the art.
 
@@ -142,3 +142,7 @@ Three automatic evolutions activate when both requirements are reached in the sa
 Workshop offers SCRAP-01 (+10% damage), SCOUT (+18% speed and +0.8 m pickup range, 80 parts), and VOLT (starts with lightning, +15% damage and −5% speed, 120 parts). Each has a distinct portrait and visible in-game attachments. Reinforced Hull and Magnet Tuning each have three permanent ranks, costing 25/60/110 parts. These reduce incoming damage and extend pickup range. A run takes a snapshot of its chosen robot and bonuses; workshop changes apply to the next run, never a paused one.
 
 Defeat banks discovered/boss parts plus one part per ten kills and per thirty survival seconds. Main Menu and New Run do not bank unfinished runs. Results show the award and balance; repeated result rendering or changing languages cannot award it twice. Parts, unlocks, upgrades and best time/kills are versioned and validated in this browser's local storage. There is no account/cloud sync; blocked storage falls back to session memory. An unfinished run still does not survive reloading.
+
+### Clearer level-up choices
+
+Level-up uses three framed, illustrated choices with prominent ability names, new/rank-change labels and small rank markers. The focused choice receives a gold outline. Arrow Up/Down moves focus; Enter, a click/tap, or keys 1–3 select an ability. The simulation stays paused until selection. Desktop and portrait use rows, while short landscape fits three compact cards without scrolling. All six languages reuse the same choice renderer. The larger XP strip remains visible during level-up; Pause and Results use their existing run summaries instead.
