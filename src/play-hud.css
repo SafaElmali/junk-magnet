@@ -138,28 +138,111 @@
   height: 7px;
   outline: 1px solid #fff6e3;
 }
+/* Illustrated equipment tiles: the object leads, with rank on a separate plate. */
 .in-run .ability-loadout {
   left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
   top: calc(max(14px, env(safe-area-inset-top)) + 28px);
-  max-width: calc(100% - 90px);
+  max-width: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 6px;
 }
 .in-run .ability-chip {
-  width: 25px;
-  height: 25px;
-  padding: 3px;
-  gap: 1px;
-  border-radius: 4px;
-  background: #fff6e3d9;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 48px;
+  padding: 2px;
+  gap: 0;
+  border: 1px solid #27464b;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #fff5da, #d9c9a6);
+  box-shadow: 0 2px 0 #18343bcc, 0 3px 6px #44372130,
+    inset 0 1px 0 #fffaf0;
 }
-.in-run .ability-chip svg {
-  width: 14px;
-  height: 14px;
+.in-run .ability-chip-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+.in-run .ability-chip-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px #44372135);
 }
 .in-run .ability-chip b {
-  font-size: 9px;
+  position: absolute;
+  right: -3px;
+  bottom: 0;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 17px;
+  padding: 0 3px;
+  border: 1px solid #58736b;
+  border-radius: 4px 0 0 0;
+  background: #193b43;
+  color: #fff3d5;
+  font: 800 13px/1 "Barlow Condensed", sans-serif;
+}
+.in-run .ability-chip-ranks {
+  display: flex;
+  flex: 0 0 3px;
+  align-self: stretch;
+  gap: 2px;
+  margin: 3px 2px 1px;
+}
+.in-run .ability-chip-ranks i {
+  flex: 1;
+  border-radius: 1px;
+  background: #17334230;
+}
+.in-run .ability-chip-ranks .is-filled {
+  background: #286d75;
+}
+.in-run .ability-chip.is-evolved {
+  border-color: #e6b74d;
+  background: linear-gradient(145deg, #486965, #1a3942);
+  box-shadow: 0 2px 0 #173342, inset 0 0 0 1px #f4d67b66;
+}
+.in-run .ability-chip.is-evolved b {
+  border-color: #e6b74d;
+  background: #edc366;
+  color: #193b43;
+}
+.in-run .is-evolved .ability-chip-ranks .is-filled {
+  background: #f0cc76;
+}
+.ability-chip-evolution {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  color: #ffe39a;
+  font-size: 12px;
+  text-shadow: 0 1px 2px #173342;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .in-run .ability-loadout {
+    gap: 5px;
+  }
+  .in-run .ability-chip {
+    flex-basis: 36px;
+    width: 36px;
+    height: 42px;
+    border-radius: 6px;
+  }
+  .in-run .ability-chip b {
+    min-width: 14px;
+    height: 15px;
+    font-size: 12px;
+  }
 }
 .in-run .touch-stick {
   width: 84px;

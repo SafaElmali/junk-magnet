@@ -2,7 +2,10 @@ import { FieldControls } from "./field-controls";
 import { setDroneMode, DRONE_MODES, type DroneMode } from "./drone";
 import { specializationCopy, specializationHeading } from "./specialization-ui";
 import type { SpecializationId } from "./specializations";
+import { GameAudio } from "./audio";
 import { CoopClient } from "./coop-client";
+import { initAnalytics, track } from "./analytics";
+import { createRunAnalytics } from "./run-analytics";
 import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
@@ -25,20 +28,30 @@ import "./loading-screen.css";
 import "./expansion.css";
 import "./level-up.css";
 import { upgradeChoicesMarkup } from "./level-up";
+import { abilityLoadoutMarkup } from "./ability-loadout";
+import { setupBuildInspector } from "./build-inspector";
 import {
   getRunConfig,
   recordRun,
   ROBOTS,
   type RunReceipt,
 } from "./progression";
-import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
+import { EVOLUTIONS } from "./evolution-core";
 import { getDiscoveryHint } from "./discovery";
-import { discoveryFeedback, discoveryNames } from "./discovery-feedback";
+import {
+  discoveryFeedback,
+  discoveryProgress,
+  discoveryNames,
+} from "./discovery-feedback";
 import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
-import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
+import {
+  getGraphicsQuality,
+  setGraphicsQuality,
+  type GraphicsQuality,
+} from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
 import {
   t,
@@ -48,7 +61,6 @@ import {
   getLanguage,
   setLanguage,
   bindStaticTranslations,
-  upgradeName,
 } from "./i18n";
 import { YardScene } from "./scene";
 import {
@@ -66,6 +78,10 @@ const icons = {
   sound:
     '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   mute: '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="m17 9 5 6m0-6-5 6"/>',
+  music:
+    '<path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/>',
+  musicOff:
+    '<path d="M9 18v-5m0-6V5l11-2v12M9 9l3-.5"/><ellipse cx="6" cy="18" rx="3" ry="2"/><path d="M20 16a3 2 0 0 1-6 0M3 3l18 18"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
   play: '<path d="m8 4 12 8-12 8Z"/>',
@@ -89,7 +105,7 @@ app.innerHTML = `
 <header class="masthead">
  <div class="wordmark"><h1>JUNK MAGNET<span class="logo-bolt">${svg("bolt")}</span></h1><p>THE SWARM IS YOUR AMMO.</p></div>
  <div class="session-label"><span class="live-dot"></span> THE SCRAPYARD <span class="divider">/</span> ENDLESS SHIFT</div>
- <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
+ <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="music" aria-label="Mute music" aria-pressed="true">${svg("music")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
 </header>
 <main id="yard" aria-label="Game arena" tabindex="-1">
  <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i><span class="xp-meter-copy" aria-hidden="true"><strong id="xp-current-level"></strong><span id="xp-meter-count"></span><strong id="xp-next-level"></strong></span></div>
@@ -129,47 +145,31 @@ let s = createState(getRunConfig()),
   scene: YardScene,
   loaded = false,
   last = 0,
-  sound = false,
   modalBefore: "ready" | "playing" = "playing",
   lastFocus: HTMLElement | null = null;
 let runId = crypto.randomUUID();
+let frameRequest: number | undefined;
+function requestFrame() {
+  if (!loaded || document.hidden || frameRequest !== undefined) return;
+  frameRequest = requestAnimationFrame(loop);
+}
 let runReceipt: RunReceipt | null = null;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
-  showedResult = false,
-  audio: AudioContext | undefined;
+  showedResult = false;
+const gameAudio = new GameAudio();
 let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0;
 const touch = window.matchMedia("(pointer: coarse)").matches;
-function beep(
-  freq: number,
-  duration = 0.06,
-  type: OscillatorType = "sine",
-  gain = 0.03,
-) {
-  if (!sound) return;
-  try {
-    audio ??= new AudioContext();
-    if (audio.state === "suspended") void audio.resume();
-    const osc = audio.createOscillator(),
-      g = audio.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audio.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(
-      freq * 0.6,
-      audio.currentTime + duration,
-    );
-    g.gain.setValueAtTime(gain, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
-    osc.connect(g);
-    g.connect(audio.destination);
-    osc.start();
-    osc.stop(audio.currentTime + duration);
-  } catch {
-    sound = false;
-  }
-}
+initAnalytics();
+const runAnalytics = createRunAnalytics(track);
+const analyticsContext = () => ({
+  language: getLanguage(),
+  graphics_quality: getGraphicsQuality(),
+  input_type: touch ? "touch" : "keyboard",
+});
+const bootStarted = performance.now();
 function start() {
   if (!loaded || !menu.isHome()) return;
   if (s.time === 0) {
@@ -177,6 +177,7 @@ function start() {
     runId = crypto.randomUUID();
     runReceipt = null;
     scene.clear();
+    runAnalytics.start(runId, "solo", s, analyticsContext());
   }
   keys.clear();
   stopStick();
@@ -192,12 +193,15 @@ function start() {
   el<HTMLButtonElement>("pause").disabled = false;
   if (touch) el("touch-stick").classList.remove("hidden");
   el("yard").focus({ preventScroll: true });
-  beep(320, 0.12);
+  gameAudio.play("start");
+  requestFrame();
 }
 function returnToMenu() {
+  buildInspector.close();
   el("pause").innerHTML = svg("pause");
   el("pause").setAttribute("aria-label", t("Pause game"));
   if (coop.active) {
+    runAnalytics.abandon(s, "coop_left");
     coop.leave();
     s = createState(getRunConfig());
     scene.clear();
@@ -219,12 +223,14 @@ function returnToMenu() {
     el(id).classList.add("hidden");
   el("intro").classList.remove("hidden");
   menu.enter(canResume);
+  requestFrame();
 }
 function restart() {
   if (coop.active) {
     coop.again();
     return;
   }
+  runAnalytics.abandon(s, "restart");
   s = createState(getRunConfig());
   scene.clear();
   keys.clear();
@@ -286,6 +292,7 @@ function openModal(help = false) {
   el("help-content").classList.toggle("hidden", !help);
   el("modal").classList.remove("hidden");
   el("resume").focus({ preventScroll: true });
+  requestFrame();
 }
 function closeModal() {
   if (s.phase !== "paused" || document.hidden) return;
@@ -294,6 +301,7 @@ function closeModal() {
     app.classList.contains("in-menu") && s.time > 0 ? "paused" : modalBefore;
   el("yard").classList.toggle("is-playing", s.phase === "playing");
   lastFocus?.focus({ preventScroll: true });
+  requestFrame();
 }
 el("pause-menu").addEventListener("click", returnToMenu);
 el("result-menu").addEventListener("click", returnToMenu);
@@ -304,19 +312,68 @@ el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
 );
 el("help").addEventListener("click", () => openModal(true));
-function toggleSound() {
-  sound = !sound;
+function refreshAudio() {
+  const sound = gameAudio.enabled;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
   el("sound").setAttribute("aria-pressed", String(sound));
   el("sound").setAttribute(
     "aria-label",
-    sound ? t("Mute sound") : t("Enable sound"),
+    t(sound ? "Mute sound" : "Enable sound"),
   );
-  if (sound) beep(600);
+  const music = gameAudio.musicEnabled;
+  el("music").innerHTML = svg(music ? "music" : "musicOff");
+  el("music").setAttribute("aria-pressed", String(music));
+  el("music").setAttribute(
+    "aria-label",
+    t(music ? "Mute music" : "Enable music"),
+  );
+  el("music").title = t(music ? "Mute music" : "Enable music");
   menu.refresh();
 }
+function toggleMusic() {
+  gameAudio.toggleMusic();
+  refreshAudio();
+}
+function toggleSound() {
+  void gameAudio.toggle();
+  refreshAudio();
+}
+// Unlock only in a browser gesture, including keyboard and touch play.
+document.addEventListener("pointerdown", () => void gameAudio.unlock(), {
+  capture: true,
+});
+document.addEventListener("keydown", () => void gameAudio.unlock(), {
+  capture: true,
+});
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "button",
+    );
+    if (
+      button &&
+      !button.disabled &&
+      !button.classList.contains("audio-volume-step") &&
+      ![
+        "sound",
+        "music",
+        "menu-sound",
+        "menu-music",
+        "start",
+        "again",
+        "restart",
+        "new-run",
+      ].includes(button.id)
+    )
+      gameAudio.play("ui");
+  },
+  { capture: true },
+);
 el("sound").addEventListener("click", toggleSound);
+el("music").addEventListener("click", toggleMusic);
 window.addEventListener("keydown", (e) => {
+  if (buildInspector.isOpen) return;
   const target = e.target as HTMLElement;
   if (coop.lobbyOpen || ["INPUT", "TEXTAREA"].includes(target.tagName)) return;
   if (coop.active && !e.repeat) {
@@ -428,12 +485,16 @@ window.addEventListener("blur", () => {
   if (s.phase === "playing" && (!touch || document.hidden)) openModal();
 });
 document.addEventListener("visibilitychange", () => {
+  gameAudio.setHidden(document.hidden);
   if (document.hidden) {
+    if (frameRequest !== undefined) cancelAnimationFrame(frameRequest);
+    frameRequest = undefined;
+    last = 0;
     keys.clear();
     stopStick();
     if (coop.active) coop.stopInput();
     else if (s.phase === "playing") openModal();
-  }
+  } else requestFrame();
 });
 function trapFocus(e: KeyboardEvent) {
   const panel = !el("upgrade").classList.contains("hidden")
@@ -533,18 +594,6 @@ const format = (t: number) =>
     .padStart(2, "0")}:${Math.floor(t % 60)
     .toString()
     .padStart(2, "0")}`;
-const abilityIcons: Record<UpgradeId, keyof typeof icons> = {
-  saw: "nut",
-  lightning: "bolt",
-  turret: "turret",
-  burst: "burst",
-  boots: "boots",
-  magnet: "magnet",
-  armor: "shield",
-  repair: "repair",
-  refill: "magnet",
-  overclock: "bolt",
-};
 function ownedAbilities() {
   return (Object.keys(s.upgrades) as UpgradeId[]).filter(
     (id) => Number.isFinite(UPGRADES[id].maxRank) && s.upgrades[id] > 0,
@@ -563,6 +612,7 @@ function pickUpgrade(id: UpgradeId | SpecializationId | undefined, specializatio
   )
     return;
   if (!(specialization ? chooseSpecialization(s, id as SpecializationId) : chooseUpgrade(s, id as UpgradeId))) return;
+  runAnalytics.observe(s);
   keys.clear();
   stopStick();
   shownUpgrade = "";
@@ -570,8 +620,8 @@ function pickUpgrade(id: UpgradeId | SpecializationId | undefined, specializatio
   el("yard").classList.toggle("is-playing", s.choices.length === 0 && s.specializationChoices.length === 0);
   // Do not leave keyboard focus on a hidden choice, where a held key could fire again.
   el("yard").focus({ preventScroll: true });
-  beep(720, 0.14, "triangle");
   renderUpgrades();
+  requestFrame();
 }
 function renderUpgrades() {
   const loadout =
@@ -580,18 +630,7 @@ function renderUpgrades() {
       .join("|") + Object.values(s.evolutions).join() + Object.values(s.specializations).join();
   if (loadout !== shownLoadout) {
     shownLoadout = loadout;
-    el("ability-loadout").innerHTML = ownedAbilities()
-      .map((id) => {
-        const evolution = (Object.keys(EVOLUTIONS) as EvolutionId[]).find(
-          (key) => s.evolutions[key] && EVOLUTIONS[key].weapon === id,
-        );
-        const branch = s.specializations[id as keyof typeof s.specializations];
-        const name = branch ? specializationCopy(branch)[0] : evolution
-          ? t(EVOLUTIONS[evolution].name)
-          : upgradeName(id);
-        return `<span class="ability-chip${evolution ? " is-evolved" : ""}" title="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`;
-      })
-      .join("");
+    el("ability-loadout").innerHTML = abilityLoadoutMarkup(s);
   }
   if (coop.active || s.phase !== "upgrade") return;
   const signature = `${s.level}:${s.choices.join(",")}:${s.specializationChoices.join(",")}:${loadout}`;
@@ -610,7 +649,6 @@ function renderUpgrades() {
   el("upgrade-choices")
     .querySelector<HTMLButtonElement>("button")
     ?.focus({ preventScroll: true });
-  beep(480, 0.18, "triangle");
 }
 el("upgrade-choices").addEventListener("click", (e) => {
   const button = (e.target as Element).closest<HTMLButtonElement>(
@@ -622,16 +660,11 @@ el("upgrade-choices").addEventListener("click", (e) => {
 let shownOpening = "";
 function renderOpeningGuide() {
   const visible =
-    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 7;
+    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 3;
   el("opening-guide").classList.toggle("hidden", !visible);
   if (!visible) return;
   // Keep the explanation readable even when the first volley follows collection immediately.
-  const phase =
-    s.launched > 0 && s.time >= 3
-      ? "reload"
-      : s.scrap > 0 || s.launched > 0
-        ? "orbit"
-        : "collect";
+  const phase = s.scrap > 0 || s.launched > 0 ? "orbit" : "collect";
   const signature = `${phase}:${getLanguage()}`;
   if (signature === shownOpening) return;
   shownOpening = signature;
@@ -639,12 +672,23 @@ function renderOpeningGuide() {
   el("opening-copy").textContent = t(
     phase === "collect"
       ? "Your magnet collects nearby scrap."
-      : phase === "orbit"
-        ? "Scrap orbits you, then fires automatically."
-        : "Keep moving. Collect scrap to reload.",
+      : "Scrap orbits you, then fires automatically.",
   );
 }
 let worldHintMarkup = "";
+let hintRun = "";
+const hintStarted = new Map<string, number>();
+// Presentation time prevents pausing/revisiting from reviving a dismissed hint.
+// Keys are ability/discovery kinds, so this stays bounded in endless runs.
+function briefHint(key: string, duration = 1800) {
+  if (hintRun !== runId) {
+    hintRun = runId;
+    hintStarted.clear();
+  }
+  const now = performance.now();
+  if (!hintStarted.has(key)) hintStarted.set(key, now);
+  return now - hintStarted.get(key)! < duration;
+}
 function renderExpansionHUD() {
   const playing = s.phase === "playing" && !app.classList.contains("in-menu");
   const boss =
@@ -669,24 +713,26 @@ function renderExpansionHUD() {
   }
   let text = "";
   let markup = "";
-  let reward = false;
+  let compact = false;
   let hintProgress: number | undefined;
-  if (playing && s.evolutionNotice && s.evolutionNotice.until > s.time) {
+  if (
+    playing &&
+    s.evolutionNotice &&
+    s.evolutionNotice.until > s.time &&
+    briefHint(`evolution:${s.evolutionNotice.id}`)
+  ) {
     text = t("EVOLVED: {name}", {
       name: t(EVOLUTIONS[s.evolutionNotice.id].name),
     });
-  } else if (
-    playing &&
-    s.discovery.lastReward &&
-    s.discovery.lastReward.kind !== "chest" &&
-    s.discovery.lastReward.until > s.time
-  ) {
-    const receipt = s.discovery.lastReward;
-    markup = discoveryFeedback(receipt.kind, t("Claimed"), receipt);
-    reward = true;
   } else if (playing) {
     const hint = getDiscoveryHint(s);
-    if (hint && (s.time >= 7 || hint.mode === "hold" || hint.distance <= 3)) {
+    if (
+      hint &&
+      (s.time >= 3 || hint.mode === "hold" || hint.distance <= 3) &&
+      (hint.mode === "hold" ||
+        (hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0) ||
+        briefHint(`discovery:${hint.kind}${hint.mode === "complete" ? ":depleted" : ""}`))
+    ) {
       const status =
         hint.mode === "hold"
           ? t("{name} · {seconds}s", {
@@ -699,23 +745,34 @@ function renderExpansionHUD() {
             })
           : hint.mode === "full-health"
             ? t("Health is full")
-            : t("{name} · {distance} m", {
-                name: t(discoveryNames[hint.kind]),
-                distance: Math.ceil(hint.distance),
-              });
-      hintProgress = hint.mode === "hold" ? hint.progress : undefined;
-      markup = discoveryFeedback(
-        hint.kind,
-        status,
-        undefined,
-        hint.mode === "hold" ? 0 : undefined,
-      );
+            : hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0
+              ? t("Progress saved · {seconds}s left", { seconds: hint.seconds })
+              : t("{name} · {distance} m", {
+                  name: t(discoveryNames[hint.kind]),
+                  distance: Math.ceil(hint.distance),
+                });
+      hintProgress =
+        hint.mode === "hold" ||
+        (hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0)
+          ? hint.progress
+          : undefined;
+      compact = hintProgress !== undefined;
+      markup = compact
+        ? discoveryProgress(hint.kind, status, 0)
+        : discoveryFeedback(
+            hint.kind,
+            status,
+            undefined,
+            undefined,
+            hint.mode === "complete",
+          );
     }
   }
   const worldHint = el("world-hint");
   worldHint.classList.toggle("hidden", !text && !markup);
   worldHint.classList.toggle("is-discovery", Boolean(markup));
-  worldHint.classList.toggle("is-reward", reward);
+  worldHint.classList.remove("is-reward");
+  worldHint.classList.toggle("is-compact", compact);
   if (markup) {
     if (worldHintMarkup !== markup) {
       worldHint.innerHTML = markup;
@@ -740,44 +797,58 @@ function changeDrone(mode: DroneMode) {
   if (coop.active) coop.droneMode(mode);
   else setDroneMode(s, mode);
 }
+let shownVitals = "";
 function hud() {
   fieldControls.update(s, s.phase === "playing" && !app.classList.contains("in-menu") && !coop.controlsBlocked);
   renderOpeningGuide();
   renderExpansionHUD();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
-  el("timer").textContent = format(s.time);
-  el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
-  el("level").textContent = t("LV. {level}", { level: s.level });
-  el("xp-label").textContent = t("{xp} / {needed} XP", {
-    xp: s.xp,
-    needed: s.xpNeeded,
-  });
-  el("xp-current-level").textContent = t("LV. {level}", { level: s.level });
-  el("xp-next-level").textContent = t("LV. {level}", { level: s.level + 1 });
-  el("xp-meter-count").textContent = t("{xp} / {needed} XP", {
-    xp: s.xp,
-    needed: s.xpNeeded,
-  });
-  el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
-  el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
-  el("yard").classList.toggle("low-health", s.hp <= 25);
-  document
-    .querySelector(".health-track")!
-    .setAttribute("aria-valuenow", String(s.hp));
-  el("kills").textContent = String(s.kills);
-  el("xp-progress").style.transform =
-    `scaleX(${Math.min(1, s.xp / s.xpNeeded)})`;
-  const xpBar = document.querySelector(".top-progress")!;
-  xpBar.setAttribute("aria-valuenow", String(Math.min(s.xp, s.xpNeeded)));
-  xpBar.setAttribute("aria-valuemax", String(s.xpNeeded));
-  xpBar.setAttribute(
-    "aria-valuetext",
-    t("Level {level}, {xp} of {needed} experience", {
-      level: s.level,
+  const vitals = [
+    getLanguage(),
+    Math.floor(s.time),
+    s.wave,
+    s.level,
+    s.xp,
+    s.xpNeeded,
+    s.hp,
+    s.kills,
+  ].join("|");
+  if (vitals !== shownVitals) {
+    shownVitals = vitals;
+    el("timer").textContent = format(s.time);
+    el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
+    el("level").textContent = t("LV. {level}", { level: s.level });
+    el("xp-label").textContent = t("{xp} / {needed} XP", {
       xp: s.xp,
       needed: s.xpNeeded,
-    }),
-  );
+    });
+    el("xp-current-level").textContent = t("LV. {level}", { level: s.level });
+    el("xp-next-level").textContent = t("LV. {level}", { level: s.level + 1 });
+    el("xp-meter-count").textContent = t("{xp} / {needed} XP", {
+      xp: s.xp,
+      needed: s.xpNeeded,
+    });
+    el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
+    el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
+    el("yard").classList.toggle("low-health", s.hp <= 25);
+    document
+      .querySelector(".health-track")!
+      .setAttribute("aria-valuenow", String(s.hp));
+    el("kills").textContent = String(s.kills);
+    el("xp-progress").style.transform =
+      `scaleX(${Math.min(1, s.xp / s.xpNeeded)})`;
+    const xpBar = document.querySelector(".top-progress")!;
+    xpBar.setAttribute("aria-valuenow", String(Math.min(s.xp, s.xpNeeded)));
+    xpBar.setAttribute("aria-valuemax", String(s.xpNeeded));
+    xpBar.setAttribute(
+      "aria-valuetext",
+      t("Level {level}, {xp} of {needed} experience", {
+        level: s.level,
+        xp: s.xp,
+        needed: s.xpNeeded,
+      }),
+    );
+  }
   renderUpgrades();
   el<HTMLButtonElement>("pause").disabled =
     s.phase !== "playing" && s.phase !== "paused";
@@ -792,6 +863,7 @@ function hud() {
       kills: s.kills,
       earnedParts: s.earnedParts,
     });
+    runAnalytics.complete(s, runReceipt?.earned ?? 0);
     el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
       parts: runReceipt?.earned ?? 0,
       total: runReceipt?.parts ?? 0,
@@ -815,11 +887,11 @@ function hud() {
     el("result-level").textContent = String(s.level);
     el("result-build").innerHTML = resultBuildMarkup(s);
     el("again").focus({ preventScroll: true });
-    beep(120, 0.3);
   }
 }
 function loop(now: number) {
-  const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+  frameRequest = undefined;
+  const dt = last === 0 ? 0 : Math.min(0.05, (now - last) / 1000);
   last = now;
   const m = {
     x:
@@ -831,18 +903,13 @@ function loop(now: number) {
       Number(keys.has("KeyW") || keys.has("ArrowUp")) +
       stick.z,
   };
-  if (coop.active) coop.input(m, now);
+  if (coop.active) coop.input(buildInspector.isOpen ? { x: 0, z: 0 } : m, now);
   else update(s, dt, m);
+  runAnalytics.observe(s);
+  gameAudio.sync(s, app.classList.contains("in-menu"));
   if (s.events.length) {
     scene.events(s.events, s);
-    if (s.events.some((event) => event.kind === "launch"))
-      beep(160, 0.22, "sawtooth", 0.026);
-    const e = s.events.find(
-      (e) => e.kind === "kill" || e.kind === "hurt" || e.kind === "collect",
-    );
-    if (e?.kind === "kill") beep(240, 0.07, "triangle");
-    else if (e?.kind === "hurt") beep(80, 0.12, "triangle");
-    else if (e) beep(650, 0.025, "sine", 0.009);
+    gameAudio.events(s.events, s.player);
     s.events = [];
   }
   scene.renderPartner(coop.active ? coop.partner : null, dt);
@@ -851,7 +918,10 @@ function loop(now: number) {
     s.phase === "playing" ? dt : 0,
   );
   hud();
-  requestAnimationFrame(loop);
+  // Static solo scenes need another frame only after an explicit change.
+  // Co-op keeps presenting network updates while its local menu is open.
+  if (coop.active || s.phase === "playing") requestFrame();
+  else last = 0;
 }
 async function boot() {
   let loadFailed = false;
@@ -875,11 +945,21 @@ async function boot() {
       );
     });
     loaded = true;
+    track("game_loaded", {
+      ...analyticsContext(),
+      load_duration_ms: Math.round(performance.now() - bootStarted),
+    });
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
     menu.enter(false);
-    new ResizeObserver(() => scene.resize()).observe(el("yard"));
-    requestAnimationFrame(loop);
+    new ResizeObserver(() => {
+      scene.resize();
+      requestFrame();
+    }).observe(el("yard"));
+    window
+      .matchMedia("(prefers-reduced-motion: reduce)")
+      .addEventListener("change", requestFrame);
+    requestFrame();
     // Read-only state snapshot for browser QA, without gameplay mutation hooks.
     Object.defineProperty(window, "__JUNK_MAGNET__", {
       value: {
@@ -893,6 +973,7 @@ async function boot() {
               ? { player: { ...coop.partner.player }, hp: coop.partner.hp }
               : null,
           },
+          audio: gameAudio.diagnostics(),
           phase: s.phase,
           time: s.time,
           openingRemaining: s.openingRemaining,
@@ -954,6 +1035,10 @@ async function boot() {
     });
   } catch (error) {
     loadFailed = true;
+    track("game_load_failed", {
+      ...analyticsContext(),
+      stage: "assets_or_webgl",
+    });
     console.error(error);
     el("loading").classList.add("has-error");
     el("load-title").textContent = t("The yard couldn’t open.");
@@ -979,10 +1064,7 @@ function applyLanguage() {
     `${t("Language")}: ${currentLanguage.name}`,
   );
   el("language").title = currentLanguage.name;
-  el("sound").setAttribute(
-    "aria-label",
-    t(sound ? "Mute sound" : "Enable sound"),
-  );
+  refreshAudio();
   document.querySelector<HTMLElement>(".workbench")!.dataset.touchHint = t(
     "DRAG TO MOVE · AUTO ATTACK",
   );
@@ -1006,6 +1088,7 @@ function applyLanguage() {
 }
 function chooseLanguage(next: Language) {
   setLanguage(next);
+  track("setting_changed", { setting: "language", value: next });
   applyLanguage();
 }
 function toggleLanguage() {
@@ -1014,8 +1097,10 @@ function toggleLanguage() {
 }
 function chooseQuality(next: GraphicsQuality) {
   setGraphicsQuality(next);
+  track("setting_changed", { setting: "graphics_quality", value: next });
   scene?.setQuality(next);
   menu.refresh();
+  requestFrame();
 }
 el("language").addEventListener("click", toggleLanguage);
 const menu = setupMenu({
@@ -1025,16 +1110,34 @@ const menu = setupMenu({
   language: chooseLanguage,
   quality: chooseQuality,
   sound: toggleSound,
-  soundEnabled: () => sound,
+  soundEnabled: () => gameAudio.enabled,
+  music: toggleMusic,
+  musicEnabled: () => gameAudio.musicEnabled,
+  volume: (channel) =>
+    channel === "sound" ? gameAudio.effectsVolume : gameAudio.musicVolume,
+  changeVolume: (channel, amount) => {
+    const volume =
+      channel === "sound" ? gameAudio.effectsVolume : gameAudio.musicVolume;
+    gameAudio.setVolume(channel, volume + amount);
+    if (channel === "sound") gameAudio.play("ui");
+    menu.refresh();
+  },
 });
 const fieldControls = new FieldControls(el("yard"), changeDrone);
 const coop = new CoopClient({
   snapshot(packet, first) {
+    if (first) runAnalytics.abandon(s, "mode_changed");
     const events = [...s.events, ...packet.events].slice(-160);
     s = packet.state;
+    if (s.phase !== "playing") buildInspector.close();
     s.events = events;
     if (first) {
+      gameAudio.play("start");
       runId = packet.runId as typeof runId;
+      runAnalytics.start(runId, "coop", s, {
+        ...analyticsContext(),
+        player_role: coop.index === 0 ? "host" : "guest",
+      });
       runReceipt = null;
       showedResult = false;
       shownUpgrade = "";
@@ -1057,8 +1160,10 @@ const coop = new CoopClient({
     el("again").querySelector("span")!.textContent = ct(
       coop.index === 0 ? "again" : "hostAgain",
     );
+    requestFrame();
   },
   leave() {
+    runAnalytics.abandon(s, "coop_left");
     s = createState(getRunConfig());
     scene.clear();
     el<HTMLButtonElement>("again").disabled = false;
@@ -1066,5 +1171,34 @@ const coop = new CoopClient({
     returnToMenu();
   },
 });
+const buildInspector = setupBuildInspector({
+  state: () => s,
+  notice: () => coop.active ? ct("running") : "",
+  open() {
+    keys.clear();
+    stopStick();
+    if (coop.active) coop.stopInput();
+    else {
+      s.phase = "paused";
+      el("yard").classList.remove("is-playing");
+    }
+    requestFrame();
+  },
+  close() {
+    keys.clear();
+    stopStick();
+    if (!coop.active && s.phase === "paused" && !app.classList.contains("in-menu")) {
+      s.phase = "playing";
+      el("yard").classList.add("is-playing");
+    }
+    hud();
+    requestFrame();
+  },
+});
+el("ability-loadout").addEventListener("click", event => {
+  const tile = (event.target as Element).closest<HTMLButtonElement>("[data-owned-ability]");
+  if (tile) buildInspector.open(tile.dataset.ownedAbility as UpgradeId, tile);
+});
 applyLanguage();
+refreshAudio();
 void boot();

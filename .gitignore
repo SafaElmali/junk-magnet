@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.netlify/
+.wrangler/
 *.blend1
 .DS_Store
 .env

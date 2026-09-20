@@ -74,7 +74,9 @@ export type GameEvent = Vec & {
     | "hurt"
     | "pulse"
     | "lightning"
-    | "burst";
+    | "burst"
+    | "turret";
+  pickupKind?: "scrap" | "xp";
   fromX?: number;
   fromZ?: number;
   radius?: number;
@@ -628,6 +630,7 @@ function abilities(s: State, dt: number) {
       const e = nearestEnemy(s, t, sniper ? 14 : 8);
       if (e && s.shots.length < ENTITY_LIMITS.shots) {
         const d = distance(e, t) || 1;
+        emit(s, { kind: "turret", x: t.x, z: t.z });
         s.shots.push({
           id: s.nextId++,
           x: t.x,
@@ -680,7 +683,7 @@ function collectPickups(s: State, dt: number, players: State[] = [s]) {
         s.xp += value;
         p.value = 0;
       }
-      emit(s, { kind: "collect", x: p.x, z: p.z });
+      emit(s, { kind: "collect", pickupKind: p.kind, x: p.x, z: p.z });
       return !!p.value;
     }
     return true;

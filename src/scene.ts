@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
 import { DroneView } from "./drone-view";
+import { createTurretTemplate } from "./turret-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -39,6 +40,8 @@ const mat = (color: number, roughness = 0.65, metalness = 0.05) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const models = new Map<string, THREE.Group>();
 const tempV = new THREE.Vector3();
+const PULSE_DURATION = 0.26;
+const PULSE_SEGMENTS = 16;
 function prepare(group: THREE.Object3D) {
   group.traverse((o) => {
     if (o instanceof THREE.Mesh) {
@@ -91,6 +94,7 @@ function labelTexture(text: string, width = 512, height = 256) {
 export class YardScene {
   composer?: EffectComposer;
   ao?: SSAOPass;
+  private frames = 0;
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera();
@@ -103,6 +107,10 @@ export class YardScene {
   floor!: THREE.Mesh;
   sun!: THREE.DirectionalLight;
   enemyBatches: THREE.InstancedMesh[] = [];
+  bossBatches: Record<"boss" | "miniboss", THREE.InstancedMesh[]> = {
+    boss: [],
+    miniboss: [],
+  };
   pickupBatches: THREE.InstancedMesh[][] = [];
   shotBatches: THREE.InstancedMesh[][] = [];
   renderedEnemies = 0;
@@ -276,9 +284,20 @@ export class YardScene {
   private hurtRed = new THREE.Color(0xff3b24);
   private hurtWhite = new THREE.Color(0xfff4d8);
   pulse!: THREE.Group;
-  private pulseBeam!: THREE.Mesh;
-  private pulseCore!: THREE.Mesh;
-  private pulseHead!: THREE.Mesh;
+  private pulseBeam!: THREE.InstancedMesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
+  private pulseCore!: THREE.InstancedMesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
+  private pulseHead!: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  private pulseRing!: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  private pulsePoints = Array.from(
+    { length: PULSE_SEGMENTS + 1 },
+    () => new THREE.Vector3(),
+  );
   private pulseStart = new THREE.Vector3();
   private pulseEnd = new THREE.Vector3();
   private beamDirection = new THREE.Vector3();
@@ -410,6 +429,15 @@ export class YardScene {
       this.composer.addPass(this.ao);
       this.composer.addPass(new OutputPass());
     }
+    if (!profile.ambientOcclusion && this.composer) {
+      for (const pass of this.composer.passes) pass.dispose();
+      // SSAOPass.dispose in this Three.js version leaves these owned resources alive.
+      this.ao?.ssaoMaterial.dispose();
+      this.ao?.noiseTexture.dispose();
+      this.composer.dispose();
+      this.composer = undefined;
+      this.ao = undefined;
+    }
     this.composer?.setPixelRatio(profile.pixelRatio);
     this.resize();
   }
@@ -424,6 +452,8 @@ export class YardScene {
       "discovery-repair",
       "discovery-salvage",
       "enemy-can",
+      "enemy-boss",
+      "enemy-miniboss",
       "container",
       "tire",
       "cone",
@@ -468,6 +498,11 @@ export class YardScene {
       this.mobile ? "enemy-mobile" : "enemy-can",
       ENTITY_LIMITS.enemies,
     );
+    for (const kind of ["boss", "miniboss"] as const)
+      this.bossBatches[kind] = this.modelBatches(
+        `enemy-${kind}`,
+        ENTITY_LIMITS.enemies,
+      );
     this.pickupBatches = [
       this.modelBatches(
         this.mobile ? "bolt-mobile" : "scrap-bolt",
@@ -545,22 +580,50 @@ export class YardScene {
       color: 0x10ded0,
       toneMapped: false,
     });
-    const outline = new THREE.MeshBasicMaterial({
-      color: 0x126675,
-      toneMapped: false,
-    });
     const hot = new THREE.MeshBasicMaterial({
       color: 0xffde72,
       toneMapped: false,
     });
     this.pulse = new THREE.Group();
-    this.pulseBeam = new THREE.Mesh(beamGeometry, outline);
-    this.pulseCore = new THREE.Mesh(beamGeometry, magnetic);
-    this.pulseHead = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.26, 1),
-      hot,
+    const pulseMaterial = (color: number, opacity: number) =>
+      new THREE.MeshBasicMaterial({
+        color,
+        opacity,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      });
+    this.pulseBeam = new THREE.InstancedMesh(
+      beamGeometry,
+      pulseMaterial(0x39cbbb, 0.28),
+      PULSE_SEGMENTS,
     );
-    this.pulse.add(this.pulseBeam, this.pulseCore, this.pulseHead);
+    this.pulseCore = new THREE.InstancedMesh(
+      beamGeometry,
+      pulseMaterial(0xcaffdf, 1),
+      PULSE_SEGMENTS,
+    );
+    for (const mesh of [this.pulseBeam, this.pulseCore]) {
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    }
+    this.pulseBeam.renderOrder = 11;
+    this.pulseCore.renderOrder = 12;
+    this.pulseHead = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.18, 1),
+      pulseMaterial(0xfff0b0, 1),
+    );
+    this.pulseRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.86, 1, 32),
+      pulseMaterial(0xffd56d, 0.8),
+    );
+    this.pulseRing.material.side = THREE.DoubleSide;
+    this.pulse.add(
+      this.pulseBeam,
+      this.pulseCore,
+      this.pulseHead,
+      this.pulseRing,
+    );
     this.pulse.visible = false;
     this.scene.add(this.pulse);
     this.shotTrails = new THREE.InstancedMesh(
@@ -785,15 +848,7 @@ export class YardScene {
     label.rotation.x = -Math.PI / 2;
     label.position.set(-3, 0.012, 2);
     this.scene.add(label);
-    this.turretTemplate = new THREE.Group();
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.4, 0.54, 0.3, 8),
-      mat(C.ink),
-    );
-    base.position.y = 0.15;
-    const head = box(0.62, 0.52, 0.62, mat(C.teal), 0, 0.57, 0, 0.1);
-    const barrel = box(0.2, 0.2, 0.72, mat(0xffcf54), 0, 0.67, 0.36);
-    this.turretTemplate.add(base, head, barrel);
+    this.turretTemplate = createTurretTemplate();
     this.updateWorld(0, 0);
   }
   private updateWorld(x: number, z: number) {
@@ -875,6 +930,7 @@ export class YardScene {
   }
   diagnostics() {
     return {
+      frames: this.frames,
       camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
       chunks: 9,
       drones: { local: this.droneVisible, partner: this.partnerDroneVisible },
@@ -888,7 +944,7 @@ export class YardScene {
         lightning: this.lightning.diagnostics(),
         pulseVisible: this.pulse?.visible ?? false,
         pulseLife: this.pulseLife,
-        pulseWidth: 0.28,
+        pulseWidth: 0.15,
         shotTrails: this.shotTrails?.count ?? 0,
         impacts: this.impacts.length,
         impactLimit: 24,
@@ -985,15 +1041,26 @@ export class YardScene {
           ev.fromZ ?? s.player.z,
         );
         this.pulseEnd.set(ev.x, 1.15, ev.z);
-        this.pulseLife = 0.26;
+        // Bow the magnetic filament away from the direct aim line. Keep the
+        // curve fixed for the strike so it stays still when gameplay pauses.
+        const dx = this.pulseEnd.x - this.pulseStart.x;
+        const dz = this.pulseEnd.z - this.pulseStart.z;
+        const distance = Math.hypot(dx, dz);
+        const bend = Math.min(0.42, distance * 0.18);
+        for (let i = 0; i <= PULSE_SEGMENTS; i++) {
+          const t = i / PULSE_SEGMENTS;
+          const bow = Math.sin(t * Math.PI) * bend;
+          this.pulsePoints[i].copy(this.pulseStart).lerp(this.pulseEnd, t);
+          this.pulsePoints[i].x -= (dz / (distance || 1)) * bow;
+          this.pulsePoints[i].z += (dx / (distance || 1)) * bow;
+          this.pulsePoints[i].y += bow * 0.65;
+        }
+        this.pulseLife = PULSE_DURATION;
         this.pulse.visible = true;
       }
-      if (
-        (ev.kind === "hit" || ev.kind === "pulse") &&
-        this.impacts.length < 24
-      )
+      if (ev.kind === "hit" && this.impacts.length < 24)
         this.impacts.push({ x: ev.x, z: ev.z, life: 0.26 });
-      if (ev.kind === "collect") continue;
+      if (ev.kind === "collect" || ev.kind === "turret") continue;
       const count = ev.kind === "kill" ? 12 : ev.kind === "launch" ? 10 : 4;
       for (let i = 0; i < count && this.fx.length < 160; i++) {
         const o = new THREE.Mesh(this.particles, this.sparkMat);
@@ -1019,6 +1086,7 @@ export class YardScene {
   render(s: State, dt: number) {
     this.clock += dt;
     if (!this.robot) return;
+    this.frames++;
     this.camera.position.set(s.player.x, 23, s.player.z + 25);
     this.camera.lookAt(s.player.x, 0, s.player.z);
     this.camera.updateMatrixWorld();
@@ -1074,6 +1142,8 @@ export class YardScene {
       Math.hypot(orbitPoint.x - s.player.x, orbitPoint.z - s.player.z) / 1.85,
     );
     this.renderedEnemies = 0;
+    let regularCount = 0;
+    const bossCounts = { boss: 0, miniboss: 0 };
     const transform = this.transform;
     for (let i = 0; i < s.enemies.length; i++) {
       const e = s.enemies[i];
@@ -1102,10 +1172,28 @@ export class YardScene {
         Math.sin(s.time * 8 + e.seed) * 0.06,
       );
       const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
-      if (e.type === "boss") transform.scale.set(k * 3.2, k * 2.9, k * 3.2);
-      else if (e.type === "miniboss")
-        transform.scale.set(k * 2.4, k * 2.1, k * 2.4);
-      else if (e.type === "charger")
+      if (e.type === "boss" || e.type === "miniboss") {
+        // Purpose-built silhouettes are authored at gameplay scale. Heavy tracks
+        // stay planted; the crusher leans into its actual charge telegraph.
+        const warning = s.encounters.warnings.find((w) => w.owner === e.id);
+        const charge = warning
+          ? 1 - Math.max(0, warning.remaining) / warning.duration
+          : 0;
+        transform.position.y = 0;
+        transform.rotation.x = e.type === "miniboss" ? charge * 0.1 : 0;
+        transform.rotation.z = 0;
+        transform.scale.setScalar(k);
+        transform.updateMatrix();
+        this.instanceColor.setHex(e.hit > 0 ? 0xffd4ba : 0xffffff);
+        for (const batch of this.bossBatches[e.type]) {
+          batch.setMatrixAt(bossCounts[e.type], transform.matrix);
+          batch.setColorAt(bossCounts[e.type], this.instanceColor);
+        }
+        bossCounts[e.type]++;
+        this.renderedEnemies++;
+        continue;
+      }
+      if (e.type === "charger")
         transform.scale.set(k * 0.9, k * 1.2, k * 1.3);
       else if (e.type === "warden")
         transform.scale.set(k * 1.4, k * 1.2, k * 1.4);
@@ -1116,7 +1204,7 @@ export class YardScene {
       else transform.scale.setScalar(k * 1.12);
       transform.updateMatrix();
       for (const batch of this.enemyBatches) {
-        batch.setMatrixAt(this.renderedEnemies, transform.matrix);
+        batch.setMatrixAt(regularCount, transform.matrix);
         const metal = /Brushed steel/i.test(
           (batch.material as THREE.Material).name,
         );
@@ -1124,18 +1212,19 @@ export class YardScene {
           metal && e.type !== "can"
             ? e.type === "runner" || e.type === "charger"
               ? 0xff8a55
-              : e.type === "boss" || e.type === "miniboss"
-                ? 0xf6c873
-                : e.type === "warden"
-                  ? 0x8b9dc5
-                  : 0x62bec6
+              : e.type === "warden"
+                ? 0x8b9dc5
+                : 0x62bec6
             : 0xffffff,
         );
-        batch.setColorAt(this.renderedEnemies, this.instanceColor);
+        batch.setColorAt(regularCount, this.instanceColor);
       }
+      regularCount++;
       this.renderedEnemies++;
     }
-    this.finishBatch(this.enemyBatches, this.renderedEnemies);
+    this.finishBatch(this.enemyBatches, regularCount);
+    for (const kind of ["boss", "miniboss"] as const)
+      this.finishBatch(this.bossBatches[kind], bossCounts[kind]);
     const pickupCounts = [0, 0];
     for (const p of s.pickups) {
       if (!this.visible(p.x, p.z, 0.5)) continue;
@@ -1203,8 +1292,10 @@ export class YardScene {
         this.scene.add(model);
       }
       model.position.set(turret.x, 0, turret.z);
-      let target = s.enemies[0],
-        nearest = Infinity;
+      const head = model.getObjectByName("head")!;
+      const barrels = head.getObjectByName("barrels")!;
+      let target: (typeof s.enemies)[number] | undefined,
+        nearest = 8;
       for (const enemy of s.enemies) {
         const d = Math.hypot(enemy.x - turret.x, enemy.z - turret.z);
         if (d < nearest) {
@@ -1213,7 +1304,15 @@ export class YardScene {
         }
       }
       if (target)
-        model.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
+        head.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
+      const interval =
+        (0.9 - turret.rank * 0.1) * (s.evolutions.fortress ? 0.7 : 1);
+      const shotAge = interval - turret.fireTimer;
+      const recoil =
+        target && turret.fireTimer > 0 && shotAge >= 0 && shotAge < 0.16
+          ? Math.pow(1 - shotAge / 0.16, 2)
+          : 0;
+      barrels.position.z = this.reduced ? 0 : -0.1 * recoil;
       model.scale.setScalar(turret.life < 1 ? Math.max(0.1, turret.life) : 1);
     }
     this.lightning.update(dt, this.reduced);
@@ -1240,21 +1339,43 @@ export class YardScene {
     this.pulseLife = Math.max(0, this.pulseLife - dt);
     this.pulse.visible = this.pulseLife > 0;
     if (this.pulse.visible) {
-      this.beamDirection.subVectors(this.pulseEnd, this.pulseStart);
-      const length = this.beamDirection.length();
-      this.beamDirection.normalize();
-      for (const [mesh, radius] of [
-        [this.pulseBeam, 0.14],
-        [this.pulseCore, 0.075],
-      ] as const) {
-        mesh.position.copy(this.pulseStart).lerp(this.pulseEnd, 0.5);
-        // Raise the luminous inner core above its dark silhouette.
-        if (mesh === this.pulseCore) mesh.position.y += 0.11;
-        mesh.quaternion.setFromUnitVectors(this.beamUp, this.beamDirection);
-        mesh.scale.set(radius, length, radius);
+      const progress = 1 - this.pulseLife / PULSE_DURATION;
+      const fade = Math.max(0, 1 - progress / 0.72) ** 2;
+      this.pulseBeam.material.opacity = fade * 0.28;
+      this.pulseCore.material.opacity = fade;
+      for (let i = 0; i < PULSE_SEGMENTS; i++) {
+        const from = this.pulsePoints[i],
+          to = this.pulsePoints[i + 1];
+        this.beamDirection.subVectors(to, from);
+        const length = this.beamDirection.length();
+        transform.position.copy(from).lerp(to, 0.5);
+        transform.quaternion.setFromUnitVectors(
+          this.beamUp,
+          this.beamDirection.normalize(),
+        );
+        const taper =
+          0.3 + Math.sin(((i + 0.5) / PULSE_SEGMENTS) * Math.PI) * 0.7;
+        for (const [mesh, radius] of [
+          [this.pulseBeam, 0.075],
+          [this.pulseCore, 0.027],
+        ] as const) {
+          const width = radius * taper * (0.5 + fade * 0.5);
+          transform.scale.set(width, length * 1.06, width);
+          transform.updateMatrix();
+          mesh.setMatrixAt(i, transform.matrix);
+        }
       }
+      this.pulseBeam.instanceMatrix.needsUpdate = true;
+      this.pulseCore.instanceMatrix.needsUpdate = true;
       this.pulseHead.position.copy(this.pulseEnd);
-      this.pulseHead.scale.setScalar(this.reduced ? 1 : 0.85 + this.pulseLife);
+      this.pulseHead.scale.setScalar(this.reduced ? 0.8 : 1.2 - progress * 0.9);
+      this.pulseHead.material.opacity = (1 - progress) ** 2;
+      this.pulseRing.position.copy(this.pulseEnd);
+      this.pulseRing.quaternion.copy(this.camera.quaternion);
+      this.pulseRing.scale.setScalar(
+        this.reduced ? 0.28 : 0.12 + progress * 0.4,
+      );
+      this.pulseRing.material.opacity = (1 - progress) ** 2 * 0.8;
     }
     for (const impact of this.impacts) impact.life -= dt;
     this.impacts = this.impacts.filter((impact) => impact.life > 0);
@@ -1311,6 +1432,8 @@ export class YardScene {
     this.renderedEnemies = 0;
     for (const batch of [
       ...this.enemyBatches,
+      ...this.bossBatches.boss,
+      ...this.bossBatches.miniboss,
       ...this.pickupBatches.flat(),
       ...this.shotBatches.flat(),
     ])

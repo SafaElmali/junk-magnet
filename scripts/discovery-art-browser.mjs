@@ -147,7 +147,8 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
       for (const lang of ["tr", "en", "de", "fr", "es", "pt"]) {
         setLanguage(lang);
         for (const kind of ["chest", "repair", "salvage"])
-          for (const claimed of [false, true]) {
+          for (const mode of ["ready", "claimed", "depleted"]) {
+            const claimed = mode === "claimed";
             hint.className =
               "world-hint is-discovery" + (claimed ? " is-reward" : "");
             const reward = {
@@ -169,7 +170,10 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
               ),
               claimed ? reward : undefined,
               claimed ? undefined : 0.6,
+              mode === "depleted",
             );
+            if (mode === "depleted" && hint.querySelector(".discovery-rewards,.discovery-progress"))
+              throw new Error("Depleted props must not advertise available rewards");
             const expectedTitle = t(
               kind === "chest"
                 ? "Supply chest"
@@ -207,7 +211,7 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
       });
       return count;
     });
-    assert.equal(checks, 36);
+    assert.equal(checks, 54);
     await page.waitForFunction(() =>
       [...document.querySelectorAll("#world-hint img")].every(
         (i) => i.complete && i.naturalWidth,
@@ -216,6 +220,11 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
     await page.screenshot({
       path: ".impeccable/review/discovery-receipt-" + width + ".png",
     });
+    await page.evaluate(async () => {
+      const { discoveryFeedback } = await import("/src/discovery-feedback.ts");
+      document.querySelector("#world-hint").innerHTML = discoveryFeedback("repair", "", undefined, undefined, true);
+    });
+    await page.screenshot({ path: ".impeccable/review/discovery-depleted-" + width + ".png" });
     results.push({ width, height, layoutChecks: checks });
     await page.close();
   }
@@ -225,7 +234,7 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
     JSON.stringify({ fixture: true, results, errors }, null, 2),
   );
   console.log(
-    "PASS: GLB hinges/loot, opening animation, pause, reduced motion, streaming reset, GPU memory, 180 translated HUD layouts.",
+    "PASS: GLB hinges/loot, opening animation, pause, reduced motion, streaming reset, GPU memory, 270 translated HUD layouts including depleted props.",
   );
 } finally {
   await browser.close();

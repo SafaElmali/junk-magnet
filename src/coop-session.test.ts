@@ -93,6 +93,28 @@ test("separate discoveries both retain progress across different chunks", () => 
   assert.ok(s.players[0].discovery.points.some((p) => p.x > 30));
   assert.ok(s.players[0].discovery.points.length <= 22);
 });
+test("co-op salvage saves evasive breaks and charges once when both robots return", () => {
+  const s = session();
+  quiet(s);
+  const p = s.players[0].discovery.points.find((p) => p.id === "0,0:salvage")!;
+  const current = () => s.players[0].discovery.points.find((point) => point.id === p.id)!;
+  for (let visit = 0; visit < 4; visit++) {
+    for (const actor of s.players) actor.player = { x: p.x + 3.8, z: p.z };
+    for (let frame = 0; frame < 40; frame++) s.tick(0.05, [zero, zero]);
+    if (visit < 3) {
+      assert.equal(current().completed, false);
+      const progress = current().progress;
+      assert.ok(Math.abs(progress - (visit + 1) * 2) < 1e-8);
+      for (const actor of s.players) actor.player = { x: p.x + 5, z: p.z };
+      for (let frame = 0; frame < 80; frame++) s.tick(0.05, [zero, zero]);
+      assert.equal(current().progress, progress);
+    }
+  }
+  s.tick(0.05, [zero, zero]);
+  assert.equal(current().completed, true);
+  assert.equal(s.players[0].discovery.questsCompleted, 1);
+  for (const actor of s.players) assert.equal(actor.earnedParts, 8);
+});
 test("a downed robot is revived after three seconds nearby; team defeat ends the run", () => {
   const s = session();
   quiet(s);

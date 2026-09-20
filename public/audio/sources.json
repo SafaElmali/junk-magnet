@@ -1,0 +1,98 @@
+{
+  "pickup-scrap-1.wav": {
+    "pack": "impact",
+    "original": "impactMetal_light_000.ogg"
+  },
+  "pickup-scrap-2.wav": {
+    "pack": "impact",
+    "original": "impactMetal_light_002.ogg"
+  },
+  "hit-1.wav": {
+    "pack": "impact",
+    "original": "impactTin_medium_000.ogg"
+  },
+  "hit-2.wav": {
+    "pack": "impact",
+    "original": "impactTin_medium_001.ogg"
+  },
+  "kill-1.wav": {
+    "pack": "impact",
+    "original": "impactMetal_heavy_000.ogg"
+  },
+  "kill-2.wav": {
+    "pack": "impact",
+    "original": "impactMetal_heavy_002.ogg"
+  },
+  "hurt.wav": {
+    "pack": "impact",
+    "original": "impactPlate_heavy_000.ogg"
+  },
+  "launch.wav": {
+    "pack": "scifi",
+    "original": "laserSmall_000.ogg"
+  },
+  "pulse.wav": {
+    "pack": "scifi",
+    "original": "laserSmall_002.ogg"
+  },
+  "lightning.wav": {
+    "pack": "scifi",
+    "original": "laserRetro_001.ogg"
+  },
+  "burst.wav": {
+    "pack": "scifi",
+    "original": "lowFrequency_explosion_000.ogg"
+  },
+  "turret.wav": {
+    "pack": "scifi",
+    "original": "laserSmall_004.ogg"
+  },
+  "pickup-xp.wav": {
+    "pack": "interface",
+    "original": "pluck_001.ogg"
+  },
+  "ui.wav": {
+    "pack": "interface",
+    "original": "click_003.ogg"
+  },
+  "start.wav": {
+    "pack": "interface",
+    "original": "open_001.ogg"
+  },
+  "upgrade.wav": {
+    "pack": "interface",
+    "original": "confirmation_002.ogg"
+  },
+  "level.wav": {
+    "pack": "interface",
+    "original": "confirmation_001.ogg"
+  },
+  "reward.wav": {
+    "pack": "interface",
+    "original": "confirmation_004.ogg"
+  },
+  "evolve.wav": {
+    "pack": "interface",
+    "original": "maximize_004.ogg"
+  },
+  "boss.wav": {
+    "pack": "interface",
+    "original": "error_007.ogg"
+  },
+  "defeat.wav": {
+    "pack": "interface",
+    "original": "error_003.ogg"
+  },
+  "repair.wav": {
+    "pack": "interface",
+    "original": "maximize_001.ogg"
+  },
+  "yard-loop.ogg / yard-loop.mp3": {
+    "pack": "Empacotatron",
+    "original": "empacotatron_loop.ogg"
+  },
+  "menu-loop.ogg / menu-loop.mp3": {
+    "pack": "Empacotatron",
+    "original": "empacotatron_menu.ogg"
+  }
+}

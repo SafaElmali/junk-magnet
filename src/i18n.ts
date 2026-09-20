@@ -17,21 +17,22 @@ export const LANGUAGES = [
 export type Language = (typeof LANGUAGES)[number]["code"];
 export function resolveLanguage(
   saved: string | null,
-  browser = "en",
+  browser: string | readonly string[] = "en",
 ): Language {
   const match = (value: string | null) =>
     LANGUAGES.find(
       ({ code }) =>
         code === value?.toLowerCase().replace("_", "-").split("-")[0],
     )?.code;
-  return match(saved) ?? match(browser) ?? "en";
+  const preferences = typeof browser === "string" ? [browser] : browser;
+  return match(saved) ?? preferences.map(match).find(Boolean) ?? "en";
 }
 // Country flags are original SVG artwork, never emoji glyphs. Native names remain
 // the accessible language labels; these flags are decorative visual shortcuts.
 export function languageFlag(code: Language): string {
   const art: Record<Language, string> = {
     en: '<path fill="#24466c" d="M0 0h30v20H0z"/><path stroke="#fff" stroke-width="5" d="m0 0 30 20M30 0 0 20"/><path stroke="#c5433a" stroke-width="2" d="m0 0 30 20M30 0 0 20"/><path stroke="#fff" stroke-width="7" d="M15 0v20M0 10h30"/><path stroke="#c5433a" stroke-width="4" d="M15 0v20M0 10h30"/>',
-    tr: '<path fill="#d6423d" d="M0 0h30v20H0z"/><circle cx="12" cy="10" r="6" fill="#fff"/><circle cx="14" cy="9" r="5" fill="#d6423d"/><path fill="#fff" d="m21 6 1 3 3 .1-2.5 1.9.9 3-2.4-1.9-2.5 1.9.9-3-2.4-1.9L20 9z"/>',
+    tr: '<path fill="#e30a17" d="M0 0h30v20H0z"/><circle cx="10" cy="10" r="5" fill="#fff"/><circle cx="11.25" cy="10" r="4" fill="#e30a17"/><polygon fill="#fff" points="15.000,10.000 16.727,9.439 16.727,7.622 17.795,9.092 19.523,8.531 18.455,10.000 19.523,11.469 17.795,10.908 16.727,12.378 16.727,10.561"/>',
     de: '<path fill="#262b2f" d="M0 0h30v7H0z"/><path fill="#c74237" d="M0 7h30v6H0z"/><path fill="#edc049" d="M0 13h30v7H0z"/>',
     fr: '<path fill="#265694" d="M0 0h10v20H0z"/><path fill="#fff" d="M10 0h10v20H10z"/><path fill="#d44943" d="M20 0h10v20H20z"/>',
     es: '<path fill="#bb3933" d="M0 0h30v20H0z"/><path fill="#efc449" d="M0 5h30v10H0z"/><path fill="#bd4339" stroke="#fff2ce" stroke-width=".6" d="M8 7h5v5q-2.5 3-5 0z"/><path stroke="#efc449" d="M10.5 7v6M8 10h5"/>',
@@ -47,7 +48,9 @@ try {
 }
 let language: Language = resolveLanguage(
   saved,
-  typeof navigator === "undefined" ? "en" : navigator.language,
+  typeof navigator === "undefined"
+    ? []
+    : [...(navigator.languages ?? []), navigator.language],
 );
 export function getLanguage() {
   return language;
@@ -82,6 +85,9 @@ export const turkish: Record<string, string> = {
   READY: "HAZIR",
   Language: "Dil",
   Sound: "Ses",
+  Music: "Müzik",
+  "Volume down": "Sesi azalt",
+  "Volume up": "Sesi artır",
   ON: "AÇIK",
   OFF: "KAPALI",
   "Move. Collect. Choose your upgrades. Attacks are automatic.":
@@ -134,6 +140,8 @@ export const turkish: Record<string, string> = {
   "Game controls": "Oyun kontrolleri",
   "Enable sound": "Sesi aç",
   "Mute sound": "Sesi kapat",
+  "Enable music": "Müziği aç",
+  "Mute music": "Müziği kapat",
   "How to play": "Nasıl oynanır?",
   "Pause game": "Oyunu duraklat",
   "Game arena": "Oyun alanı",

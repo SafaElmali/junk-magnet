@@ -19,6 +19,18 @@ test("saved language wins over browser preference, with safe fallback", () => {
   assert.equal(resolveLanguage("bad", "de-DE"), "de");
 });
 
+test("device preferences choose the first supported language in order", () => {
+  assert.equal(resolveLanguage(null, ["tr-TR", "en-US"]), "tr");
+  assert.equal(resolveLanguage(null, ["ja-JP", "pt-BR", "de-DE"]), "pt");
+  assert.equal(resolveLanguage(null, ["en-US", "tr-TR"]), "en");
+  assert.equal(resolveLanguage(null, ["FR_ca", "es-MX"]), "fr");
+  assert.equal(resolveLanguage("de", ["tr-TR", "en-US"]), "de");
+  assert.equal(resolveLanguage("invalid", ["ja-JP", "es-MX"]), "es");
+  assert.equal(resolveLanguage(null, ["ja-JP", "ko-KR"]), "en");
+  assert.equal(resolveLanguage(null, []), "en");
+  assert.equal(resolveLanguage(null), "en");
+});
+
 test("Turkish dynamic values and every upgrade translate without changing the run", () => {
   const state = createState();
   state.hp = 50;

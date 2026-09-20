@@ -159,6 +159,17 @@ Production build, five i18n tests and formatting checks pass. `scripts/level-up-
 
 The post-collection supply-chest receipt is now suppressed at the user's request. Nearby unopened-chest previews and actual rewards remain; repair/salvage receipts retain their behavior. Updated real-gameplay `scripts/discovery-browser.mjs` passes at 1440×900 and 390×844: the chest card stays hidden after ability selection, 5 XP and 3 parts are still awarded, salvage reaches 11 earned parts, and pause remains frozen. No page errors. Build and changed-file formatting checks pass.
 
+## Boss silhouettes and depleted discovery points
+
+- Added original Blender furnace-boss and crusher-miniboss models, with reproducible generator and editable source in `art/BOSS-ASSETS.md`. Dedicated material-instance pools replace scaled normal enemies on desktop and mobile.
+- All consumed discovery props now use cached desaturated, non-emissive surfaces and a persistent overhead X. Active rings disappear. Repair/salvage proximity cards explicitly say the point is depleted and hide reward previews; opened chest cards remain dismissed. Streaming and new-run restoration preserve shared asset ownership.
+- `npm test`: 78 passing tests, including consumption/revisit hints, dismissed chest cards, shared material isolation and pooled restoration. `npm run build` passes with the existing bundle-size advisory.
+- `node scripts/boss-discovery-browser.mjs`: desktop, portrait touch and landscape touch fixtures verify boss-only instance routing, all three consumed props, markers, empty rings, proximity hints, removal and stable warmed GPU geometry.
+- `node scripts/expansion-renderer.mjs`: all three robot variants retain attacks, pause behavior, damage feedback and stable geometry on desktop/touch. `node scripts/discovery-art-browser.mjs`: GLB animation, reduced motion, independent lights, streaming and 270 localized HUD layouts pass (six languages × five viewports × three kinds × three states).
+- New screenshots and reports are under `.impeccable/review/boss-discovery-*` and `discovery-depleted-*`. Visually inspected desktop/portrait world states and Turkish portrait/short-landscape depleted cards. These are controlled renderer/UI fixtures, not physical-device performance benchmarks.
+
+After integration with the current main branch, the build and all 88 unit tests pass. The three boss/discovery renderer fixtures also pass again with the updated graphics defaults. Depleted hints have their own brief display key, preserving main's compact active-progress UI and dismissed introductory hints.
+
 ## Field feature expansion — 2026-09-20
 
 - `npm run build`: passed (existing large-bundle advisory remains).
@@ -199,3 +210,9 @@ Production build and whitespace checks pass. The focused solo simulation, drone,
 Yellow progress segments now occupy a thicker inner band (0.80–0.91 of the interaction radius), separated from the pale outer boundary (0.94–1.0). Their own transparent-pass material renders after the shaded floor and outline, while depth testing keeps solid objects correctly in front. This prevents the floor overlay washing out the yellow progress. Portrait touch receipts are positioned above the joystick.
 
 Production build, nine discovery tests and whitespace checks pass. `GAME_URL=http://127.0.0.1:5197 node scripts/discovery-browser.mjs` passes desktop and mobile gameplay, including partial progress, completion/rewards, pause, and no joystick overlap or page errors. Both partial-progress screenshots were visually inspected. Co-op was not tested.
+
+## Main integration (2026-09-20)
+
+Integrated with main through `d44eddf`, retaining its hidden co-op entry, boss/depleted-station models, forgiving salvage progress, audio, analytics, deployment setup, compact HUD and performance improvements. Drone/specialization messages now use the extracted shared server hub. Owned-ability tiles retain the new inspector and show the chosen specialization name.
+
+Post-merge validation: production build and Worker dry-run build passed; 93 solo tests passed with co-op files/named tests excluded. Five drone viewport checks, 48 specialization layout fixtures and desktop/mobile discovery gameplay checks all passed with no browser errors. Co-op tests were not run at the user's request.

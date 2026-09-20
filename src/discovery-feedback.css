@@ -22,6 +22,20 @@
 .discovery-heading div {
   min-width: 0;
 }
+.discovery-heading .discovery-spent-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  height: 34px;
+  margin: 0;
+  border: 2px solid #b5b8a7;
+  border-radius: 50%;
+  color: #eee5cf;
+  font: 700 30px/1 sans-serif;
+}
+.discovery-heading.is-depleted span {
+  color: #dfd7c5;
+}
 .discovery-heading strong {
   display: block;
   font-size: 13px;
@@ -126,4 +140,26 @@
   .discovery-rewards small {
     font-size: 9px;
   }
+}
+
+.world-hint.is-discovery.is-compact {
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 6px 10px;
+  box-shadow: none;
+}
+.is-compact .discovery-heading {
+  gap: 6px;
+}
+.is-compact .discovery-heading img {
+  width: 24px;
+  height: 24px;
+}
+.is-compact .discovery-heading span {
+  font-size: 11px;
+  margin: 0;
+}
+.is-compact .discovery-progress {
+  margin-top: 3px;
+  height: 2px;
 }

@@ -67,21 +67,71 @@ test("repair saves its charge at full health and caps healing", () => {
   updateDiscovery(s, 1);
   assert.equal(s.hp, 50);
 });
-test("salvage quest loses progress outside zone, then grants capped scrap and parts once", () => {
+test("salvage keeps progress while dodging, then grants capped scrap and parts once", () => {
   const s = state();
   const p = approach(s, "salvage");
   updateDiscovery(s, 4);
   s.player = { x: 0, z: 0 };
   updateDiscovery(s, 2);
-  assert.equal(p.progress, 3);
+  assert.equal(p.progress, 4);
   s.player = { x: p.x, z: p.z };
-  updateDiscovery(s, 5.01);
+  updateDiscovery(s, 4.01);
   assert.deepEqual(
     [s.xp, s.scrap, s.earnedParts, s.discovery.questsCompleted],
     [12, 12, 8, 1],
   );
   updateDiscovery(s, 100);
   assert.equal(s.earnedParts, 8);
+});
+test("salvage can be completed in short visits with long evasive breaks", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  for (let visit = 0; visit < 8; visit++) {
+    // This space is outside the old ring, and beyond a centered boss hazard.
+    s.player = { x: p.x + 3.8, z: p.z };
+    updateDiscovery(s, 1);
+    if (visit < 7) {
+      assert.equal(p.completed, false);
+      s.player = { x: p.x + 5, z: p.z };
+      updateDiscovery(s, 6);
+      assert.equal(p.progress, visit + 1);
+      assert.equal(getDiscoveryHint(s)?.progress, (visit + 1) / 8);
+      assert.equal(getDiscoveryHint(s)?.mode, "approach");
+    }
+  }
+  assert.equal(p.completed, true);
+  assert.equal(s.discovery.questsCompleted, 1);
+  assert.equal(s.earnedParts, 8);
+  assert.equal(s.discovery.salvageProgress.size, 0);
+});
+test("saved salvage survives streaming, retires with history and resets each run", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  updateDiscovery(s, 3);
+  s.player = { x: 70, z: 0 };
+  updateDiscovery(s, 10);
+  assert.equal(s.discovery.points.some((other) => other.id === p.id), false);
+  s.player = { x: p.x, z: p.z - 5 };
+  updateDiscovery(s, 1);
+  assert.equal(s.discovery.points.find((other) => other.id === p.id)?.progress, 3);
+  assert.equal(getDiscoveryHint(s)?.seconds, 5);
+  s.player = { x: 1200, z: 1200 };
+  updateDiscovery(s, 1);
+  assert.equal(s.discovery.salvageProgress.size, 0);
+  s.player = { x: p.x, z: p.z };
+  updateDiscovery(s, 10);
+  assert.equal(s.discovery.questsCompleted, 0);
+  assert.equal(s.earnedParts, 0);
+  assert.equal(createDiscoveryState().salvageProgress.size, 0);
+});
+test("a downed player cannot charge or claim a salvage contract", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  s.hp = 0;
+  updateDiscovery(s, 10);
+  assert.equal(p.progress, 0);
+  assert.equal(p.completed, false);
+  assert.equal(s.earnedParts, 0);
 });
 test("pause, level selection and death freeze discovery; the guide does not", () => {
   const s = state();
@@ -177,7 +227,7 @@ test("render pools retain geometry across streaming and detach cleanly", () => {
     if (o instanceof THREE.Mesh) after.add(o.geometry);
   });
   assert.deepEqual(after, geometries);
-  assert.equal(geometries.size, 5);
+  assert.equal(geometries.size, 7);
   view.dispose();
   assert.equal(scene.children.length, 0);
   assert.equal(sharedDisposed, false);
@@ -257,4 +307,61 @@ test("discovery receipts report capped actual gains and keep completion time on 
     hp: 0,
     parts: 8,
   });
+});
+
+test("depleted hints survive revisits, stay local, and clear on a new run", () => {
+  const s = state();
+  s.hp = 40;
+  const repair = approach(s, "repair");
+  updateDiscovery(s, 0.1);
+  assert.equal(getDiscoveryHint(s)?.mode, "complete");
+  assert.equal(getDiscoveryHint(s)?.seconds, 0);
+  s.player = { x: repair.x, z: repair.z + 4 };
+  assert.notEqual(getDiscoveryHint(s)?.kind, "repair");
+  s.player = { x: 70, z: 0 };
+  updateDiscovery(s, 0.1);
+  s.player = { x: repair.x, z: repair.z };
+  updateDiscovery(s, 0.1);
+  assert.equal(getDiscoveryHint(s)?.mode, "complete");
+  assert.equal(s.hp, 80);
+  s.discovery = createDiscoveryState();
+  assert.equal(getDiscoveryHint(s)?.mode, "hold");
+});
+
+test("depletion changes whole props without leaking into shared models and restores pooled slots", () => {
+  const scene = new THREE.Scene();
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshStandardMaterial({ color: 0x44bba0, emissive: 0x226655 });
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(geometry, material));
+  const view = new DiscoveryView(scene, { repair: model, chest: model, salvage: model });
+  const s = state();
+  view.update(s);
+  const root = scene.children[0];
+  const slot = root.children[0];
+  const prop = (slot.children[0] as THREE.Group).children[0] as THREE.Mesh;
+  const marker = slot.getObjectByName("Discovery_Unavailable")!;
+  assert.equal(marker.visible, false);
+  s.discovery.points[0].completed = true;
+  view.update(s, true);
+  assert.equal(marker.visible, true);
+  assert.notEqual(prop.material, material);
+  assert.equal((prop.material as THREE.MeshStandardMaterial).emissiveIntensity, 0);
+  assert.equal(material.color.getHex(), 0x44bba0);
+  s.discovery = createDiscoveryState();
+  view.update(s);
+  assert.equal(prop.material, material);
+  assert.equal(marker.visible, false);
+  view.dispose();
+  geometry.dispose();
+  material.dispose();
+});
+
+test("open chest cards remain dismissed while their spent world marker persists", () => {
+  const s = state();
+  const chest = approach(s, "chest");
+  updateDiscovery(s, 1.3);
+  s.discovery.points = [chest];
+  assert.equal(chest.completed, true);
+  assert.equal(getDiscoveryHint(s), null);
 });

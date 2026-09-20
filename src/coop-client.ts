@@ -1,11 +1,15 @@
 import type { SpecializationId } from "./specializations";
 import type { DroneMode } from "./drone";
 import { getRunConfig } from "./progression";
+import { track } from "./analytics";
 import { ct } from "./coop-text";
 import { upgradeChoicesMarkup } from "./level-up";
 import type { CoopSnapshot } from "./coop-session";
 import type { State, Vec, UpgradeId } from "./simulation";
 import "./coop.css";
+
+// Keep co-op opt-in while its performance issues are being addressed.
+const coopEnabled = import.meta.env.VITE_COOP_ENABLED === "true";
 
 const groupIcon =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8" cy="7" r="3"/><path d="M2 21v-5a6 6 0 0 1 12 0v5M16 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 5 5v2"/></svg>';
@@ -25,6 +29,8 @@ export class CoopClient {
   private latest?: CoopSnapshot;
   private displayed?: State;
   private statusMarkup = "";
+  private rescueState = "";
+  private rescueStarted = 0;
   private panel: HTMLElement;
   private status: HTMLElement;
   private upgrades: HTMLElement;
@@ -37,23 +43,25 @@ export class CoopClient {
     },
   ) {
     const nav = document.querySelector(".menu-actions")!;
-    nav.insertAdjacentHTML(
-      "beforeend",
-      `<button id="menu-coop" class="menu-button">${groupIcon}<span>${ct("play")}</span></button>`,
-    );
+    if (coopEnabled) {
+      nav.insertAdjacentHTML(
+        "beforeend",
+        `<button id="menu-coop" class="menu-button">${groupIcon}<span>${ct("play")}</span></button>`,
+      );
+    }
     document.getElementById("yard")!.insertAdjacentHTML(
       "beforeend",
       `
       <section id="coop-lobby" class="coop-lobby hidden" role="dialog" aria-modal="true" aria-labelledby="coop-title"></section>
-      <aside id="coop-status" class="coop-status hidden" aria-live="polite"></aside>
+      <aside id="coop-status" class="coop-status hidden"></aside>
       <section id="coop-upgrades" class="coop-upgrades hidden" aria-label="Co-op upgrades"></section>`,
     );
     this.panel = document.getElementById("coop-lobby")!;
     this.status = document.getElementById("coop-status")!;
     this.upgrades = document.getElementById("coop-upgrades")!;
     document
-      .getElementById("menu-coop")!
-      .addEventListener("click", () => this.open());
+      .getElementById("menu-coop")
+      ?.addEventListener("click", () => this.open());
     this.panel.addEventListener("click", (e) => {
       const action = (e.target as Element).closest<HTMLElement>("[data-coop]")
         ?.dataset.coop;
@@ -61,7 +69,7 @@ export class CoopClient {
         this.leave();
         this.panel.classList.add("hidden");
         this.lobbyOpen = false;
-        document.getElementById("menu-coop")!.focus();
+        document.getElementById("menu-coop")?.focus();
       }
       if (action === "create") this.connect("create");
       if (action === "join")
@@ -131,6 +139,8 @@ export class CoopClient {
     this.panel.classList.remove("hidden");
   }
   open() {
+    if (!coopEnabled) return;
+    track("coop_lobby_opened");
     this.lobbyOpen = true;
     this.shell(
       `<p>${ct("intro")}</p><div class="coop-robots"><img src="robots/scrap.png" alt="SCRAP-01"><span>+</span><img src="robots/volt.png" alt="VOLT"></div><div class="coop-connect"><button data-coop="create" class="primary-btn">${ct("create")}</button><div><label for="coop-code">${ct("code")}</label><div class="coop-code-entry"><input id="coop-code" maxlength="6" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="A1B2C3"><button data-coop="join" class="menu-back">${ct("join")}</button></div></div></div><p class="coop-rule">${ct("rule")}</p><p id="coop-message" role="status"></p>`,
@@ -140,6 +150,7 @@ export class CoopClient {
       ?.focus();
   }
   private connect(type: "create" | "join", code?: string) {
+    if (!coopEnabled) return;
     if (type === "join" && !/^[A-Fa-f0-9]{6}$/.test(code?.trim() ?? "")) {
       this.message(ct("room"));
       return;
@@ -147,13 +158,23 @@ export class CoopClient {
     if (this.socket?.readyState === WebSocket.CONNECTING) return;
     this.leave();
     this.lobbyOpen = true;
+    track("coop_connection_attempted", { action: type });
     this.message(ct("connecting"));
     const socket = new WebSocket(
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/coop`,
+      import.meta.env.VITE_COOP_URL ||
+        `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/coop`,
     );
     this.socket = socket;
+    let joined = false;
+    let failureReported = false;
+    const reportFailure = (reason: string) => {
+      if (failureReported) return;
+      failureReported = true;
+      track("coop_connection_failed", { action: type, reason });
+    };
     const timeout = window.setTimeout(() => {
       if (this.socket === socket && socket.readyState !== WebSocket.OPEN) {
+        reportFailure("timeout");
         socket.close();
         this.message(ct("offline"));
       }
@@ -166,6 +187,7 @@ export class CoopClient {
       if (this.socket !== socket) return;
       const m = JSON.parse(e.data);
       if (m.type === "error") {
+        reportFailure(m.reason === "room" ? "room_not_found" : "room_busy");
         this.message(ct(m.reason === "room" ? "room" : "busy"));
         return;
       }
@@ -174,6 +196,13 @@ export class CoopClient {
         return;
       }
       if (m.type === "lobby") {
+        if (!joined) {
+          joined = true;
+          track("coop_lobby_joined", {
+            action: type,
+            player_role: m.index === 0 ? "host" : "guest",
+          });
+        }
         this.code = m.code;
         this.index = m.index;
         const ready = m.players.length === 2;
@@ -185,6 +214,7 @@ export class CoopClient {
         const packet = m as CoopSnapshot;
         packet.state.encounters.brains = new Map();
         packet.state.discovery.consumed = new Map();
+        packet.state.discovery.salvageProgress = new Map();
         this.lastPacket = performance.now();
         const first = this.runId !== packet.runId;
         this.runId = packet.runId;
@@ -195,6 +225,7 @@ export class CoopClient {
         this.down = packet.down;
         if (first) {
           this.displayed = undefined;
+          this.rescueState = "";
           this.menuOpen = false;
           this.lastChoice = "";
           this.expanded = false;
@@ -210,7 +241,10 @@ export class CoopClient {
       clearTimeout(timeout);
       if (this.socket === socket) this.ended(ct("offline"));
     };
-    socket.onerror = () => this.message(ct("offline"));
+    socket.onerror = () => {
+      reportFailure("network");
+      this.message(ct("offline"));
+    };
   }
   private message(text: string) {
     const target = this.panel.querySelector("#coop-message");
@@ -328,9 +362,18 @@ export class CoopClient {
     const distance = Math.round(
       Math.hypot(p.player.x - s.player.x, p.player.z - s.player.z),
     );
-    const status = this.down ? ct("down") : p.hp <= 0 ? ct("revive") : "";
+    const rescue = this.down ? "down" : p.hp <= 0 ? "revive" : "";
+    if (rescue !== this.rescueState) {
+      this.rescueState = rescue;
+      this.rescueStarted = performance.now();
+    }
+    const status =
+      rescue && performance.now() - this.rescueStarted < 2000 ? ct(rescue) : "";
+    const progress = Math.round(
+      (Math.max(p.revive, this.latest?.revive ?? 0) / 3) * 100,
+    );
     // Text is intentionally short: the battle remains the focus.
-    const markup = `<svg class="coop-direction" viewBox="0 0 20 20" aria-hidden="true" style="transform:rotate(${(Math.atan2(p.player.z - s.player.z, p.player.x - s.player.x) * 180) / Math.PI + 90}deg)"><path d="m10 2 6 15-6-3-6 3Z" fill="currentColor"/></svg><strong>2P</strong><span>${Math.ceil(p.hp)} HP · ${distance} m</span>${status ? `<span class="coop-revive">${status} ${Math.round((Math.max(p.revive, this.latest?.revive ?? 0) / 3) * 100)}%</span>` : ""}`;
+    const markup = `<svg class="coop-direction" viewBox="0 0 20 20" aria-hidden="true" style="transform:rotate(${(Math.atan2(p.player.z - s.player.z, p.player.x - s.player.x) * 180) / Math.PI + 90}deg)"><path d="m10 2 6 15-6-3-6 3Z" fill="currentColor"/></svg><strong>2P</strong><span>${Math.ceil(p.hp)} HP · ${distance} m</span>${status || progress > 0 ? `<span class="coop-revive">${status}${progress > 0 ? ` ${progress}%` : ""}</span>` : ""}`;
     if (markup !== this.statusMarkup) {
       this.statusMarkup = markup;
       this.status.innerHTML = markup;
@@ -380,7 +423,8 @@ export class CoopClient {
     document.getElementById("app")!.classList.remove("is-coop");
   }
   refresh() {
-    document.querySelector("#menu-coop span")!.textContent = ct("play");
+    const label = document.querySelector("#menu-coop span");
+    if (label) label.textContent = ct("play");
     this.lastChoice = "";
   }
 }

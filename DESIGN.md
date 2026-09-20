@@ -182,7 +182,7 @@ Both families are bundled through Fontsource imports in `src/main.ts`. Compact c
 
 The lobby retains the cream masthead and instruction footer. Starting a run switches to a full-viewport map with no outer gutters, logo, slogans or persistent tutorial text. `src/play-hud.css` owns the run layout; `src/style.css` retains the lobby and base components.
 
-A 5px XP bar spans the top. Level and 25px ability chips sit at upper left, the 22px timer is centered, and an icon plus kill count sits beside the 48px pause control. Health is a 54×5px bar just below the centered robot, growing to 7px at critical health. There is no launch button or lower ammunition HUD: scrap automatically targets nearby enemies. Mobile movement uses a subdued 84px stick that becomes opaque during a drag. Controls respect safe-area insets.
+A 5px XP bar spans the top. Illustrated 44×48px ability tiles (36×42px on compact screens) sit at upper left, the 22px timer is centered, and an icon plus kill count sits beside the 48px pause control. Health is a 54×5px bar just below the centered robot, growing to 7px at critical health. There is no launch button or lower ammunition HUD: scrap automatically targets nearby enemies. Mobile movement uses a subdued 84px stick that becomes opaque during a drag. Controls respect safe-area insets.
 
 During play, only Pause remains in the utility menu. Pausing reveals language, sound and help. Upgrade and result screens keep language/sound available while hiding inactive gameplay HUD elements. Upgrade choices are compact rows in a sheet up to 480px wide; short landscape uses three columns up to 720px wide. Titles are 26px and ability names 19px, with readable 12px mechanical descriptions. Keyboard choice shortcuts and focus handling remain intact.
 
@@ -226,7 +226,7 @@ The physical orbit shows individual scrap pieces without a separate ammunition p
 
 ### XP and Build Chips
 
-Blue energy pickups supply XP; silver scrap replenishes orbit ammunition. The top XP bar has a numeric caption and accessible progress values. Level replaces the original player-name label in the health panel. Small translucent cream chips display each owned permanent ability's icon and rank, with a full accessible name. They wrap within a bounded area beneath XP; repeatable consumables do not accumulate as permanent build chips.
+Blue energy pickups supply XP; silver scrap replenishes orbit ammunition. The top XP bar has a numeric caption and accessible progress values. Level replaces the original player-name label in the health panel. Cream equipment tiles display each owned permanent ability’s illustrated artwork, a separate dark rank badge, and four or five rank marks matching its upgrade cap. Evolved weapons use a dark teal surface, gold marks, and a star. Tiles retain a full accessible name and fit all seven skills in a single row at 320px; the boss health bar sits below them. Repeatable consumables do not accumulate as permanent build tiles. Rendering lives in `src/ability-loadout.ts`, with styling in `src/play-hud.css`.
 
 ### Upgrade Choices
 
@@ -274,3 +274,7 @@ Menus must not depend on scrolling or emoji glyphs. Use original Blender artwork
 ### Illustrated controls and display quality
 
 Navigation and category tabs have original SVG symbols paired with text. Settings use dedicated language and graphics subviews instead of adding scroll. Five illustrated Help cards teach a single interaction per page. High desktop rendering uses consistent native pixel density for canvas and effects; Ultra offers supersampling. The auto-target arrow is removed. Damage feedback belongs on the robot: brief highlight, red tint and subtle recoil, respecting reduced motion and paused simulation time.
+
+### Inspecting the current build
+
+Clicking or tapping an owned skill opens Your Build with that skill selected. The dialog lists only permanent abilities owned in the active run and shows artwork, current rank versus its cap, category, and the localized ability or evolution description. Solo play pauses until dismissal; co-op continues with movement input suppressed and a visible notice. Escape, the close button, or Back to the Yard dismisses the panel and restores focus. The list scrolls independently on compact screens. Sources: `src/build-inspector.ts` and `src/build-inspector.css`.

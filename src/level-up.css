@@ -50,7 +50,7 @@
   top: calc(max(14px, env(safe-area-inset-top)) + 54px);
 }
 .in-run .boss-hud {
-  top: 108px;
+  top: calc(max(14px, env(safe-area-inset-top)) + 114px);
 }
 /* Three generous, framed rows echo the reference within the existing workshop palette. */
 #upgrade {
@@ -441,4 +441,14 @@
 }
 .in-run[data-phase="upgrade"] .top-progress {
   border-color: #edbd58;
+}
+
+/* At phone widths, the complete build sits below the pause hit area. */
+@media (max-width: 360px) {
+  .in-run .ability-loadout {
+    top: calc(max(14px, env(safe-area-inset-top)) + 80px);
+  }
+  .in-run .boss-hud {
+    top: calc(max(14px, env(safe-area-inset-top)) + 140px);
+  }
 }

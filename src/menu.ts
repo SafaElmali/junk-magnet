@@ -1,4 +1,5 @@
 import { ROBOTS, getProgress } from "./progression";
+import { track } from "./analytics";
 import { setupWorkshop, workshopIcon, robotPortrait } from "./workshop";
 import { evolutionGuideMarkup } from "./evolutions";
 import {
@@ -69,6 +70,9 @@ const qualityDescriptions: Record<GraphicsQuality, string> = {
 const previousIcon = icon('<path d="m14 6-6 6 6 6"/>');
 const nextIcon = icon('<path d="m10 6 6 6-6 6"/>');
 
+const audioControls = (channel: "sound" | "music", label: string) =>
+  `<div class="audio-settings-controls"><button id="menu-${channel}-down" class="audio-volume-step" aria-label="${label}: Volume down">${icon('<path d="M6 12h12"/>')}</button><button id="menu-${channel}" class="menu-button audio-toggle" aria-labelledby="${channel}-label menu-${channel}-state" aria-pressed="true"><span id="menu-${channel}-state"></span><small id="menu-${channel}-value" aria-hidden="true"></small></button><button id="menu-${channel}-up" class="audio-volume-step" aria-label="${label}: Volume up">${icon('<path d="M6 12h12M12 6v12"/>')}</button></div>`;
+
 export const menuMarkup = `
 <div class="menu-shell">
   <div class="menu-brand"><span class="menu-eyebrow">SURVIVE. SALVAGE. REPEAT.</span><h2>JUNK<span>MAGNET</span></h2><p>THE SWARM IS YOUR AMMO.</p></div>
@@ -96,13 +100,14 @@ export const menuMarkup = `
     <div id="menu-options" class="menu-options hidden">
       <div><span>Language</span><button id="menu-language" class="menu-button"></button></div>
       <div><span>Graphics quality</span><button id="menu-quality" class="menu-button"></button></div>
-      <div><span>Sound</span><button id="menu-sound" class="menu-button" aria-pressed="false"></button></div>
+      <div class="audio-setting"><span id="sound-label">Sound</span>${audioControls("sound", "Sound")}<input id="menu-sound-volume" class="audio-volume-bar" type="range" min="0" max="100" step="1" aria-labelledby="sound-label" /></div>
+      <div class="audio-setting"><span id="music-label">Music</span>${audioControls("music", "Music")}<input id="menu-music-volume" class="audio-volume-bar" type="range" min="0" max="100" step="1" aria-labelledby="music-label" /></div>
     </div>
     <div id="menu-language-picker" class="menu-picker hidden"></div>
     <div id="menu-quality-picker" class="menu-picker quality-picker hidden"></div>
   </section>
   <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
-  <span class="intro-note">Move with WASD or arrows · Attacks are automatic</span>
+  <span class="intro-note"><span>Move with WASD or arrows · Attacks are automatic</span> · <a href="./guide/" target="_blank" rel="noopener" aria-label="Gameplay guide (opens in a new tab)">Gameplay guide</a></span>
 </div>`;
 
 export function setupMenu(actions: {
@@ -113,6 +118,10 @@ export function setupMenu(actions: {
   quality: (next: GraphicsQuality) => void;
   sound: () => void;
   soundEnabled: () => boolean;
+  music: () => void;
+  musicEnabled: () => boolean;
+  volume: (channel: "sound" | "music") => number;
+  changeVolume: (channel: "sound" | "music", amount: number) => void;
 }) {
   const el = (id: string) => document.getElementById(id)!;
   let page:
@@ -211,11 +220,30 @@ export function setupMenu(actions: {
           `<button class="menu-choice" data-quality="${quality}" aria-pressed="${quality === getGraphicsQuality()}">${menuIcons.quality}<span><strong>${t(qualityLabels[quality])}</strong><small>${t(qualityDescriptions[quality])}</small></span></button>`,
       ).join("") + `<p>${t("Graphics apply immediately.")}</p>`;
     el("menu-back").textContent = t("BACK");
-    el("menu-sound").textContent = t(actions.soundEnabled() ? "ON" : "OFF");
-    el("menu-sound").setAttribute(
-      "aria-pressed",
-      String(actions.soundEnabled()),
-    );
+    for (const [id, label, enabled] of [
+      ["menu-sound", "Sound", actions.soundEnabled()],
+      ["menu-music", "Music", actions.musicEnabled()],
+    ] as const) {
+      el(id).setAttribute("aria-pressed", String(enabled));
+      const channel = id === "menu-sound" ? "sound" : "music";
+      const volume = actions.volume(channel);
+      el(id).title = `${t(label)}: ${t(enabled ? "ON" : "OFF")} · ${volume}%`;
+      el(`${id}-state`).textContent = t(enabled ? "ON" : "OFF");
+      el(`${id}-value`).textContent = `${volume}%`;
+      const slider = el(`${id}-volume`) as HTMLInputElement;
+      slider.value = String(volume);
+      slider.setAttribute("aria-valuetext", `${volume}%`);
+      slider.style.setProperty("--volume", `${volume}%`);
+      for (const direction of ["down", "up"] as const) {
+        const button = el(`${id}-${direction}`) as HTMLButtonElement;
+        button.setAttribute(
+          "aria-label",
+          `${t(label)}: ${t(direction === "down" ? "Volume down" : "Volume up")}`,
+        );
+        button.title = `${button.getAttribute("aria-label")} · ${volume}%`;
+        button.disabled = direction === "down" ? volume === 0 : volume === 100;
+      }
+    }
     el("menu-panel-title").textContent = t(
       page === "workshop"
         ? "WORKSHOP"
@@ -237,6 +265,7 @@ export function setupMenu(actions: {
 
   function show(next: typeof page, focus = true) {
     const previous = page;
+    if (next !== previous) track("menu_opened", { menu: next });
     page = next;
     detailOpen = false;
     document
@@ -360,6 +389,21 @@ export function setupMenu(actions: {
       ?.focus({ preventScroll: true });
   });
   el("menu-sound").addEventListener("click", actions.sound);
+  el("menu-music").addEventListener("click", actions.music);
+  for (const channel of ["sound", "music"] as const) {
+    el(`menu-${channel}-volume`).addEventListener("input", (event) => {
+      const value = Number((event.target as HTMLInputElement).value);
+      actions.changeVolume(channel, value - actions.volume(channel));
+    });
+    for (const [direction, amount] of [
+      ["down", -10],
+      ["up", 10],
+    ] as const) {
+      el(`menu-${channel}-${direction}`).addEventListener("click", () =>
+        actions.changeVolume(channel, amount),
+      );
+    }
+  }
   return {
     refresh,
     enter(canResume: boolean) {

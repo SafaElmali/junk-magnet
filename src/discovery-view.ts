@@ -7,7 +7,7 @@ import {
 } from "./discovery";
 export type DiscoveryModels = Record<DiscoveryKind, THREE.Group>;
 
-/** Clones share loaded GLB geometry/materials; streaming only changes transforms. */
+/** Fixed pools share GLB geometry and cached active/depleted materials. */
 export class DiscoveryView {
   private root = new THREE.Group();
   private geometries: THREE.BufferGeometry[] = [];
@@ -18,6 +18,12 @@ export class DiscoveryView {
     lid?: THREE.Object3D;
     loot?: THREE.Object3D;
     lights: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[];
+    surfaces: {
+      mesh: THREE.Mesh;
+      original: THREE.Material | THREE.Material[];
+      depleted: THREE.Material | THREE.Material[];
+    }[];
+    unavailable: THREE.Group;
     ring: THREE.Mesh;
     area: THREE.Mesh;
     ticks: THREE.Mesh[];
@@ -58,6 +64,37 @@ export class DiscoveryView {
     this.materials.push(gold, progressMaterial, faded, areaMaterial, this.spent);
     const ring = new THREE.RingGeometry(0.94, 1, 48);
     const disc = new THREE.CircleGeometry(0.94, 48);
+    const badgeInk = new THREE.MeshBasicMaterial({
+      color: 0x344541,
+      side: THREE.DoubleSide,
+    });
+    const badgeMark = new THREE.MeshBasicMaterial({
+      color: 0xfff0d2,
+      side: THREE.DoubleSide,
+    });
+    this.materials.push(badgeInk, badgeMark);
+    const badgeDisc = new THREE.CircleGeometry(0.39, 24);
+    const slash = new THREE.PlaneGeometry(0.49, 0.10);
+    this.geometries.push(badgeDisc, slash);
+    // Cache variants once: pooled stations never mutate the loaded materials or
+    // allocate new resources when consumed, streamed, or reset.
+    const depletedMaterials = new Map<THREE.Material, THREE.Material>();
+    const depleted = (original: THREE.Material) => {
+      let m = depletedMaterials.get(original);
+      if (!m) {
+        m = original.clone();
+        if (m instanceof THREE.MeshStandardMaterial) {
+          m.color.lerp(new THREE.Color(0x59615a), 0.86);
+          m.emissive.setHex(0);
+          m.emissiveIntensity = 0;
+          m.metalness = 0.05;
+          m.roughness = 0.95;
+        }
+        depletedMaterials.set(original, m);
+        this.materials.push(m);
+      }
+      return m;
+    };
     const tick = new THREE.RingGeometry(
       0.80,
       0.91,
@@ -73,6 +110,7 @@ export class DiscoveryView {
       this.root.add(root);
       const models = {} as DiscoveryModels;
       const lights: (typeof this.slots)[number]["lights"] = [];
+      const surfaces: (typeof this.slots)[number]["surfaces"] = [];
       for (const kind of ["repair", "chest", "salvage"] as const) {
         const model = templates[kind].clone(true);
         models[kind] = model;
@@ -81,6 +119,13 @@ export class DiscoveryView {
           if (!(o instanceof THREE.Mesh)) return;
           o.castShadow = true;
           o.receiveShadow = true;
+          surfaces.push({
+            mesh: o,
+            original: o.material,
+            depleted: Array.isArray(o.material)
+              ? o.material.map(depleted)
+              : depleted(o.material),
+          });
           const material = Array.isArray(o.material)
             ? o.material[0]
             : o.material;
@@ -100,6 +145,18 @@ export class DiscoveryView {
       outline.position.y = 0.04;
       outline.renderOrder = 1;
       root.add(outline);
+      const unavailable = new THREE.Group();
+      unavailable.name = "Discovery_Unavailable";
+      unavailable.rotation.x = -Math.PI / 3;
+      unavailable.add(new THREE.Mesh(badgeDisc, badgeInk));
+      for (const angle of [-Math.PI / 4, Math.PI / 4]) {
+        const mark = new THREE.Mesh(slash, badgeMark);
+        mark.rotation.z = angle;
+        mark.position.z = 0.012;
+        unavailable.add(mark);
+      }
+      unavailable.visible = false;
+      root.add(unavailable);
       const ticks: THREE.Mesh[] = [];
       for (let n = 0; n < 24; n++) {
         const t = new THREE.Mesh(tick, progressMaterial);
@@ -123,6 +180,8 @@ export class DiscoveryView {
         root,
         models,
         lights,
+        surfaces,
+        unavailable,
         lid: models.chest.getObjectByName("Chest_Lid"),
         loot: models.chest.getObjectByName("Chest_Loot"),
         ring: outline,
@@ -144,6 +203,8 @@ export class DiscoveryView {
       slot.ring.visible = !p.completed;
       slot.area.scale.setScalar(radius);
       slot.area.visible = !p.completed;
+      slot.unavailable.visible = p.completed;
+      slot.unavailable.position.set(0, p.kind === "chest" ? 1.85 : 2.25, 0);
       for (const kind of ["repair", "chest", "salvage"] as const)
         slot.models[kind].visible = kind === p.kind;
       const age =
@@ -153,6 +214,10 @@ export class DiscoveryView {
       const opening = p.completed ? (reduced ? 1 : Math.min(1, age / 0.55)) : 0;
       if (slot.lid) slot.lid.rotation.x = -1.8 * (1 - (1 - opening) ** 3);
       if (slot.loot) slot.loot.visible = !p.completed || age < 0.28;
+      for (const surface of slot.surfaces)
+        surface.mesh.material = p.completed
+          ? surface.depleted
+          : surface.original;
       for (const light of slot.lights)
         light.mesh.material = p.completed ? this.spent : light.material;
       const fraction = p.progress / (p.kind === "salvage" ? 8 : 1.2);
