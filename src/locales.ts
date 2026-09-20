@@ -1,3 +1,5 @@
+import { expansionLocales } from "./expansion-locales";
+import { workshopLocales } from "./workshop-locales";
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
@@ -1037,3 +1039,10 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Hurda İkmali",
   },
 };
+
+for (const language of ["tr", "de", "fr", "es", "pt"])
+  Object.assign(
+    locales[language],
+    expansionLocales[language],
+    workshopLocales[language],
+  );

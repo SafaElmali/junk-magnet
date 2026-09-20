@@ -1,3 +1,6 @@
+import { ROBOTS, getProgress } from "./progression";
+import { setupWorkshop, workshopIcon, robotPortrait } from "./workshop";
+import { evolutionGuideMarkup } from "./evolutions";
 import {
   getLanguage,
   t,
@@ -73,6 +76,7 @@ export const menuMarkup = `
     <nav class="menu-actions" aria-label="Main menu">
       <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span>${playIcon}</button>
       <button id="new-run" class="menu-button hidden">${menuIcons.restart}<span>NEW RUN</span></button>
+      <button id="menu-workshop" class="menu-button">${workshopIcon}<span>WORKSHOP</span></button>
       <button id="menu-abilities" class="menu-button">${menuIcons.abilities}<span>ABILITIES</span></button>
       <button id="menu-settings" class="menu-button">${menuIcons.settings}<span>SETTINGS</span></button>
       <button id="menu-help" class="menu-button">${menuIcons.help}<span>HOW TO PLAY</span></button>
@@ -80,12 +84,14 @@ export const menuMarkup = `
     <aside class="pilot-card" aria-label="Your character">
       <span class="pilot-tag">YOUR SURVIVOR</span>
       <svg class="pilot-art" viewBox="0 0 260 220" aria-hidden="true"><ellipse cx="130" cy="195" rx="81" ry="12" fill="#0b2029"/><g transform="rotate(-7 130 120)"><path d="M95 68V28h20v35c0 17 30 17 30 0V28h20v40c0 43-70 43-70 0" fill="#cd4e39" stroke="#142f3b" stroke-width="5"/><path d="M95 28h20v17H95zm50 0h20v17h-20z" fill="#fff6e3"/><rect x="61" y="132" width="33" height="63" rx="12" fill="#263c41" stroke="#071e29" stroke-width="5"/><rect x="166" y="132" width="33" height="63" rx="12" fill="#263c41" stroke="#071e29" stroke-width="5"/><path d="M67 146h20m-20 14h20m-20 14h20m86-28h20m-20 14h20m-20 14h20" stroke="#67736a" stroke-width="5"/><rect x="82" y="91" width="96" height="91" rx="25" fill="#edba4b" stroke="#132f3b" stroke-width="5"/><path d="M97 102h65" stroke="#ffe8a0" stroke-width="6" stroke-linecap="round"/><rect x="96" y="117" width="68" height="39" rx="18" fill="#173342"/><ellipse cx="115" cy="133" rx="6" ry="9" fill="#a2eced"/><ellipse cx="145" cy="133" rx="6" ry="9" fill="#a2eced"/><path d="M117 169h26" stroke="#b17832" stroke-width="5" stroke-linecap="round"/></g><path d="m38 87 8 8-8 8-8-8zm177 46 7 7-7 7-7-7z" fill="#74b6b6"/><circle cx="212" cy="68" r="10" fill="none" stroke="#bcbaa0" stroke-width="5"/></svg>
-      <h3>SCRAP-01</h3><p>Tiny robot. Endless potential.</p>
+      <h3 id="menu-pilot-name">SCRAP-01</h3><p id="menu-pilot-copy">Tiny robot. Endless potential.</p>
       <div class="pilot-weapon"><span>STARTING WEAPON</span><strong id="menu-weapon"></strong></div>
     </aside>
   </div>
   <section id="menu-panel" class="menu-panel hidden" aria-labelledby="menu-panel-title">
-    <header><h3 id="menu-panel-title"></h3><button id="menu-back" class="menu-back">BACK</button></header>
+    <header><h3 id="menu-panel-title"></h3><div class="menu-panel-tools"><button id="menu-evolutions-open" class="hidden" aria-label="EVOLUTIONS" title="EVOLUTIONS">${menuIcons.abilities}<span>Recipes</span></button><button id="menu-back" class="menu-back">BACK</button></div></header>
+    <div id="menu-workshop-content" class="hidden"></div>
+    <div id="menu-evolutions" class="hidden"></div>
     <div id="menu-library" class="menu-library hidden"></div>
     <div id="menu-options" class="menu-options hidden">
       <div><span>Language</span><button id="menu-language" class="menu-button"></button></div>
@@ -109,8 +115,16 @@ export function setupMenu(actions: {
   soundEnabled: () => boolean;
 }) {
   const el = (id: string) => document.getElementById(id)!;
-  let page: "home" | "abilities" | "settings" | "language" | "quality" = "home";
+  let page:
+    | "home"
+    | "abilities"
+    | "settings"
+    | "language"
+    | "quality"
+    | "workshop"
+    | "evolutions" = "home";
   let resumable = false;
+  const workshop = setupWorkshop(el("menu-workshop-content"), refresh);
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
   let sheet = 0;
@@ -168,7 +182,20 @@ export function setupMenu(actions: {
   function refresh() {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
-    el("menu-weapon").textContent = upgradeName("saw");
+    const robot = ROBOTS.find(
+      (robot) => robot.id === getProgress().selectedRobot,
+    )!;
+    el("menu-weapon").textContent = upgradeName(robot.startingWeapon);
+    el("menu-pilot-name").textContent = robot.name;
+    el("menu-pilot-copy").textContent = t(robot.description);
+    document.querySelector(".pilot-art")!.outerHTML = robotPortrait(
+      robot.id,
+    ).replace('class="workshop-robot"', 'class="pilot-art"');
+    el("menu-workshop").querySelector("span")!.textContent = t("WORKSHOP");
+    el("menu-evolutions-open").setAttribute("aria-label", t("EVOLUTIONS"));
+    el("menu-evolutions-open").setAttribute("title", t("EVOLUTIONS"));
+    el("menu-evolutions-open").querySelector("span")!.textContent =
+      t("Recipes");
     const currentLanguage = LANGUAGES.find(
       ({ code }) => code === getLanguage(),
     )!;
@@ -192,15 +219,22 @@ export function setupMenu(actions: {
       String(actions.soundEnabled()),
     );
     el("menu-panel-title").textContent = t(
-      page === "abilities"
-        ? "ABILITIES"
-        : page === "language"
-          ? "Language"
-          : page === "quality"
-            ? "Graphics quality"
-            : "SETTINGS",
+      page === "workshop"
+        ? "WORKSHOP"
+        : page === "evolutions"
+          ? "EVOLUTIONS"
+          : page === "abilities"
+            ? "ABILITIES"
+            : page === "language"
+              ? "Language"
+              : page === "quality"
+                ? "Graphics quality"
+                : "SETTINGS",
     );
     if (page === "abilities") renderLibrary();
+    if (page === "workshop") workshop.refresh();
+    if (page === "evolutions")
+      el("menu-evolutions").innerHTML = evolutionGuideMarkup();
   }
 
   function show(next: typeof page, focus = true) {
@@ -213,6 +247,16 @@ export function setupMenu(actions: {
     document
       .querySelector(".menu-shell")!
       .classList.toggle("is-library", page === "abilities");
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-workshop", page === "workshop");
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-evolutions", page === "evolutions");
+    el("menu-workshop-content").classList.toggle("hidden", page !== "workshop");
+    el("menu-evolutions").classList.toggle("hidden", page !== "evolutions");
+    el("menu-evolutions-open").classList.toggle("hidden", page !== "abilities");
+    if (page === "workshop") workshop.enter(resumable);
     el("menu-home").classList.toggle("hidden", page !== "home");
     el("menu-panel").classList.toggle("hidden", page === "home");
     el("menu-library").classList.toggle("hidden", page !== "abilities");
@@ -223,9 +267,11 @@ export function setupMenu(actions: {
     if (focus)
       el(
         page === "home"
-          ? previous === "abilities"
-            ? "menu-abilities"
-            : "menu-settings"
+          ? previous === "workshop"
+            ? "menu-workshop"
+            : previous === "abilities"
+              ? "menu-abilities"
+              : "menu-settings"
           : "menu-back",
       ).focus();
   }
@@ -273,10 +319,15 @@ export function setupMenu(actions: {
   el("start").addEventListener("click", actions.start);
   el("new-run").addEventListener("click", actions.restart);
   el("menu-help").addEventListener("click", actions.help);
+  el("menu-workshop").addEventListener("click", () => show("workshop"));
+  el("menu-evolutions-open").addEventListener("click", () =>
+    show("evolutions"),
+  );
   el("menu-abilities").addEventListener("click", () => show("abilities"));
   el("menu-settings").addEventListener("click", () => show("settings"));
   const goBack = () => {
-    if (detailOpen && compact()) closeDetail();
+    if (page === "evolutions") show("abilities");
+    else if (detailOpen && compact()) closeDetail();
     else if (page === "language" || page === "quality") {
       const opener = page === "language" ? "menu-language" : "menu-quality";
       show("settings", false);

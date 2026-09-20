@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { ExpansionView } from "./expansion-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -91,6 +92,7 @@ export class YardScene {
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera();
   robot!: THREE.Group;
+  private expansion?: ExpansionView;
   floor!: THREE.Mesh;
   sun!: THREE.DirectionalLight;
   enemyBatches: THREE.InstancedMesh[] = [];
@@ -110,6 +112,7 @@ export class YardScene {
   }[] = [];
   ring!: THREE.Mesh;
   quality: GraphicsQuality = getGraphicsQuality();
+  private robotVariant: State["config"]["robotId"] = "scrap";
   private hurtAt = -Infinity;
   private hurtDirection = new THREE.Vector2(0, -1);
   private hurtStrength = 0;
@@ -896,6 +899,9 @@ export class YardScene {
     );
     this.robot.rotation.y += diff * Math.min(1, dt * 14);
     this.robot.visible = true;
+    this.expansion ??= new ExpansionView(this.scene, this.robot);
+    this.expansion.update(s);
+    this.robotVariant = s.config.robotId;
     this.renderRobotHurt(s.time);
     for (let i = 0; i < this.orbit.length; i++) {
       const o = this.orbit[i];
@@ -919,7 +925,20 @@ export class YardScene {
     const transform = this.transform;
     for (let i = 0; i < s.enemies.length; i++) {
       const e = s.enemies[i];
-      if (!this.visible(e.x, e.z, e.type === "brute" ? 2 : 1.3)) continue;
+      if (
+        !this.visible(
+          e.x,
+          e.z,
+          e.type === "boss"
+            ? 5
+            : e.type === "miniboss"
+              ? 4
+              : e.type === "brute"
+                ? 2
+                : 1.3,
+        )
+      )
+        continue;
       transform.position.set(
         e.x,
         Math.abs(Math.sin(s.time * 8 + e.seed)) * 0.065,
@@ -931,7 +950,15 @@ export class YardScene {
         Math.sin(s.time * 8 + e.seed) * 0.06,
       );
       const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
-      if (e.type === "brute") transform.scale.set(k * 1.85, k * 1.6, k * 1.85);
+      if (e.type === "boss") transform.scale.set(k * 3.2, k * 2.9, k * 3.2);
+      else if (e.type === "miniboss")
+        transform.scale.set(k * 2.4, k * 2.1, k * 2.4);
+      else if (e.type === "charger")
+        transform.scale.set(k * 0.9, k * 1.2, k * 1.3);
+      else if (e.type === "warden")
+        transform.scale.set(k * 1.4, k * 1.2, k * 1.4);
+      else if (e.type === "brute")
+        transform.scale.set(k * 1.85, k * 1.6, k * 1.85);
       else if (e.type === "runner")
         transform.scale.set(k * 0.85, k * 1.2, k * 0.85);
       else transform.scale.setScalar(k * 1.12);
@@ -943,9 +970,13 @@ export class YardScene {
         );
         this.instanceColor.setHex(
           metal && e.type !== "can"
-            ? e.type === "runner"
+            ? e.type === "runner" || e.type === "charger"
               ? 0xff8a55
-              : 0x62bec6
+              : e.type === "boss" || e.type === "miniboss"
+                ? 0xf6c873
+                : e.type === "warden"
+                  ? 0x8b9dc5
+                  : 0x62bec6
             : 0xffffff,
         );
         batch.setColorAt(this.renderedEnemies, this.instanceColor);
@@ -1096,7 +1127,12 @@ export class YardScene {
     const tint = !this.reduced && age < 0.075 ? this.hurtWhite : this.hurtRed;
     for (const { material, color, emissive, intensity } of this
       .robotMaterials) {
-      material.color.copy(color).lerp(tint, strength * 0.82);
+      material.color.copy(color);
+      if (material.name === "Butter yellow" && this.robotVariant !== "scrap")
+        material.color.setHex(
+          this.robotVariant === "scout" ? 0xce7856 : 0x91cad1,
+        );
+      material.color.lerp(tint, strength * 0.82);
       material.emissive.copy(emissive).lerp(tint, strength * 0.55);
       material.emissiveIntensity = intensity + strength * 0.8;
     }

@@ -122,3 +122,23 @@ The results screen uses the same dark workshop panel as Pause. Survival time lea
 ### Animated loading screen
 
 An inline SVG robot and orbiting scrap appear immediately while the actual game assets load, using the same dark workshop colors as the menus. The progress bar reflects completed asset loads; animation adds no minimum wait. Narrow phones use a compact vertical layout and short landscape uses two columns. Reduced-motion preferences disable the orbit, hover and blink. Failed loading retains the design with a translated Retry button, and later asset callbacks cannot overwrite the error message.
+
+### Bosses, exploration and evolving builds
+
+Mini bosses arrive at 90-second slots and bosses at alternating 180-second slots; only one boss is active at a time. Their health scales with the run. Chargers lock a lane before dashing, spitters telegraph aimed bolts, and wardens place temporary danger zones. Rust boundaries and amber fill warn before impact; active ground hazards turn coral. Boss kills grant parts, energy, scrap and repairs. Existing endless enemy and world limits remain bounded.
+
+Repair stations restore 40 health when needed. Supply chests open after 1.2 seconds nearby and grant five XP, six scrap and three parts. Salvage contracts require eight seconds inside their marked zone and grant twelve XP, a full orbit and eight parts; leaving slowly drains progress. Each point rewards once per run. Nearby points stream from deterministic sectors; a bounded sector ledger retires old sectors permanently within that run rather than letting revisits farm rewards.
+
+Three automatic evolutions activate when both requirements are reached in the same run. Abilities → Recipes explains them:
+
+| Evolution     | Requirements                       | Effect                                                                            |
+| ------------- | ---------------------------------- | --------------------------------------------------------------------------------- |
+| Scrap Cyclone | Orbiting Saws 5 + Pickup Magnet 2  | Permanent rotating blades, repeated area damage and inward pull even without ammo |
+| Storm Circuit | Chain Lightning 5 + Turbo Treads 2 | Longer reach, four additional jumps, half the cooldown                            |
+| Iron Bastion  | Scrap Turret 5 + Steel Plating 2   | Longer-lived, faster turrets with stronger rounds that pierce three enemies       |
+
+### Robot workshop and saved progress
+
+Workshop offers SCRAP-01 (+10% damage), SCOUT (+18% speed and +0.8 m pickup range, 80 parts), and VOLT (starts with lightning, +15% damage and −5% speed, 120 parts). Each has a distinct portrait and visible in-game attachments. Reinforced Hull and Magnet Tuning each have three permanent ranks, costing 25/60/110 parts. These reduce incoming damage and extend pickup range. A run takes a snapshot of its chosen robot and bonuses; workshop changes apply to the next run, never a paused one.
+
+Defeat banks discovered/boss parts plus one part per ten kills and per thirty survival seconds. Main Menu and New Run do not bank unfinished runs. Results show the award and balance; repeated result rendering or changing languages cannot award it twice. Parts, unlocks, upgrades and best time/kills are versioned and validated in this browser's local storage. There is no account/cloud sync; blocked storage falls back to session memory. An unfinished run still does not survive reloading.

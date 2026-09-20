@@ -16,6 +16,15 @@ import "./pause-menu.css";
 import "./opening-guide.css";
 import "./result-menu.css";
 import "./loading-screen.css";
+import "./expansion.css";
+import {
+  getRunConfig,
+  recordRun,
+  ROBOTS,
+  type RunReceipt,
+} from "./progression";
+import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
+import { getDiscoveryHint } from "./discovery";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
@@ -85,6 +94,8 @@ app.innerHTML = `
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
  <aside id="opening-guide" class="opening-guide hidden" role="status" aria-live="polite" aria-atomic="true"><svg class="opening-art" viewBox="0 0 72 48" aria-hidden="true"><g class="opening-collect-art"><path d="m8 10 7 3-3 7-7-3Zm-2 23 7-3 3 7-7 3Z" fill="#d7e0d9" stroke="#789a9c"/><path d="M21 16h10m-4-4 4 4-4 4M21 33h10m-4-4 4 4-4 4" fill="none" stroke="#8abfc2" stroke-width="2"/><path d="M40 8v17a12 12 0 0 0 24 0V8h-8v17a4 4 0 0 1-8 0V8Z" fill="#cf5945" stroke="#f28a68" stroke-width="1.5"/><path d="M40 8h8v7h-8Zm16 0h8v7h-8Z" fill="#fff0c8"/></g><g class="opening-orbit-art"><ellipse cx="23" cy="24" rx="17" ry="16" fill="none" stroke="#7ba9a6" stroke-dasharray="3 3"/><rect x="16" y="17" width="14" height="14" rx="4" fill="#edba53"/><path d="M19 22h8" stroke="#173441" stroke-width="3"/><path d="m7 8 6 2-2 6-6-2ZM32 33l6 2-2 6-6-2Z" fill="#d7e0d9"/><path d="M43 24h13m-5-5 5 5-5 5" fill="none" stroke="#edba53" stroke-width="2"/><rect x="62" y="19" width="7" height="10" rx="2" fill="#cf5945"/></g></svg><p id="opening-copy"></p></aside>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
+ <div id="boss-hud" class="boss-hud hidden"><span id="boss-name"></span><div role="progressbar" id="boss-health" aria-valuemin="0"><i id="boss-fill"></i></div></div>
+ <div id="world-hint" class="world-hint hidden" role="status"></div>
  <div class="load-state" id="loading" role="status" aria-live="polite">${loadingMarkup}</div>
  <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
@@ -95,7 +106,7 @@ app.innerHTML = `
  <h2 id="result-title">SHIFT COMPLETE</h2><p id="result-copy"></p>
  <div class="result-stats"><div class="result-stat-time"><span>${svg("clock")}<span>SHIFT TIME</span></span><strong id="result-time"></strong></div><div><span>${svg("nut")}<span>RECYCLED ENEMIES</span></span><strong id="result-kills"></strong></div><div><span>${svg("bolt")}<span>LEVEL REACHED</span></span><strong id="result-level"></strong></div></div>
  <section class="result-loadout" aria-labelledby="result-build-label"><h3 id="result-build-label">YOUR BUILD</h3><ul class="result-build" id="result-build"></ul></section>
- <div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
+ <p id="result-reward" class="result-reward"></p><div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
  </div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
@@ -106,13 +117,15 @@ app.classList.add("in-menu");
 const translateStatic = bindStaticTranslations(app);
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
-let s = createState(),
+let s = createState(getRunConfig()),
   scene: YardScene,
   loaded = false,
   last = 0,
   sound = false,
   modalBefore: "ready" | "playing" = "playing",
   lastFocus: HTMLElement | null = null;
+let runId = crypto.randomUUID();
+let runReceipt: RunReceipt | null = null;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
   showedResult = false,
@@ -151,6 +164,12 @@ function beep(
 }
 function start() {
   if (!loaded || !menu.isHome()) return;
+  if (s.time === 0) {
+    s = createState(getRunConfig());
+    runId = crypto.randomUUID();
+    runReceipt = null;
+    scene.clear();
+  }
   keys.clear();
   stopStick();
   s.phase = "playing";
@@ -173,7 +192,7 @@ function returnToMenu() {
   stopStick();
   if (canResume) s.phase = "paused";
   else {
-    s = createState();
+    s = createState(getRunConfig());
     scene.clear();
   }
   app.classList.remove("in-run");
@@ -185,7 +204,7 @@ function returnToMenu() {
   menu.enter(canResume);
 }
 function restart() {
-  s = createState();
+  s = createState(getRunConfig());
   scene.clear();
   keys.clear();
   stopStick();
@@ -486,16 +505,22 @@ function pickUpgrade(id: UpgradeId | undefined) {
   renderUpgrades();
 }
 function renderUpgrades() {
-  const loadout = ownedAbilities()
-    .map((id) => `${id}:${s.upgrades[id]}`)
-    .join("|");
+  const loadout =
+    ownedAbilities()
+      .map((id) => `${id}:${s.upgrades[id]}`)
+      .join("|") + Object.values(s.evolutions).join();
   if (loadout !== shownLoadout) {
     shownLoadout = loadout;
     el("ability-loadout").innerHTML = ownedAbilities()
-      .map(
-        (id) =>
-          `<span class="ability-chip" title="${t("{name}, rank {rank}", { name: upgradeName(id), rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name: upgradeName(id), rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`,
-      )
+      .map((id) => {
+        const evolution = (Object.keys(EVOLUTIONS) as EvolutionId[]).find(
+          (key) => s.evolutions[key] && EVOLUTIONS[key].weapon === id,
+        );
+        const name = evolution
+          ? t(EVOLUTIONS[evolution].name)
+          : upgradeName(id);
+        return `<span class="ability-chip${evolution ? " is-evolved" : ""}" title="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`;
+      })
       .join("");
   }
   if (s.phase !== "upgrade") return;
@@ -562,8 +587,74 @@ function renderOpeningGuide() {
         : "Keep moving. Collect scrap to reload.",
   );
 }
+function renderExpansionHUD() {
+  const playing = s.phase === "playing" && !app.classList.contains("in-menu");
+  const boss =
+    s.encounters.active &&
+    s.enemies.find((e) => e.id === s.encounters.active!.id && e.hp > 0);
+  el("boss-hud").classList.toggle("hidden", !playing || !boss);
+  if (boss && s.encounters.active) {
+    el("boss-name").textContent = t(
+      boss.type === "boss" ? "Yard Titan" : "Crusher",
+    );
+    el("boss-fill").style.transform =
+      `scaleX(${Math.max(0, boss.hp / s.encounters.active.maxHp)})`;
+    el("boss-health").setAttribute(
+      "aria-label",
+      t(boss.type === "boss" ? "Yard Titan" : "Crusher"),
+    );
+    el("boss-health").setAttribute(
+      "aria-valuemax",
+      String(s.encounters.active.maxHp),
+    );
+    el("boss-health").setAttribute("aria-valuenow", String(Math.ceil(boss.hp)));
+  }
+  let text = "";
+  const names = {
+    repair: "Repair station",
+    chest: "Supply chest",
+    salvage: "Salvage contract",
+  };
+  if (playing && s.evolutionNotice && s.evolutionNotice.until > s.time)
+    text = t("EVOLVED: {name}", {
+      name: t(EVOLUTIONS[s.evolutionNotice.id].name),
+    });
+  else if (
+    playing &&
+    s.discovery.lastReward &&
+    s.discovery.lastReward.until > s.time
+  )
+    text = `${t(names[s.discovery.lastReward.kind])} · ${t("Claimed")}`;
+  else if (playing && s.openingRemaining === 0) {
+    const hint = getDiscoveryHint(s);
+    if (hint && (s.time >= 7 || hint.mode === "hold")) {
+      const name = t(names[hint.kind]);
+      text =
+        hint.mode === "hold"
+          ? t("{name} · {seconds}s", {
+              name: t(
+                hint.kind === "salvage"
+                  ? "Hold the zone"
+                  : "Stay nearby to open",
+              ),
+              seconds: hint.seconds,
+            })
+          : hint.mode === "full-health"
+            ? `${name} · ${t("Health is full")}`
+            : t("{name} · {distance} m", {
+                name,
+                distance: Math.ceil(hint.distance),
+              });
+    }
+  }
+  el("world-hint").classList.toggle("hidden", !text);
+  if (el("world-hint").textContent !== text)
+    el("world-hint").textContent = text;
+  if (text) el("opening-guide").classList.add("hidden");
+}
 function hud() {
   renderOpeningGuide();
+  renderExpansionHUD();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
   el("timer").textContent = format(s.time);
   el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
@@ -599,6 +690,20 @@ function hud() {
     s.phase === "upgrade" || s.phase === "lost";
   if (s.phase === "lost" && !showedResult) {
     showedResult = true;
+    runReceipt ??= recordRun({
+      runId,
+      phase: s.phase,
+      time: s.time,
+      kills: s.kills,
+      earnedParts: s.earnedParts,
+    });
+    el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
+      parts: runReceipt?.earned ?? 0,
+      total: runReceipt?.parts ?? 0,
+    });
+    document.querySelector(".result-unit")!.textContent = ROBOTS.find(
+      (r) => r.id === s.config.robotId,
+    )!.name;
     el("yard").classList.remove("is-playing");
     keys.clear();
     stopStick();
@@ -682,6 +787,17 @@ async function boot() {
           phase: s.phase,
           time: s.time,
           openingRemaining: s.openingRemaining,
+          robot: { ...s.config },
+          earnedParts: s.earnedParts,
+          evolutions: { ...s.evolutions },
+          boss: s.encounters.active ? { ...s.encounters.active } : null,
+          encounterWarnings: s.encounters.warnings.map((w) => ({ ...w })),
+          hostileShots: s.encounters.projectiles.length,
+          dangerZones: s.encounters.zones.length,
+          discoveries: s.discovery.points.map((p) => ({ ...p })),
+          chestsOpened: s.discovery.chestsOpened,
+          questsCompleted: s.discovery.questsCompleted,
+          receipt: runReceipt ? { ...runReceipt } : null,
           player: { ...s.player },
           aim: { ...s.aim },
           facing: { ...s.facing },
