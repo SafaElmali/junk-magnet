@@ -1,6 +1,7 @@
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
+    "Loading progress": "Ladefortschritt",
     "RECYCLED ENEMIES": "RECYCELTE GEGNER",
     "YOUR BUILD": "DEIN BUILD",
     "Your magnet collects nearby scrap.":
@@ -243,6 +244,7 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Schrottnachschub",
   },
   fr: {
+    "Loading progress": "Chargement",
     "RECYCLED ENEMIES": "ENNEMIS RECYCLÉS",
     "YOUR BUILD": "TON ÉQUIPEMENT",
     "Your magnet collects nearby scrap.":
@@ -487,6 +489,7 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recharge de ferraille",
   },
   es: {
+    "Loading progress": "Progreso de carga",
     "RECYCLED ENEMIES": "ENEMIGOS RECICLADOS",
     "YOUR BUILD": "TUS HABILIDADES",
     "Your magnet collects nearby scrap.": "Tu imán recoge chatarra cercana.",
@@ -728,6 +731,7 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de chatarra",
   },
   pt: {
+    "Loading progress": "Progresso de carregamento",
     "RECYCLED ENEMIES": "INIMIGOS RECICLADOS",
     "YOUR BUILD": "AS TUAS HABILIDADES",
     "Your magnet collects nearby scrap.": "Seu ímã coleta sucata próxima.",
@@ -970,6 +974,7 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de sucata",
   },
   tr: {
+    "Loading progress": "Yükleme durumu",
     "RECYCLED ENEMIES": "YENİLEN DÜŞMAN",
     "YOUR BUILD": "BU TURDAKİ YETENEKLERİN",
     "Your magnet collects nearby scrap.":

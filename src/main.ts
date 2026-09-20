@@ -15,6 +15,8 @@ import "./help-art.css";
 import "./pause-menu.css";
 import "./opening-guide.css";
 import "./result-menu.css";
+import "./loading-screen.css";
+import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
 import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
@@ -83,7 +85,7 @@ app.innerHTML = `
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
  <aside id="opening-guide" class="opening-guide hidden" role="status" aria-live="polite" aria-atomic="true"><svg class="opening-art" viewBox="0 0 72 48" aria-hidden="true"><g class="opening-collect-art"><path d="m8 10 7 3-3 7-7-3Zm-2 23 7-3 3 7-7 3Z" fill="#d7e0d9" stroke="#789a9c"/><path d="M21 16h10m-4-4 4 4-4 4M21 33h10m-4-4 4 4-4 4" fill="none" stroke="#8abfc2" stroke-width="2"/><path d="M40 8v17a12 12 0 0 0 24 0V8h-8v17a4 4 0 0 1-8 0V8Z" fill="#cf5945" stroke="#f28a68" stroke-width="1.5"/><path d="M40 8h8v7h-8Zm16 0h8v7h-8Z" fill="#fff0c8"/></g><g class="opening-orbit-art"><ellipse cx="23" cy="24" rx="17" ry="16" fill="none" stroke="#7ba9a6" stroke-dasharray="3 3"/><rect x="16" y="17" width="14" height="14" rx="4" fill="#edba53"/><path d="M19 22h8" stroke="#173441" stroke-width="3"/><path d="m7 8 6 2-2 6-6-2ZM32 33l6 2-2 6-6-2Z" fill="#d7e0d9"/><path d="M43 24h13m-5-5 5 5-5 5" fill="none" stroke="#edba53" stroke-width="2"/><rect x="62" y="19" width="7" height="10" rx="2" fill="#cf5945"/></g></svg><p id="opening-copy"></p></aside>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
- <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
+ <div class="load-state" id="loading" role="status" aria-live="polite">${loadingMarkup}</div>
  <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
  <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="pause-heading pause-only"><span class="pause-location">${svg("magnet")}<span>THE SCRAPYARD</span></span><span class="pause-badge">${svg("pause")}</span></div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div class="pause-summary pause-only"><div><span>SHIFT TIME</span><strong id="pause-time">00:00</strong></div><div><span>LEVEL REACHED</span><strong id="pause-level">1</strong></div><div><span>JUNK RECYCLED</span><strong id="pause-kills">0</strong></div></div><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><div class="pause-actions"><button class="primary-btn" id="resume"><span id="resume-label">CONTINUE</span><span id="resume-icon">${svg("play")}</span></button><button class="text-btn" id="restart">${svg("reset")}<span>NEW RUN</span></button><button id="pause-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div></div></div>
@@ -647,6 +649,7 @@ function loop(now: number) {
   requestAnimationFrame(loop);
 }
 async function boot() {
+  let loadFailed = false;
   try {
     await document.fonts.ready;
     scene = new YardScene(el("yard"));
@@ -657,10 +660,13 @@ async function boot() {
       ),
     );
     await scene.load((n) => {
+      if (loadFailed) return;
+      const percent = Math.round(n * 100);
       el("load-progress").style.transform = `scaleX(${n})`;
+      el("load-meter").setAttribute("aria-valuenow", String(percent));
+      el("load-percent").textContent = `${percent}%`;
       el("load-detail").textContent = t(
-        "Preparing the scrapyard… {progress}%",
-        { progress: Math.round(n * 100) },
+        n < 1 ? "Unpacking the good junk." : "Opening the yard…",
       );
     });
     loaded = true;
@@ -716,9 +722,14 @@ async function boot() {
       },
     });
   } catch (error) {
+    loadFailed = true;
     console.error(error);
-    el("loading").innerHTML =
-      `<h2>${t("The yard couldn’t open.")}</h2><p>${t("A 3D asset or WebGL failed to load. Please reload in a browser with hardware acceleration enabled.")}</p><button class="primary-btn" id="reload">${t("TRY AGAIN")}</button>`;
+    el("loading").classList.add("has-error");
+    el("load-title").textContent = t("The yard couldn’t open.");
+    el("load-detail").textContent = t(
+      "A 3D asset or WebGL failed to load. Please reload in a browser with hardware acceleration enabled.",
+    );
+    el("reload").classList.remove("hidden");
     el("reload").addEventListener("click", () => location.reload());
   }
 }

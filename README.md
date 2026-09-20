@@ -118,3 +118,7 @@ Scrap projectiles have larger silhouettes and colored trails; the fallback magne
 ### End-of-run report
 
 The results screen uses the same dark workshop panel as Pause. Survival time leads the three statistics; the enemy total is labeled accurately. The build summary uses the original Blender ability images with visible rank badges and accessible names. One More Shift is the primary gold action, with Main Menu alongside it. Narrow portrait wraps modules into four columns; short landscape splits the summary and modules into two columns without scrolling.
+
+### Animated loading screen
+
+An inline SVG robot and orbiting scrap appear immediately while the actual game assets load, using the same dark workshop colors as the menus. The progress bar reflects completed asset loads; animation adds no minimum wait. Narrow phones use a compact vertical layout and short landscape uses two columns. Reduced-motion preferences disable the orbit, hover and blink. Failed loading retains the design with a translated Retry button, and later asset callbacks cannot overwrite the error message.
