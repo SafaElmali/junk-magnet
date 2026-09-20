@@ -138,3 +138,10 @@ Production build, five i18n tests and formatting checks pass. `scripts/level-up-
 - `node scripts/lightning-browser.mjs`: four controlled source-renderer fixtures (1440×900, 390×844, 844×390, plus reduced-motion portrait) pass. Actual simulation emits four chained strikes; effects freeze at zero render delta, expire completely and clear on restart. Stress checks cap active arcs at 40 with unchanged GPU geometry count. No page errors. These are controlled fixtures, not natural gameplay or physical-device performance measurements.
 - Screenshots and machine-readable evidence: `.impeccable/review/lightning-*.png` and `lightning-browser.json`. Desktop and portrait screenshots visually inspected.
 - TypeScript/Vite build and changed-file formatting checks pass. Existing large-bundle advisory remains.
+
+## Detailed playable robots and 3D workshop portraits
+
+- Original SCOUT and VOLT Blender models replace the tint-and-primitive attachments. SCRAP-01's game model is unchanged. All three workshop portraits are 768×768 transparent Cycles renders of their matching game geometry; the menu uses images, without adding another live WebGL renderer. Sources and reproducible generation instructions are in `art/ROBOT-ASSETS.md`.
+- `node scripts/workshop-browser.mjs`: all 30 cases pass (six languages × five viewports). Checks include decoded 768px portraits matching the browsed robot, no overflow, unlock/select, persistence, unchanged paused-run selection and new-run configuration. Explicit saved-parts fixtures are used.
+- Updated `node scripts/expansion-renderer.mjs`: all three models pass at desktop and touch-mobile viewports. Switching shows the matching native enamel model; damage tint restores the original material color. Pause, attack effects, reset and stable warmed GPU geometry checks pass, with no page errors.
+- Visually inspected all three standalone portraits, desktop VOLT workshop, portrait SCOUT workshop and in-game VOLT render. Build and changed-file formatting checks pass.

@@ -38,8 +38,8 @@ function prepare(robotId='scrap') {
   return s;
 }
 function step(state,frames){for(let i=0;i<frames;i++){update(state,.05,{x:0,z:0});scene.events(state.events.splice(0),state);scene.render(state,state.phase==='playing'?.05:0);}}
-function bodyColors(){const colors=[];scene.robot.traverse(o=>{if(o.isMesh)for(const material of(Array.isArray(o.material)?o.material:[o.material]))if(material.name==='Butter yellow')colors.push(material.color.getHexString());});return [...new Set(colors)];}
-window.fixture={scene,prepare,step,bodyColors,originalBodyColors:bodyColors(),state:prepare()};</script>`,
+function bodyColors(id){const colors=[];const model=id?scene.robotModels.get(id):[...scene.robotModels.values()].find(m=>m.visible);model.traverse(o=>{if(o.isMesh)for(const material of(Array.isArray(o.material)?o.material:[o.material]))if(material.name==='Butter yellow'||material.name.includes('enamel'))colors.push(material.color.getHexString());});return [...new Set(colors)];}
+window.fixture={scene,prepare,step,bodyColors,originalBodyColors:Object.fromEntries(['scrap','scout','volt'].map(id=>[id,bodyColors(id)])),state:prepare()};</script>`,
       }),
     );
     await page.goto(`${origin}/expansion-renderer-fixture`);
@@ -63,8 +63,8 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:bodyColors(),st
           visibleWarnings: visible.length,
           cyclone: v.cyclone.visible,
           cycloneBlades: v.cyclone.children.length,
-          scout: v.scout.visible,
-          volt: v.volt.visible,
+          scout: f.scene.robotModels.get("scout").visible,
+          volt: f.scene.robotModels.get("volt").visible,
           accents: v.accents.count,
           geometries: f.scene.diagnostics().geometries,
           allVisibleMeshes: visible.every(
@@ -75,16 +75,12 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:bodyColors(),st
         };
       }, robotId);
       assert.ok(
-        warnings.originalBodyColors.length > 0,
-        "Butter yellow body material must exist",
+        warnings.originalBodyColors[robotId].length > 0,
+        "Each robot must have its own enamel shell material",
       );
       assert.deepEqual(
         warnings.bodyColors,
-        robotId === "scout"
-          ? ["ce7856"]
-          : robotId === "volt"
-            ? ["91cad1"]
-            : warnings.originalBodyColors,
+        warnings.originalBodyColors[robotId],
       );
       assert.ok(warnings.visibleWarnings >= 3);
       assert.ok(warnings.warningKinds.includes("charge"));
@@ -194,14 +190,7 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:bodyColors(),st
       return { original: f.originalBodyColors, switches, damage };
     });
     for (const { robotId, colors } of variants.switches)
-      assert.deepEqual(
-        colors,
-        robotId === "scout"
-          ? ["ce7856"]
-          : robotId === "volt"
-            ? ["91cad1"]
-            : variants.original,
-      );
+      assert.deepEqual(colors, variants.original[robotId]);
     for (const { before, tinted, recovered } of variants.damage) {
       assert.notDeepEqual(tinted, before);
       assert.deepEqual(recovered, before);
@@ -209,7 +198,7 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:bodyColors(),st
     results.push({ width, variants });
     const memory = await page.evaluate(() => {
       const f = window.fixture;
-      // Warm every attack, robot kit and discovery geometry before measuring.
+      // Warm every attack, robot model and discovery geometry before measuring.
       for (const id of ["scrap", "scout", "volt"]) {
         f.state = f.prepare(id);
         f.step(f.state, 55);

@@ -113,7 +113,7 @@ export class YardScene {
   }[] = [];
   ring!: THREE.Mesh;
   quality: GraphicsQuality = getGraphicsQuality();
-  private robotVariant: State["config"]["robotId"] = "scrap";
+  private robotModels = new Map<State["config"]["robotId"], THREE.Group>();
   private hurtAt = -Infinity;
   private hurtDirection = new THREE.Vector2(0, -1);
   private hurtStrength = 0;
@@ -268,6 +268,8 @@ export class YardScene {
   async load(onProgress: (n: number) => void) {
     const names = [
       "robot",
+      "robot-scout",
+      "robot-volt",
       "enemy-can",
       "container",
       "tire",
@@ -325,7 +327,14 @@ export class YardScene {
     this.shotBatches = ["scrap-saw", "scrap-bolt", "scrap-nut"].map((name) =>
       this.modelBatches(name, ENTITY_LIMITS.shots),
     );
-    this.robot = instance("robot", 0, 0, 0, 1.0);
+    this.robot = new THREE.Group();
+    for (const id of ["scrap", "scout", "volt"] as const) {
+      const model = instance(id === "scrap" ? "robot" : `robot-${id}`);
+      model.name = `robot-${id}`;
+      model.visible = id === "scrap";
+      this.robotModels.set(id, model);
+      this.robot.add(model);
+    }
     // GLTF clones normally share materials: isolate the robot before tinting hits.
     const isolated = new Map<THREE.Material, THREE.Material>();
     this.robot.traverse((object) => {
@@ -877,9 +886,10 @@ export class YardScene {
     );
     this.robot.rotation.y += diff * Math.min(1, dt * 14);
     this.robot.visible = true;
-    this.expansion ??= new ExpansionView(this.scene, this.robot);
+    this.expansion ??= new ExpansionView(this.scene);
     this.expansion.update(s);
-    this.robotVariant = s.config.robotId;
+    for (const [id, model] of this.robotModels)
+      model.visible = id === s.config.robotId;
     this.renderRobotHurt(s.time);
     for (let i = 0; i < this.orbit.length; i++) {
       const o = this.orbit[i];
@@ -1107,10 +1117,6 @@ export class YardScene {
     for (const { material, color, emissive, intensity } of this
       .robotMaterials) {
       material.color.copy(color);
-      if (material.name === "Butter yellow" && this.robotVariant !== "scrap")
-        material.color.setHex(
-          this.robotVariant === "scout" ? 0xce7856 : 0x91cad1,
-        );
       material.color.lerp(tint, strength * 0.82);
       material.emissive.copy(emissive).lerp(tint, strength * 0.55);
       material.emissiveIntensity = intensity + strength * 0.8;

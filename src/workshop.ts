@@ -26,15 +26,7 @@ const upgradeIcons = {
   ),
 };
 export function robotPortrait(id: RobotId): string {
-  const color =
-    id === "volt" ? "#91cad1" : id === "scout" ? "#ce7856" : "#edba4b";
-  const crown =
-    id === "volt"
-      ? '<path d="m85 7-15 27h14l-4 19 25-32H90l7-14" fill="#efbd56"/>'
-      : id === "scout"
-        ? '<path d="M75 45 56 19m35 26 18-26" stroke="#91cad1" stroke-width="7"/><circle cx="55" cy="18" r="7" fill="#efbd56"/><circle cx="110" cy="18" r="7" fill="#efbd56"/>'
-        : '<path d="M60 17v19a23 23 0 0 0 46 0V17" stroke="#c65d46" stroke-width="14" fill="none"/><path d="M60 17v10m46-10V17" stroke="#fff1ce" stroke-width="14"/>';
-  return `<svg class="workshop-robot" viewBox="0 0 170 160" aria-hidden="true"><ellipse cx="85" cy="146" rx="64" ry="9" fill="#091d27"/>${crown}<rect x="25" y="91" width="30" height="52" rx="12" fill="#4b6365" stroke="#0c2833" stroke-width="5"/><rect x="115" y="91" width="30" height="52" rx="12" fill="#4b6365" stroke="#0c2833" stroke-width="5"/><rect x="43" y="49" width="84" height="85" rx="24" fill="${color}" stroke="#123440" stroke-width="5"/><path d="M57 61h55" stroke="#fff1ce" opacity=".65" stroke-width="5" stroke-linecap="round"/><rect x="54" y="73" width="63" height="34" rx="15" fill="#153443"/><path d="M71 83v12m29-12v12" stroke="#b6fcf5" stroke-width="7" stroke-linecap="round"/><path d="M74 121h23" stroke="#294d55" stroke-width="4" stroke-linecap="round"/></svg>`;
+  return `<div class="workshop-stage" data-robot="${id}"><img class="workshop-robot" src="${import.meta.env.BASE_URL}robots/${id}.png" width="768" height="768" alt="" decoding="async" draggable="false" /></div>`;
 }
 const minutes = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;

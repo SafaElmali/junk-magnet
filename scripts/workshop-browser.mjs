@@ -47,6 +47,19 @@ try {
           );
       });
       const check = async (name) => {
+        if (await page.locator(".workshop-robot").isVisible()) {
+          await page.waitForFunction(() => {
+            const image = document.querySelector("img.workshop-robot");
+            return image?.complete && image.naturalWidth === 768;
+          });
+          const portrait = await page
+            .locator(".workshop-robot")
+            .evaluate((image) => ({
+              src: image.getAttribute("src"),
+              id: image.parentElement.dataset.robot,
+            }));
+          assert.ok(portrait.src.endsWith(`/robots/${portrait.id}.png`));
+        }
         const violations = await page.evaluate(() =>
           [
             ...document.querySelectorAll(
@@ -94,8 +107,10 @@ try {
         await check("home");
         await page.locator("#menu-workshop").click();
         await check("starter robot");
+        await shot("scrap-3d");
         await page.locator('[data-robot-step="1"]').click();
         await check("locked scout");
+        await shot("scout-3d");
         await page.locator('[data-robot-action="unlock"]').click();
         await page.locator('[data-robot-action="select"]').click();
         assert.equal(

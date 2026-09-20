@@ -78,10 +78,38 @@
   height: 22px;
   display: block;
 }
+.workshop-stage {
+  position: relative;
+  min-width: 0;
+  isolation: isolate;
+}
+.workshop-stage::before {
+  content: "";
+  position: absolute;
+  inset: 6% 0 4%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #f2c86718, transparent 68%);
+}
+.workshop-stage::after {
+  content: "";
+  position: absolute;
+  width: 68%;
+  height: 10%;
+  left: 16%;
+  bottom: 7%;
+  z-index: -1;
+  border: 1px solid #a6c7bd38;
+  border-radius: 50%;
+  background: #09263166;
+}
 .workshop-robot {
   width: 100%;
-  max-height: 240px;
+  height: 260px;
+  max-height: 260px;
+  object-fit: contain;
   display: block;
+  filter: drop-shadow(0 10px 8px #061b3055);
 }
 .workshop-machine-copy {
   min-width: 0;
@@ -253,7 +281,7 @@
     margin: auto;
   }
   .workshop-robot {
-    height: 110px;
+    height: 140px;
   }
   .workshop-machine-copy {
     text-align: center;

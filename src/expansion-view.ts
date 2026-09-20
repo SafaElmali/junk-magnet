@@ -9,12 +9,9 @@ export class ExpansionView {
   discovery: DiscoveryView;
   private accents: THREE.InstancedMesh;
   private cyclone: THREE.Group;
-  private robotKit: THREE.Group;
-  private scout: THREE.Group;
-  private volt: THREE.Group;
   private transform = new THREE.Object3D();
   private color = new THREE.Color();
-  constructor(scene: THREE.Scene, robot: THREE.Group) {
+  constructor(scene: THREE.Scene) {
     this.encounters = new EncounterView(scene);
     this.discovery = new DiscoveryView(scene);
     this.accents = new THREE.InstancedMesh(
@@ -43,37 +40,10 @@ export class ExpansionView {
       m.rotation.z = Math.PI / 2;
       this.cyclone.add(m);
     }
-    this.robotKit = new THREE.Group();
-    robot.add(this.robotKit);
-    this.scout = new THREE.Group();
-    this.volt = new THREE.Group();
-    this.robotKit.add(this.scout, this.volt);
-    const teal = new THREE.MeshStandardMaterial({
-      color: 0x5bbdba,
-      emissive: 0x123b40,
-    });
-    const fin = new THREE.BoxGeometry(0.12, 0.65, 0.45);
-    for (const x of [-0.48, 0.48]) {
-      const m = new THREE.Mesh(fin, teal);
-      m.position.set(x, 1.1, -0.18);
-      m.rotation.z = x;
-      this.scout.add(m);
-    }
-    const coil = new THREE.CylinderGeometry(0.15, 0.15, 0.6, 10);
-    for (const x of [-0.45, 0.45]) {
-      const m = new THREE.Mesh(coil, gold);
-      m.position.set(x, 1.25, 0);
-      this.volt.add(m);
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), teal);
-      cap.position.set(x, 1.6, 0);
-      this.volt.add(cap);
-    }
   }
   update(s: State) {
     this.encounters.update(s);
     this.discovery.update(s);
-    this.scout.visible = s.config.robotId === "scout";
-    this.volt.visible = s.config.robotId === "volt";
     this.cyclone.visible = s.evolutions.vortex;
     this.cyclone.position.set(s.player.x, 0.6, s.player.z);
     this.cyclone.children.forEach((m, i) => {
