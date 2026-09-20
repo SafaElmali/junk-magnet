@@ -401,78 +401,59 @@ test("automatic fire saves ammunition without an in-range target and respects pa
   assert.equal(s.launched, 1);
 });
 
-test("fresh runs gather real visible ground scrap before any combat starts", () => {
+test("fresh enemies move immediately and spawns advance during the pickup introduction", () => {
   const s = createState();
-  assert.equal(s.scrap, 0);
-  assert.equal(s.openingRemaining, OPENING_DURATION);
-  assert.equal(s.pickups.length, 6);
-  assert.ok(
-    s.pickups.every(
-      (p) => p.kind === "scrap" && Math.abs(Math.hypot(p.x, p.z) - 2.4) < 1e-8,
-    ),
-  );
-  const ground = structuredClone(s.pickups);
-  const enemies = structuredClone(s.enemies);
-  const spawned = s.spawned;
   s.phase = "playing";
-  for (let i = 0; i < 12; i++) update(s, 0.05, still);
-  assert.deepEqual(
-    s.pickups,
-    ground,
-    "Scrap is visible on the ground before attraction",
-  );
-  assert.equal(s.scrap, 0);
-  for (let i = 0; i < 6; i++) update(s, 0.05, still);
-  assert.equal(
-    s.scrap,
-    0,
-    "Attraction takes visible time instead of instantly granting ammunition",
-  );
-  assert.ok(
-    s.pickups.every((p) => Math.hypot(p.x, p.z) < 2.4),
-    "Real pieces travel toward the player",
-  );
-  for (let i = 0; i < 12; i++) update(s, 0.05, still);
-  assert.equal(s.scrap, 6);
-  assert.equal(s.pickups.length, 0);
-  assert.equal(s.events.filter((e) => e.kind === "collect").length, 6);
-  assert.deepEqual(s.enemies, enemies);
-  assert.equal(s.spawned, spawned);
-  assert.equal(s.launched, 0);
-  assert.equal(s.shots.length, 0);
-  assert.equal(launch(s), false, "Manual helper also respects the opening");
-  for (let i = 0; i < 30; i++) update(s, 0.05, still);
-  assert.equal(s.openingRemaining, 0);
-  assert.equal(s.launched, 0);
-  s.enemies = [enemy(999, 5, 0)];
+  const original = structuredClone(s.enemies),
+    spawned = s.spawned;
   update(s, 0.05, still);
-  assert.equal(
-    s.launched,
-    1,
-    "Automatic fire starts after the gathering introduction",
-  );
+  assert.ok(s.openingRemaining > 0);
+  assert.ok(s.spawnTimer < 1.3);
+  for (const e of s.enemies) {
+    const before = original.find((o) => o.id === e.id)!;
+    assert.ok(Math.hypot(e.x, e.z) < Math.hypot(before.x, before.z));
+  }
+  for (let i = 0; i < 27; i++) update(s, 0.05, still);
+  assert.ok(s.spawned > spawned, "New enemies do not wait for the guide");
 });
 
-test("opening permits movement but blocks all weapons, contact damage and new spawns", () => {
+test("real scrap is visibly gathered and fires before the introduction ends", () => {
   const s = createState();
   s.phase = "playing";
-  s.enemies = [enemy(999, 0, 0)];
+  s.enemies = [];
+  s.spawnTimer = Infinity;
+  assert.equal(s.scrap, 0);
+  assert.equal(s.pickups.length, 6);
+  for (let i = 0; i < 12; i++) update(s, 0.05, still);
+  assert.equal(s.scrap, 0);
+  for (let i = 0; i < 18; i++) update(s, 0.05, still);
+  assert.equal(s.scrap, 6);
+  assert.equal(s.pickups.length, 0);
+  assert.ok(s.openingRemaining > 0);
+  s.enemies = [enemy(999, 5, 0, 100)];
+  update(s, 0.05, still);
+  assert.equal(s.launched, 1, "No opening cooldown blocks automatic fire");
+  assert.equal(s.scrap, 0);
+});
+
+test("movement, contact damage and abilities are active on the first frame", () => {
+  const s = createState();
+  s.phase = "playing";
+  s.enemies = [enemy(999, 0, 0, 100), enemy(998, 5, 0, 100)];
   s.scrap = 6;
   s.pulseTimer = 0;
   s.spawnTimer = 0;
   s.upgrades.lightning = 1;
   s.upgrades.turret = 1;
   s.upgrades.burst = 1;
-  const opponent = structuredClone(s.enemies[0]);
   update(s, 0.05, { x: 1, z: 0 });
   assert.ok(Math.abs(s.player.x - 0.31) < 1e-9);
-  assert.equal(s.hp, 100);
-  assert.deepEqual(s.enemies, [opponent]);
-  assert.equal(s.launched, 0);
-  assert.equal(s.turrets.length, 0);
-  assert.equal(s.shots.length, 0);
-  assert.equal(s.events.length, 0);
-  assert.equal(s.spawnTimer, 0);
+  assert.equal(s.hp, 91);
+  assert.equal(s.launched, 1);
+  assert.equal(s.turrets.length, 1);
+  assert.ok(s.spawnTimer > 0);
+  assert.ok(s.events.some((e) => e.kind === "lightning"));
+  assert.ok(s.events.some((e) => e.kind === "burst"));
 });
 
 test("pause freezes opening and a fresh restart restores uncollected ground scrap", () => {

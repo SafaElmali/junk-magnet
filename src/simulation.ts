@@ -86,6 +86,7 @@ export type State = {
   evolutionNotice: { id: EvolutionId; until: number } | null;
   vortexTimer: number;
   time: number;
+  /** Non-blocking pickup/guide animation timer; never gates combat. */
   openingRemaining: number;
   player: Vec;
   aim: Vec;
@@ -405,7 +406,6 @@ export function orbitPosition(s: State, index: number): Vec {
 export function launch(s: State, target?: Vec): boolean {
   if (
     s.phase !== "playing" ||
-    s.openingRemaining > 0 ||
     s.cooldown > 0 ||
     !s.scrap ||
     s.shots.length >= ENTITY_LIMITS.shots
@@ -666,8 +666,6 @@ export function update(s: State, dt: number, movement: Vec) {
   if (s.openingRemaining > 0) {
     s.openingRemaining = Math.max(0, s.openingRemaining - dt);
     if (s.openingRemaining < 1e-8) s.openingRemaining = 0;
-    collectPickups(s, dt);
-    return;
   }
   const encounter = encounterHooks(s);
   updateEncounters(s, dt, encounter);

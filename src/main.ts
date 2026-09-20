@@ -45,7 +45,6 @@ import {
 import { YardScene } from "./scene";
 import {
   createState,
-  OPENING_DURATION,
   update,
   UPGRADES,
   chooseUpgrade,
@@ -568,13 +567,13 @@ function renderOpeningGuide() {
     s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 7;
   el("opening-guide").classList.toggle("hidden", !visible);
   if (!visible) return;
+  // Keep the explanation readable even when the first volley follows collection immediately.
   const phase =
-    s.openingRemaining > 0 &&
-    (s.openingRemaining > OPENING_DURATION / 2 || s.scrap === 0)
-      ? "collect"
-      : s.openingRemaining > 0
+    s.launched > 0 && s.time >= 3
+      ? "reload"
+      : s.scrap > 0 || s.launched > 0
         ? "orbit"
-        : "reload";
+        : "collect";
   const signature = `${phase}:${getLanguage()}`;
   if (signature === shownOpening) return;
   shownOpening = signature;

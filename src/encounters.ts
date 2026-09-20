@@ -66,7 +66,7 @@ export function createEncounterState() {
 const dist = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.z - b.z);
 const isSpecial = (e: Enemy) =>
   ["charger", "spitter", "warden", "miniboss", "boss"].includes(e.type);
-const canRun = (s: State) => s.phase === "playing" && s.openingRemaining <= 0;
+const canRun = (s: State) => s.phase === "playing";
 
 /** Scheduling and persistent hazards use simulation time; no browser timers. */
 export function updateEncounters(s: State, dt: number, hooks: EncounterHooks) {

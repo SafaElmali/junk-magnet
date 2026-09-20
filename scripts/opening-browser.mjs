@@ -1,3 +1,4 @@
+// Real production gameplay: the collection guide must never freeze combat.
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -24,85 +25,64 @@ try {
     const ready = await read();
     assert.equal(ready.scrap, 0);
     assert.equal(ready.pickups, 6);
-    assert.equal(ready.openingRemaining, 3);
-    await page.locator("#start").click();
-    await page.locator("#opening-guide").waitFor({ state: "visible" });
-    const initial = await read();
-    assert.ok(await page.locator("#opening-guide").isVisible());
-    const hintFits = await page.locator("#opening-guide").evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      return (
-        r.left >= 0 &&
-        r.right <= innerWidth &&
-        r.top >= 0 &&
-        r.bottom <= innerHeight &&
-        el.scrollWidth <= el.clientWidth + 1
+    const assertApproaching = (s) => {
+      assert.equal(s.enemies.length, ready.enemies.length);
+      s.enemies.forEach((e, i) =>
+        assert.ok(
+          Math.hypot(e.x, e.z) <
+            Math.hypot(ready.enemies[i].x, ready.enemies[i].z),
+          "Enemy moves before collection introduction finishes",
+        ),
       );
-    });
-    assert.ok(hintFits);
-    assert.equal(initial.launched, 0);
-    assert.equal(initial.hp, 100);
-    assert.equal(initial.shots, 0);
-    await page.waitForTimeout(200);
+    };
+    await page.locator("#start").click();
+    await page.waitForFunction(
+      () => window.__JUNK_MAGNET__.snapshot().time >= 0.25,
+    );
+    const immediate = await read();
+    assert.ok(immediate.time < 1);
+    assertApproaching(immediate);
+    assert.ok(await page.locator("#opening-guide").isVisible());
     await page.screenshot({
-      path: `.impeccable/review/opening-ground-${width}.png`,
+      path: `.impeccable/review/immediate-start-${width}.png`,
     });
     await page.locator("#pause").click();
     const paused = await read();
-    assert.equal(await page.locator("#opening-guide").isVisible(), false);
     await page.waitForTimeout(200);
-    assert.equal((await read()).openingRemaining, paused.openingRemaining);
+    assert.equal((await read()).time, paused.time);
     assert.deepEqual((await read()).enemies, paused.enemies);
     await page.locator("#resume").click();
-    await page.waitForFunction(
-      () => window.__JUNK_MAGNET__.snapshot().scrap === 6,
-    );
-    const gathered = await read();
-    assert.ok(gathered.openingRemaining > 0);
-    assert.equal(gathered.launched, 0);
-    assert.equal(gathered.pickups, 0);
-    await page
-      .locator('#opening-guide[data-step="orbit"]')
-      .waitFor({ state: "visible" });
-    await page.screenshot({
-      path: `.impeccable/review/opening-orbit-${width}.png`,
-    });
     await page.waitForFunction(
       () => window.__JUNK_MAGNET__.snapshot().launched > 0,
     );
     const attack = await read();
-    assert.equal(attack.openingRemaining, 0);
-    for (let i = 0; i < 160 && (await read()).time < 7.2; i++) {
-      if ((await read()).phase === "upgrade")
-        await page.locator(".upgrade-choice").first().click();
-      await page.waitForTimeout(80);
-    }
-    assert.ok((await read()).time >= 7.2);
-    assert.equal(await page.locator("#opening-guide").isVisible(), false);
+    assert.ok(
+      attack.time < 3,
+      `No protected three-second opening: ${attack.time}`,
+    );
     await page.locator("#pause").click();
     await page.locator("#restart").click();
-    assert.ok((await read()).openingRemaining > 2);
-    assert.equal((await read()).launched, 0);
+    await page.waitForFunction(
+      () => window.__JUNK_MAGNET__.snapshot().time >= 0.25,
+    );
+    const restarted = await read();
+    assert.ok(restarted.time < 1);
+    assertApproaching(restarted);
     assert.deepEqual(errors, []);
     reports.push({
       width,
       height,
-      ready: { scrap: ready.scrap, pickups: ready.pickups },
-      gathered: {
-        time: gathered.time,
-        openingRemaining: gathered.openingRemaining,
-        scrap: gathered.scrap,
-      },
+      firstMovementTime: immediate.time,
       firstAttackTime: attack.time,
       pauseFreezes: true,
-      restartReplays: true,
+      restartImmediate: true,
       errors,
     });
     await page.close();
-    console.log(`PASS opening ${width}x${height}`);
+    console.log(`PASS immediate start ${width}x${height}`);
   }
   await fs.writeFile(
-    ".impeccable/review/opening-browser.json",
+    ".impeccable/review/immediate-start.json",
     JSON.stringify(reports, null, 2),
   );
 } finally {

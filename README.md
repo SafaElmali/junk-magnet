@@ -111,7 +111,7 @@ Contact damage now changes the robot's own materials with a brief impact highlig
 
 ### Readable first combat
 
-New runs start with six real scrap pieces on the ground and an empty orbit. During a three-second opening, movement and collection work while enemies and attacks wait. The magnet starts pulling after 0.7 seconds, so players can see where their first ammunition comes from. A small translated, illustrated hint follows collecting, orbiting and reloading, then disappears after seven simulation seconds. Pause freezes the opening; restarting replays it.
+New runs start with six real scrap pieces on the ground and an empty orbit. Enemies, spawning, contact damage and weapons are active from the first gameplay frame. The collection introduction is visual only and never freezes combat. The magnet starts pulling after 0.7 seconds, so players can see where their first ammunition comes from. A small translated, illustrated hint follows collecting, orbiting and reloading, then disappears after seven simulation seconds. Pause freezes the run; restarting begins combat immediately again.
 
 Scrap projectiles have larger silhouettes and colored trails; the fallback magnetic pulse uses a thick cyan mesh beam with a gold tip and bounded impact effects. Ground scrap is enlarged and tilted for clarity. Barrel teal/rust/steel colors are decorative, with no damage or threat meaning. Their palette is derived from fixed world coordinates, so loading adjacent chunks no longer recolors existing barrels.
 

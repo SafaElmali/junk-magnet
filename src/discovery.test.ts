@@ -83,7 +83,7 @@ test("salvage quest loses progress outside zone, then grants capped scrap and pa
   updateDiscovery(s, 100);
   assert.equal(s.earnedParts, 8);
 });
-test("pause, level selection, death and opening freeze discovery, fresh runs reset it", () => {
+test("pause, level selection and death freeze discovery; the guide does not", () => {
   const s = state();
   const p = approach(s, "chest");
   updateDiscovery(s, 0.5);
@@ -94,8 +94,8 @@ test("pause, level selection, death and opening freeze discovery, fresh runs res
   }
   s.phase = "playing";
   s.openingRemaining = 2;
-  updateDiscovery(s, 10);
-  assert.equal(p.progress, 0.5);
+  updateDiscovery(s, 0.1);
+  assert.equal(p.progress, 0.6);
   assert.equal(createDiscoveryState().consumed.size, 0);
   assert.equal(
     createDiscoveryState().points.every(

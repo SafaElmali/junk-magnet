@@ -159,7 +159,7 @@ export function createDiscoveryState(): DiscoveryState {
   return d;
 }
 export function updateDiscovery(s: DiscoveryGameState, dt: number) {
-  if (s.phase !== "playing" || s.openingRemaining > 0 || dt <= 0) return;
+  if (s.phase !== "playing" || dt <= 0) return;
   stream(s.discovery, s.player.x, s.player.z);
   for (const p of s.discovery.points) {
     if (p.completed) continue;

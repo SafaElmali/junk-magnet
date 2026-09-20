@@ -117,3 +117,9 @@ Production build, TypeScript and five i18n tests pass. `node scripts/loading-bro
 `scripts/boss-hud-layout.mjs` separately checks the actual HUD styles with an explicitly injected full-loadout layout: all five sizes keep the boss bar clear of ability chips, timer and toolbar. Robot renderer checks also verify that Scout/Volt body colors match their portraits, switching robots restores the correct base color, and damage feedback returns to that base.
 
 All checks above use Chromium with emulated viewport sizes, not physical-device performance measurements. The new enemy mix, reward prices and boss health are initial playable tuning; a broad player-balance study has not been performed. Production build and formatting checks pass; the existing Vite chunk-size advisory remains.
+
+## Immediate combat start
+
+The former protected three-second opening is removed. Its remaining timer controls only the visible pickup animation: enemies, spawning, contact damage, weapons, encounters and discovery all advance immediately when Play is pressed. The guide stays readable alongside combat. This supersedes the earlier protected-opening behavior described above.
+
+The 49 focused simulation/encounter/discovery/expansion tests pass, including first-frame enemy movement, first-frame damage and abilities, ongoing spawning during the guide, and real collection followed by firing before the guide finishes. `scripts/opening-browser.mjs` now checks immediate enemy movement before one second, automatic fire before three seconds, intentional pause and immediate restart at 1440×900, 390×844, 320×568 and 568×320. Evidence: `immediate-start.json` and `immediate-start-*.png`. Production build and formatting checks pass; the existing bundle-size advisory remains.
