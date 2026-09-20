@@ -23,6 +23,7 @@ export type DiscoveryReward = {
 export type DiscoveryState = {
   points: DiscoveryPoint[];
   consumed: Map<number, number>;
+  salvageProgress: Map<number, number>;
   highestSector: number;
   chunk: string;
   chestsOpened: number;
@@ -48,7 +49,7 @@ const durations: Record<DiscoveryKind, number> = {
   salvage: 8,
 };
 export const discoveryRadius = (kind: DiscoveryKind) =>
-  kind === "salvage" ? 2.7 : 1.6;
+  kind === "salvage" ? 4.2 : 1.6;
 
 /** A square spiral gives every integer sector a permanent, unique ordinal. */
 function sectorOrdinal(x: number, z: number) {
@@ -105,7 +106,7 @@ function point(
     kind,
     x,
     z,
-    progress: 0,
+    progress: kind === "salvage" ? (d.salvageProgress.get(sector) ?? 0) : 0,
     completed:
       retired(d, sector) || Boolean((d.consumed.get(sector) ?? 0) & bits[kind]),
   };
@@ -136,6 +137,8 @@ function stream(
   d.highestSector = Math.max(d.highestSector, sectorOrdinal(cx, cz));
   for (const sector of d.consumed.keys())
     if (retired(d, sector)) d.consumed.delete(sector);
+  for (const sector of d.salvageProgress.keys())
+    if (retired(d, sector)) d.salvageProgress.delete(sector);
   const old = new Map(d.points.map((p) => [p.id, p]));
   const next: DiscoveryPoint[] = [];
   const seen = new Set<string>();
@@ -178,6 +181,7 @@ export function createDiscoveryState(): DiscoveryState {
   const d: DiscoveryState = {
     points: [],
     consumed: new Map(),
+    salvageProgress: new Map(),
     highestSector: 0,
     chunk: "",
     chestsOpened: 0,
@@ -206,24 +210,29 @@ export function updateDiscovery(
         .filter((a) => a.hp > 0 && (p.kind !== "repair" || a.hp < 100))
         .reduce<
           DiscoveryGameState | undefined
-        >((best, a) => (!best || Math.hypot(a.player.x - p.x, a.player.z - p.z) < Math.hypot(best.player.x - p.x, best.player.z - p.z) ? a : best), undefined) ??
-      host;
+        >((best, a) => (!best || Math.hypot(a.player.x - p.x, a.player.z - p.z) < Math.hypot(best.player.x - p.x, best.player.z - p.z) ? a : best), undefined);
     if (p.completed) continue;
     const inside =
-      Math.hypot(s.player.x - p.x, s.player.z - p.z) <= discoveryRadius(p.kind);
-    if (!inside) {
-      p.progress = Math.max(0, p.progress - dt * 0.5);
+      s && Math.hypot(s.player.x - p.x, s.player.z - p.z) <= discoveryRadius(p.kind);
+    if (!s || !inside) {
+      // Salvage is cumulative: dodging a hazard must not undo earned time.
+      if (p.kind !== "salvage") p.progress = Math.max(0, p.progress - dt * 0.5);
       continue;
     }
     if (p.kind === "repair" && s.hp >= 100) continue;
     p.progress += dt;
+    if (p.kind === "salvage")
+      host.discovery.salvageProgress.set(p.sector, p.progress);
     if (p.progress < durations[p.kind]) continue;
     p.completed = true;
     p.completedAt = s.time;
+    if (p.kind === "salvage") host.discovery.salvageProgress.delete(p.sector);
     const before = { xp: s.xp, scrap: s.scrap, hp: s.hp, parts: s.earnedParts };
     s.discovery.highestSector = Math.max(s.discovery.highestSector, p.sector);
     for (const sector of s.discovery.consumed.keys())
       if (retired(s.discovery, sector)) s.discovery.consumed.delete(sector);
+    for (const sector of s.discovery.salvageProgress.keys())
+      if (retired(s.discovery, sector)) s.discovery.salvageProgress.delete(sector);
     for (const other of s.discovery.points)
       if (retired(s.discovery, other.sector)) other.completed = true;
     s.discovery.consumed.set(

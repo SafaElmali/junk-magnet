@@ -211,6 +211,7 @@ export class CoopClient {
         const packet = m as CoopSnapshot;
         packet.state.encounters.brains = new Map();
         packet.state.discovery.consumed = new Map();
+        packet.state.discovery.salvageProgress = new Map();
         this.lastPacket = performance.now();
         const first = this.runId !== packet.runId;
         this.runId = packet.runId;

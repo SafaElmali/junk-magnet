@@ -67,21 +67,71 @@ test("repair saves its charge at full health and caps healing", () => {
   updateDiscovery(s, 1);
   assert.equal(s.hp, 50);
 });
-test("salvage quest loses progress outside zone, then grants capped scrap and parts once", () => {
+test("salvage keeps progress while dodging, then grants capped scrap and parts once", () => {
   const s = state();
   const p = approach(s, "salvage");
   updateDiscovery(s, 4);
   s.player = { x: 0, z: 0 };
   updateDiscovery(s, 2);
-  assert.equal(p.progress, 3);
+  assert.equal(p.progress, 4);
   s.player = { x: p.x, z: p.z };
-  updateDiscovery(s, 5.01);
+  updateDiscovery(s, 4.01);
   assert.deepEqual(
     [s.xp, s.scrap, s.earnedParts, s.discovery.questsCompleted],
     [12, 12, 8, 1],
   );
   updateDiscovery(s, 100);
   assert.equal(s.earnedParts, 8);
+});
+test("salvage can be completed in short visits with long evasive breaks", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  for (let visit = 0; visit < 8; visit++) {
+    // This space is outside the old ring, and beyond a centered boss hazard.
+    s.player = { x: p.x + 3.8, z: p.z };
+    updateDiscovery(s, 1);
+    if (visit < 7) {
+      assert.equal(p.completed, false);
+      s.player = { x: p.x + 5, z: p.z };
+      updateDiscovery(s, 6);
+      assert.equal(p.progress, visit + 1);
+      assert.equal(getDiscoveryHint(s)?.progress, (visit + 1) / 8);
+      assert.equal(getDiscoveryHint(s)?.mode, "approach");
+    }
+  }
+  assert.equal(p.completed, true);
+  assert.equal(s.discovery.questsCompleted, 1);
+  assert.equal(s.earnedParts, 8);
+  assert.equal(s.discovery.salvageProgress.size, 0);
+});
+test("saved salvage survives streaming, retires with history and resets each run", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  updateDiscovery(s, 3);
+  s.player = { x: 70, z: 0 };
+  updateDiscovery(s, 10);
+  assert.equal(s.discovery.points.some((other) => other.id === p.id), false);
+  s.player = { x: p.x, z: p.z - 5 };
+  updateDiscovery(s, 1);
+  assert.equal(s.discovery.points.find((other) => other.id === p.id)?.progress, 3);
+  assert.equal(getDiscoveryHint(s)?.seconds, 5);
+  s.player = { x: 1200, z: 1200 };
+  updateDiscovery(s, 1);
+  assert.equal(s.discovery.salvageProgress.size, 0);
+  s.player = { x: p.x, z: p.z };
+  updateDiscovery(s, 10);
+  assert.equal(s.discovery.questsCompleted, 0);
+  assert.equal(s.earnedParts, 0);
+  assert.equal(createDiscoveryState().salvageProgress.size, 0);
+});
+test("a downed player cannot charge or claim a salvage contract", () => {
+  const s = state();
+  const p = approach(s, "salvage");
+  s.hp = 0;
+  updateDiscovery(s, 10);
+  assert.equal(p.progress, 0);
+  assert.equal(p.completed, false);
+  assert.equal(s.earnedParts, 0);
 });
 test("pause, level selection and death freeze discovery; the guide does not", () => {
   const s = state();

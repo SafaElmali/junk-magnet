@@ -8,6 +8,22 @@ const rows = [
     "Esgotado · Não pode ser usado novamente",
   ],
   [
+    "Progress saved · {seconds}s left",
+    "İlerleme korundu · {seconds} sn kaldı",
+    "Fortschritt gespeichert · noch {seconds}s",
+    "Progression conservée · reste {seconds}s",
+    "Progreso guardado · faltan {seconds}s",
+    "Progresso guardado · faltam {seconds}s",
+  ],
+  [
+    "Dodge and return. Your progress is saved.",
+    "Saldırılardan kaçıp geri dön. İlerlemen korunur.",
+    "Weiche aus und kehre zurück. Dein Fortschritt bleibt erhalten.",
+    "Esquive et reviens. Ta progression est conservée.",
+    "Esquiva y vuelve. Tu progreso se guarda.",
+    "Desvia-te e volta. O teu progresso fica guardado.",
+  ],
+  [
     "Experience",
     "Deneyim",
     "Erfahrung",

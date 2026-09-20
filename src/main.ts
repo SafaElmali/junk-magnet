@@ -715,6 +715,7 @@ function renderExpansionHUD() {
       hint &&
       (s.time >= 3 || hint.mode === "hold" || hint.distance <= 3) &&
       (hint.mode === "hold" ||
+        (hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0) ||
         briefHint(`discovery:${hint.kind}${hint.mode === "complete" ? ":depleted" : ""}`))
     ) {
       const status =
@@ -729,12 +730,18 @@ function renderExpansionHUD() {
             })
           : hint.mode === "full-health"
             ? t("Health is full")
-            : t("{name} · {distance} m", {
-                name: t(discoveryNames[hint.kind]),
-                distance: Math.ceil(hint.distance),
-              });
-      hintProgress = hint.mode === "hold" ? hint.progress : undefined;
-      compact = hint.mode === "hold";
+            : hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0
+              ? t("Progress saved · {seconds}s left", { seconds: hint.seconds })
+              : t("{name} · {distance} m", {
+                  name: t(discoveryNames[hint.kind]),
+                  distance: Math.ceil(hint.distance),
+                });
+      hintProgress =
+        hint.mode === "hold" ||
+        (hint.kind === "salvage" && hint.mode === "approach" && hint.progress > 0)
+          ? hint.progress
+          : undefined;
+      compact = hintProgress !== undefined;
       markup = compact
         ? discoveryProgress(hint.kind, status, 0)
         : discoveryFeedback(
