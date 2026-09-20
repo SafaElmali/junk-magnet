@@ -246,3 +246,7 @@ Permanent upgrades cover Orbiting Saws, Chain Lightning, Scrap Turret, Magnetic 
 - **Don't** imply bosses, evolutions, or platform integration already exist.
 
 Visual reference checks: `.impeccable/review/survival-desktop.png`, `survival-mobile.png`, and `survival-upgrade-desktop.png`, `survival-upgrade-mobile.png`, `survival-upgrade-landscape.png`. These record the implemented composition; they do not establish a blanket accessibility or device-performance guarantee.
+
+## Language
+
+The header includes a 48px touch target for TR/EN. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.

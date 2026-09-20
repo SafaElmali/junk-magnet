@@ -3,7 +3,20 @@ import "@fontsource/barlow-condensed/latin-800.css";
 import "@fontsource/dm-sans/latin-400.css";
 import "@fontsource/dm-sans/latin-500.css";
 import "@fontsource/dm-sans/latin-700.css";
+import "@fontsource/barlow-condensed/latin-ext-700.css";
+import "@fontsource/barlow-condensed/latin-ext-800.css";
+import "@fontsource/dm-sans/latin-ext-400.css";
+import "@fontsource/dm-sans/latin-ext-500.css";
+import "@fontsource/dm-sans/latin-ext-700.css";
 import "./style.css";
+import {
+  t,
+  getLanguage,
+  setLanguage,
+  bindStaticTranslations,
+  upgradeName,
+  localizedUpgradeDescription,
+} from "./i18n";
 import { YardScene } from "./scene";
 import {
   createState,
@@ -11,7 +24,6 @@ import {
   launch,
   MAX_SCRAP,
   UPGRADES,
-  upgradeDescription,
   chooseUpgrade,
   type UpgradeId,
   type Vec,
@@ -43,7 +55,7 @@ app.innerHTML = `
 <header class="masthead">
  <div class="wordmark"><h1>JUNK MAGNET<span class="logo-bolt">${svg("bolt")}</span></h1><p>THE SWARM IS YOUR AMMO.</p></div>
  <div class="session-label"><span class="live-dot"></span> THE SCRAPYARD <span class="divider">/</span> ENDLESS SHIFT</div>
- <nav aria-label="Game controls"><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
+ <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
 </header>
 <main id="yard" aria-label="Game arena" tabindex="-1">
  <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i></div>
@@ -63,6 +75,7 @@ app.innerHTML = `
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button></div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><span class="mouse-icon"></span><strong>AIM</strong><i></i><kbd class="space-key">SPACE</kbd><strong>LAUNCH</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
+const translateStatic = bindStaticTranslations(app);
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 let s = createState(),
@@ -144,11 +157,13 @@ function openModal(help = false) {
   keys.clear();
   stopStick();
   el("modal-title").textContent = help
-    ? "A little scrap goes a long way."
-    : "Taking a breather.";
+    ? t("A little scrap goes a long way.")
+    : t("Taking a breather.");
   el("modal-copy").textContent = help
-    ? "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can."
-    : "The yard can wait. Your orbit and the swarm are paused.";
+    ? t(
+        "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can.",
+      )
+    : t("The yard can wait. Your orbit and the swarm are paused.");
   el("help-content").classList.toggle("hidden", !help);
   el("modal").classList.remove("hidden");
   el("resume").focus({ preventScroll: true });
@@ -185,7 +200,10 @@ el("sound").addEventListener("click", () => {
   sound = !sound;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
   el("sound").setAttribute("aria-pressed", String(sound));
-  el("sound").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
+  el("sound").setAttribute(
+    "aria-label",
+    sound ? t("Mute sound") : t("Enable sound"),
+  );
   if (sound) beep(600);
 });
 window.addEventListener("keydown", (e) => {
@@ -395,7 +413,7 @@ function renderUpgrades() {
     el("ability-loadout").innerHTML = ownedAbilities()
       .map(
         (id) =>
-          `<span class="ability-chip" title="${UPGRADES[id].name}, rank ${s.upgrades[id]}" aria-label="${UPGRADES[id].name}, rank ${s.upgrades[id]}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`,
+          `<span class="ability-chip" title="${t("{name}, rank {rank}", { name: upgradeName(id), rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name: upgradeName(id), rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`,
       )
       .join("");
   }
@@ -408,21 +426,23 @@ function renderUpgrades() {
   stopStick();
   el("yard").classList.remove("is-playing");
   el("modal").classList.add("hidden");
-  el("upgrade-copy").textContent =
-    `Level ${s.level} · Pick one upgrade. The yard is paused.`;
+  el("upgrade-copy").textContent = t(
+    "Level {level} · Pick one upgrade. The yard is paused.",
+    { level: s.level },
+  );
   el("upgrade-choices").innerHTML = s.choices
     .map((id, index) => {
       const rank = s.upgrades[id];
       const label = !Number.isFinite(UPGRADES[id].maxRank)
         ? id === "overclock"
-          ? "20-SECOND BOOST"
+          ? t("20-SECOND BOOST")
           : id === "repair"
-            ? "INSTANT REPAIR"
-            : "INSTANT REFILL"
+            ? t("INSTANT REPAIR")
+            : t("INSTANT REFILL")
         : rank
-          ? `RANK ${rank} → ${rank + 1}`
-          : "NEW ABILITY";
-      return `<button type="button" class="upgrade-choice" data-upgrade="${id}" data-choice="${index}"><span class="upgrade-icon">${svg(abilityIcons[id])}</span><span class="upgrade-text"><span class="upgrade-rank">${label}</span><strong>${UPGRADES[id].name}</strong><span class="upgrade-description">${upgradeDescription(s, id)}</span></span><kbd>${index + 1}</kbd></button>`;
+          ? t("RANK {rank} → {next}", { rank, next: rank + 1 })
+          : t("NEW ABILITY");
+      return `<button type="button" class="upgrade-choice" data-upgrade="${id}" data-choice="${index}"><span class="upgrade-icon">${svg(abilityIcons[id])}</span><span class="upgrade-text"><span class="upgrade-rank">${label}</span><strong>${upgradeName(id)}</strong><span class="upgrade-description">${localizedUpgradeDescription(s, id)}</span></span><kbd>${index + 1}</kbd></button>`;
     })
     .join("");
   el("upgrade").classList.remove("hidden");
@@ -439,9 +459,12 @@ el("upgrade-choices").addEventListener("click", (e) => {
 });
 function hud() {
   el("timer").textContent = format(s.time);
-  el("wave").textContent = `PRESSURE ${s.wave}`;
-  el("level").textContent = `LV. ${s.level}`;
-  el("xp-label").textContent = `${s.xp} / ${s.xpNeeded} XP`;
+  el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
+  el("level").textContent = t("LV. {level}", { level: s.level });
+  el("xp-label").textContent = t("{xp} / {needed} XP", {
+    xp: s.xp,
+    needed: s.xpNeeded,
+  });
   el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
   el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
   document
@@ -455,7 +478,11 @@ function hud() {
   xpBar.setAttribute("aria-valuemax", String(s.xpNeeded));
   xpBar.setAttribute(
     "aria-valuetext",
-    `Level ${s.level}, ${s.xp} of ${s.xpNeeded} experience`,
+    t("Level {level}, {xp} of {needed} experience", {
+      level: s.level,
+      xp: s.xp,
+      needed: s.xpNeeded,
+    }),
   );
   renderUpgrades();
   el<HTMLButtonElement>("pause").disabled =
@@ -469,22 +496,28 @@ function hud() {
     s.phase !== "playing" || s.scrap === 0 || s.cooldown > 0;
   el("launch-note").textContent =
     s.cooldown > 0
-      ? "RECHARGING…"
+      ? t("RECHARGING…")
       : s.scrap === 0
-        ? "COLLECT MORE SCRAP"
+        ? t("COLLECT MORE SCRAP")
         : touch
-          ? "TAP TO RELEASE"
-          : "SPACE / CLICK";
+          ? t("TAP TO RELEASE")
+          : t("SPACE / CLICK");
   el("hint").textContent =
     s.scrap === 0
-      ? "Empty orbit? Your pulse still fires. Collect silver wreckage to rebuild."
+      ? t(
+          "Empty orbit? Your pulse still fires. Collect silver wreckage to rebuild.",
+        )
       : s.time < 15
-        ? "Collect blue energy to level up. Your weapons attack automatically."
+        ? t(
+            "Collect blue energy to level up. Your weapons attack automatically.",
+          )
         : s.launched === 0
-          ? "Try launching your orbit through a crowd. Space or click."
+          ? t("Try launching your orbit through a crowd. Space or click.")
           : s.scrap === MAX_SCRAP
-            ? "Full scrap storm. Aim for a crowd and let it fly."
-            : "Blue energy upgrades your build. Silver scrap reloads your orbit.";
+            ? t("Full scrap storm. Aim for a crowd and let it fly.")
+            : t(
+                "Blue energy upgrades your build. Silver scrap reloads your orbit.",
+              );
   if (s.phase === "lost" && !showedResult) {
     showedResult = true;
     el("yard").classList.remove("is-playing");
@@ -492,16 +525,20 @@ function hud() {
     stopStick();
     el("upgrade").classList.add("hidden");
     el("result").classList.remove("hidden");
-    el("result-stamp").textContent = "BACK TO THE WORKSHOP";
-    el("result-title").textContent = "A few dents. No regrets.";
-    el("result-copy").textContent =
-      `The swarm got this shift. ${s.launched} scrap launches made it count.`;
+    el("result-stamp").textContent = t("BACK TO THE WORKSHOP");
+    el("result-title").textContent = t("A few dents. No regrets.");
+    el("result-copy").textContent = t(
+      "The swarm got this shift. {launches} scrap launches made it count.",
+      { launches: s.launched },
+    );
     el("result-kills").textContent = String(s.kills);
     el("result-time").textContent = format(s.time);
     el("result-level").textContent = String(s.level);
-    el("result-build").textContent = `Your build: ${ownedAbilities()
-      .map((id) => `${UPGRADES[id].name} ${s.upgrades[id]}`)
-      .join(" · ")}`;
+    el("result-build").textContent = t("Your build: {build}", {
+      build: ownedAbilities()
+        .map((id) => `${upgradeName(id)} ${s.upgrades[id]}`)
+        .join(" · "),
+    });
     el("again").focus({ preventScroll: true });
     beep(120, 0.3);
   }
@@ -542,10 +579,18 @@ async function boot() {
   try {
     await document.fonts.ready;
     scene = new YardScene(el("yard"));
+    scene.renderer.domElement.setAttribute(
+      "aria-label",
+      t(
+        "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.",
+      ),
+    );
     await scene.load((n) => {
       el("load-progress").style.transform = `scaleX(${n})`;
-      el("load-detail").textContent =
-        `Preparing the scrapyard… ${Math.round(n * 100)}%`;
+      el("load-detail").textContent = t(
+        "Preparing the scrapyard… {progress}%",
+        { progress: Math.round(n * 100) },
+      );
     });
     loaded = true;
     el("loading").classList.add("hidden");
@@ -612,8 +657,54 @@ async function boot() {
   } catch (error) {
     console.error(error);
     el("loading").innerHTML =
-      '<h2>The yard couldn’t open.</h2><p>A 3D asset or WebGL failed to load. Please reload in a browser with hardware acceleration enabled.</p><button class="primary-btn" id="reload">TRY AGAIN</button>';
+      `<h2>${t("The yard couldn’t open.")}</h2><p>${t("A 3D asset or WebGL failed to load. Please reload in a browser with hardware acceleration enabled.")}</p><button class="primary-btn" id="reload">${t("TRY AGAIN")}</button>`;
     el("reload").addEventListener("click", () => location.reload());
   }
 }
+function applyLanguage() {
+  document.documentElement.lang = getLanguage();
+  translateStatic();
+  el("language").textContent = getLanguage() === "en" ? "TR" : "EN";
+  el("language").setAttribute(
+    "aria-label",
+    getLanguage() === "en" ? "Türkçeye geç" : "Switch to English",
+  );
+  el("language").title = getLanguage() === "en" ? "Türkçe" : "English";
+  el("sound").setAttribute(
+    "aria-label",
+    t(sound ? "Mute sound" : "Enable sound"),
+  );
+  document.querySelector<HTMLElement>(".workbench")!.dataset.touchHint = t(
+    "DRAG TO MOVE · TAP TO LAUNCH",
+  );
+  document.querySelector<HTMLElement>(".intro-note")!.dataset.touchHint = t(
+    "Drag anywhere in the yard · Tap Launch to fire",
+  );
+  scene?.renderer.domElement.setAttribute(
+    "aria-label",
+    t(
+      "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.",
+    ),
+  );
+  if (s.phase === "paused") {
+    const help = !el("help-content").classList.contains("hidden");
+    el("modal-title").textContent = t(
+      help ? "A little scrap goes a long way." : "Taking a breather.",
+    );
+    el("modal-copy").textContent = t(
+      help
+        ? "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can."
+        : "The yard can wait. Your orbit and the swarm are paused.",
+    );
+  }
+  shownLoadout = "";
+  shownUpgrade = "";
+  if (s.phase === "lost") showedResult = false;
+  hud();
+}
+el("language").addEventListener("click", () => {
+  setLanguage(getLanguage() === "en" ? "tr" : "en");
+  applyLanguage();
+});
+applyLanguage();
 void boot();

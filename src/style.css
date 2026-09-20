@@ -1015,7 +1015,7 @@ kbd {
     display: none;
   }
   .workbench:before {
-    content: "DRAG TO MOVE · TAP TO LAUNCH";
+    content: attr(data-touch-hint);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.03em;
@@ -1024,7 +1024,7 @@ kbd {
     font-size: 0;
   }
   .intro-note:after {
-    content: "Drag anywhere in the yard · Tap Launch to fire";
+    content: attr(data-touch-hint);
     font-size: 10px;
   }
   .lower-hud .orbit-panel {
@@ -1405,4 +1405,63 @@ kbd {
   .upgrade-note {
     display: none;
   }
+}
+
+.language-btn {
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 480px) {
+  .masthead h1 {
+    font-size: 26px;
+  }
+  .masthead {
+    gap: 4px;
+  }
+  .workbench {
+    gap: 8px;
+  }
+  .workbench:before {
+    max-width: 70%;
+    font-size: 8px;
+  }
+  .prototype-label {
+    font-size: 6px;
+  }
+}
+@media (max-width: 360px) {
+  .masthead h1 {
+    font-size: 19px;
+  }
+  .masthead .logo-bolt {
+    display: none;
+  }
+  .masthead nav {
+    gap: 2px;
+  }
+  .prototype-label {
+    display: none;
+  }
+  .workbench:before {
+    max-width: 100%;
+  }
+  .launch-btn {
+    max-width: 140px;
+    padding: 10px;
+    gap: 6px;
+  }
+  .launch-btn > svg {
+    width: 22px;
+    flex: 0 0 22px;
+  }
+  .launch-btn strong {
+    font-size: 16px;
+  }
+  .launch-btn small {
+    font-size: 8px;
+    letter-spacing: 0;
+  }
+}
+html[lang="tr"] .space-key {
+  min-width: 56px;
 }

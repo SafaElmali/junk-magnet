@@ -31,6 +31,12 @@ Your orbit attacks automatically. Silver wreckage replenishes it; the automatic 
 - Cream/navy HUD with health, XP, level, survival timer, equipped modules, orbit capacity and launch feedback.
 - A deterministic simulation separated from rendering, with focused progression, combat and endurance tests.
 
+## Language / Dil
+
+Use the **TR / EN** button in the header to switch between Turkish and English without restarting your run. The first visit follows the browser language; your choice is saved locally. Menus, HUD, help, upgrade names/descriptions, results and accessibility labels are translated. Extended Latin font subsets support Turkish characters.
+
+Üstteki **TR / EN** düğmesiyle dili değiştirebilirsin. Oyun sıfırlanmaz; dil tercihin sonraki ziyaretlerde de korunur.
+
 ## Artwork and editable source
 
 - `art/junk-magnet-assets.blend` — editable Blender asset library.

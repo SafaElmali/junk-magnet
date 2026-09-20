@@ -6,7 +6,7 @@ The former 36-kill shift is replaced by a continuous run that ends on death. The
 
 ## Automated checks
 
-- `npm test`: 19 focused tests cover normalized unbounded movement, independent facing, obstacle collisions, pause/upgrade freezes, XP carryover and consecutive levels, three distinct choices, maxed-build fallbacks, launch guards, swept projectile collisions, ability behavior, death, time-based pressure, entity bounds and terrain determinism/seams.
+- `npm test`: 21 focused tests cover normalized unbounded movement, independent facing, obstacle collisions, pause/upgrade freezes, XP carryover and consecutive levels, three distinct choices, maxed-build fallbacks, launch guards, swept projectile collisions, ability behavior, death, time-based pressure, entity bounds and terrain determinism/seams.
 - Pickup saturation regression: after leaving 320 distant drops behind, a local kill still produces locally collectible XP and scrap, without losing the old accumulated values.
 - `npm run build`: TypeScript and Vite production build passed.
 - `node scripts/browser-regressions.mjs`: keyboard/pointer aim ownership, repeated Help, 48px touch targets, real emulated touch movement and launching, and no page errors.
@@ -38,3 +38,9 @@ Opened and inspected `.impeccable/review/survival-desktop.png`, `survival-mobile
 ## Evidence
 
 Reports and screenshots are in `.impeccable/review/`: `regressions.json`, `survival-browser.json`, `survival-soak.json`, and `survival-playthrough.json`. The playthrough uses normal frame timing and keyboard input; the separate protected simulation stress is labeled explicitly.
+
+## Turkish language support
+
+- `node scripts/language-browser.mjs` verifies Turkish browser-language detection, saved English override, switching during Help and level-up without resetting time/choices/abilities, and localized upgrade selection.
+- Inspected Turkish captures at 1440×900, 390×844, 844×390 and 320×740; mobile header buttons remain at least 48×48px. Turkish character subsets are bundled.
+- `src/i18n.test.ts` covers preference fallback, dynamic values and translations for all ten upgrade/consumable IDs without simulation mutation.
