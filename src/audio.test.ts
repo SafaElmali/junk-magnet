@@ -100,11 +100,11 @@ test("audio degrades safely without storage or browser audio support", async () 
 
 test("volume controls clamp independently and preserve mute preferences", () => {
   const audio = new GameAudio();
-  assert.equal(audio.effectsVolume, 80);
-  assert.equal(audio.musicVolume, 60);
+  assert.equal(audio.effectsVolume, 50);
+  assert.equal(audio.musicVolume, 50);
   audio.setVolume("sound", 150);
   assert.equal(audio.effectsVolume, 100);
-  assert.equal(audio.musicVolume, 60);
+  assert.equal(audio.musicVolume, 50);
   audio.setVolume("music", -10);
   assert.equal(audio.musicVolume, 0);
   assert.equal(audio.enabled, true);

@@ -85,7 +85,7 @@ try {
         position: { x: box.width / 2, y: box.height / 2 },
       });
       assert.equal((await state()).audio.musicVolume, 50);
-      assert.equal((await state()).audio.effectsVolume, 80);
+      assert.equal((await state()).audio.effectsVolume, 50);
       await musicBar.press("ArrowRight");
       assert.equal((await state()).audio.musicVolume, 51);
       assert.equal(await page.locator("#menu-music-value").innerText(), "51%");
@@ -141,9 +141,9 @@ try {
     for (let i = 0; i < 6; i++) await page.locator("#menu-music-up").click();
     await page.waitForFunction(() => window.__audioRms() > 0.001);
     await page.locator("#menu-sound-down").click();
-    assert.equal((await state()).audio.effectsVolume, 70);
+    assert.equal((await state()).audio.effectsVolume, 40);
     assert.equal((await state()).audio.musicVolume, 60);
-    assert.equal(await page.locator("#menu-sound-value").innerText(), "70%");
+    assert.equal(await page.locator("#menu-sound-value").innerText(), "40%");
     assert.equal(
       (await state()).audio.enabled,
       false,
@@ -151,7 +151,7 @@ try {
     );
     await page.reload();
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
-    assert.equal((await state()).audio.effectsVolume, 70);
+    assert.equal((await state()).audio.effectsVolume, 40);
     assert.equal((await state()).audio.musicVolume, 60);
     assert.equal((await state()).audio.enabled, false);
     assert.equal((await state()).audio.music, true);

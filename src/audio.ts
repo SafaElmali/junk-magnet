@@ -103,8 +103,8 @@ export class GameAudio {
   /** Sound effects only; music has its own independent preference. */
   enabled = true;
   musicEnabled = true;
-  effectsVolume = 80;
-  musicVolume = 60;
+  effectsVolume = 50;
+  musicVolume = 50;
   private context?: AudioContext;
   private master?: GainNode;
   private effects?: GainNode;
