@@ -18,7 +18,7 @@ assert.equal(
   "ready",
 );
 assert.equal(await page.locator("#intro").isVisible(), true);
-assert.equal(await page.locator("#lower-hud").isVisible(), false);
+assert.equal(await page.locator("#lower-hud").count(), 0);
 await page.getByRole("button", { name: "LET’S MAKE A MESS" }).click();
 await page.keyboard.down("KeyD");
 await page.waitForTimeout(200);
@@ -27,24 +27,26 @@ await page.waitForTimeout(200);
 await page.keyboard.up("KeyD");
 await page.waitForTimeout(200);
 await page.keyboard.up("KeyW");
-const aim = await page.evaluate(() => window.__JUNK_MAGNET__.snapshot().aim);
+const facing = await page.evaluate(
+  () => window.__JUNK_MAGNET__.snapshot().facing,
+);
 assert.ok(
-  Math.abs(aim.x) < 0.01 && aim.z < -0.99,
-  "Keyboard aim follows changed direction",
+  Math.abs(facing.x) < 0.01 && facing.z < -0.99,
+  "Robot faces movement",
+);
+await page.waitForFunction(
+  () => window.__JUNK_MAGNET__.snapshot().launched > 0,
+);
+const autoAim = await page.evaluate(
+  () => window.__JUNK_MAGNET__.snapshot().aim,
 );
 await page.mouse.move(1000, 450);
-await page.waitForTimeout(100);
-const mouseAim = await page.evaluate(
-  () => window.__JUNK_MAGNET__.snapshot().aim,
+await page.waitForTimeout(50);
+assert.deepEqual(
+  await page.evaluate(() => window.__JUNK_MAGNET__.snapshot().aim),
+  autoAim,
+  "Pointer does not override automatic targeting",
 );
-assert.ok(mouseAim.x > 0.7, "Pointer takes aim ownership");
-await page.keyboard.down("KeyA");
-await page.waitForTimeout(150);
-await page.keyboard.up("KeyA");
-const restored = await page.evaluate(
-  () => window.__JUNK_MAGNET__.snapshot().aim,
-);
-assert.ok(restored.x < -0.99, "Keyboard reclaims aim");
 const fps = await page.evaluate(
   () =>
     new Promise((resolve) => {
@@ -98,10 +100,12 @@ await cdp.send("Input.dispatchTouchEvent", {
 });
 const moved = await mobile.evaluate(() => window.__JUNK_MAGNET__.snapshot());
 assert.ok(moved.player.x > 1, "Touch stick moves robot");
-await mobile.locator("#launch").tap();
-await mobile.waitForTimeout(50);
+assert.equal(await mobile.locator("#launch").count(), 0);
+await mobile.waitForFunction(
+  () => window.__JUNK_MAGNET__.snapshot().launched > 0,
+);
 const launched = await mobile.evaluate(() => window.__JUNK_MAGNET__.snapshot());
-assert.equal(launched.launched, 1, "Touch launches");
+assert.ok(launched.launched > 0, "Automatically attacks on touch devices");
 await mobile.setViewportSize({ width: 844, height: 390 });
 await mobile.waitForTimeout(200);
 const landscapeSizes = await mobile
@@ -111,12 +115,12 @@ assert.ok(landscapeSizes.every((h) => h >= 48));
 assert.deepEqual(errors, []);
 const result = {
   repeatedHelp: "passed",
-  continuousKeyboardAim: "passed",
-  pointerAimOwnership: "passed",
+  movementFacing: "passed",
+  automaticTargeting: "passed",
   portraitTouchTargets: sizes,
   landscapeTouchTargets: landscapeSizes,
   touchMovement: moved.player,
-  touchLaunches: launched.launched,
+  automaticLaunches: launched.launched,
   headlessRafFps: Math.round(fps),
   errors,
 };

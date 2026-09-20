@@ -22,8 +22,6 @@ import { YardScene } from "./scene";
 import {
   createState,
   update,
-  launch,
-  MAX_SCRAP,
   UPGRADES,
   chooseUpgrade,
   type UpgradeId,
@@ -69,14 +67,13 @@ app.innerHTML = `
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
  <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
- <div class="intro hidden" id="intro"><div class="intro-content"><h2>Small robot.<br>Endless trouble.</h2><p>Keep moving. Your weapons fire automatically.<br>Collect blue energy to level up.<br><strong>Choose upgrades. Survive the swarm.</strong></p><button class="primary-btn" id="start">LET’S MAKE A MESS ${svg("arrow")}</button><span class="intro-note">Move with WASD or arrows · Space to launch</span></div></div>
- <div class="lower-hud hidden" id="lower-hud"><div class="orbit-panel"><div class="orbit-icon">${svg("magnet")}</div><div><div class="orbit-caption"><strong>SCRAP ORBIT</strong><span id="scrap-count">6 / 12</span></div><div class="scrap-pips" id="scrap-pips">${Array.from({ length: 12 }, () => "<i></i>").join("")}</div></div></div><div class="hint" id="hint" role="status">Your orbit attacks automatically. Get close to loose scrap.</div><button id="launch" class="launch-btn">${svg("magnet")}<span><strong>LAUNCH SCRAP</strong><small id="launch-note">SPACE / CLICK</small></span></button></div>
+ <div class="intro hidden" id="intro"><div class="intro-content"><h2>Small robot.<br>Endless trouble.</h2><p>Keep moving. Your weapons fire automatically.<br>Collect blue energy to level up.<br><strong>Choose upgrades. Survive the swarm.</strong></p><button class="primary-btn" id="start">LET’S MAKE A MESS ${svg("arrow")}</button><span class="intro-note">Move with WASD or arrows · Attacks are automatic</span></div></div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
- <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Launch</dt><dd>Aim with the pointer, then click or press Space. Without a pointer, move toward your target first.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button></div></div>
+ <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button></div></div>
  <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button></div></div>
 </main>
-<footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><span class="mouse-icon"></span><strong>AIM</strong><i></i><kbd class="space-key">SPACE</kbd><strong>LAUNCH</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
+<footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
 const translateStatic = bindStaticTranslations(app);
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -89,13 +86,11 @@ let s = createState(),
   lastFocus: HTMLElement | null = null;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
-  pointerAim = false,
   showedResult = false,
   audio: AudioContext | undefined;
 let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0;
-const pips = [...document.querySelectorAll<HTMLElement>(".scrap-pips i")];
 const touch = window.matchMedia("(pointer: coarse)").matches;
 function beep(
   freq: number,
@@ -135,7 +130,6 @@ function start() {
   el("result").classList.add("hidden");
   el("upgrade").classList.add("hidden");
   shownUpgrade = "";
-  el("lower-hud").classList.remove("hidden");
   el<HTMLButtonElement>("pause").disabled = false;
   if (touch) el("touch-stick").classList.remove("hidden");
   beep(320, 0.12);
@@ -144,7 +138,6 @@ function restart() {
   s = createState();
   scene.clear();
   keys.clear();
-  pointerAim = false;
   stopStick();
   el("modal").classList.add("hidden");
   start();
@@ -178,9 +171,6 @@ function closeModal() {
   el("yard").classList.toggle("is-playing", s.phase === "playing");
   lastFocus?.focus({ preventScroll: true });
 }
-function doLaunch() {
-  if (launch(s)) beep(160, 0.22, "sawtooth", 0.026);
-}
 el("start").addEventListener("click", start);
 el("again").addEventListener("click", restart);
 el("restart").addEventListener("click", restart);
@@ -189,16 +179,6 @@ el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
 );
 el("help").addEventListener("click", () => openModal(true));
-el("launch").addEventListener("click", doLaunch);
-// A second touch does not reliably generate a click while the movement finger is held.
-el("launch").addEventListener(
-  "touchstart",
-  (e) => {
-    e.preventDefault();
-    doLaunch();
-  },
-  { passive: false },
-);
 el("sound").addEventListener("click", () => {
   sound = !sound;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
@@ -242,23 +222,9 @@ window.addEventListener("keydown", (e) => {
     )
   )
     e.preventDefault();
-  if (
-    [
-      "KeyW",
-      "KeyA",
-      "KeyS",
-      "KeyD",
-      "ArrowUp",
-      "ArrowDown",
-      "ArrowLeft",
-      "ArrowRight",
-    ].includes(e.code)
-  )
-    pointerAim = false;
   keys.add(e.code);
   if (e.code === "Space" && !e.repeat) {
     if (s.phase === "ready") start();
-    else doLaunch();
   }
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -327,7 +293,6 @@ arena.addEventListener("pointerdown", (e) => {
     joy.style.top = `${e.clientY - r.top - joy.offsetHeight / 2}px`;
     joy.style.bottom = "auto";
   }
-  pointerAim = false;
   moveStick(e);
 });
 function moveStick(e: PointerEvent) {
@@ -495,40 +460,6 @@ function hud() {
     s.phase !== "playing" && s.phase !== "paused";
   el<HTMLButtonElement>("help").disabled =
     s.phase === "upgrade" || s.phase === "lost";
-  el("scrap-count").textContent = `${s.scrap} / ${MAX_SCRAP}`;
-  pips.forEach((p, i) => p.classList.toggle("filled", i < s.scrap));
-  const launchButton = el<HTMLButtonElement>("launch");
-  launchButton.disabled =
-    s.phase !== "playing" || s.scrap === 0 || s.cooldown > 0;
-  el("launch-note").textContent =
-    s.cooldown > 0
-      ? t("RECHARGING…")
-      : s.scrap === 0
-        ? t("COLLECT MORE SCRAP")
-        : touch
-          ? t("TAP TO RELEASE")
-          : t("SPACE / CLICK");
-  launchButton.setAttribute(
-    "aria-label",
-    `${t("LAUNCH SCRAP")} · ${s.scrap} / ${MAX_SCRAP} · ${el("launch-note").textContent}`,
-  );
-  launchButton.title = launchButton.getAttribute("aria-label")!;
-  el("hint").textContent =
-    s.scrap === 0
-      ? t(
-          "Empty orbit? Your pulse still fires. Collect silver wreckage to rebuild.",
-        )
-      : s.time < 15
-        ? t(
-            "Collect blue energy to level up. Your weapons attack automatically.",
-          )
-        : s.launched === 0
-          ? t("Try launching your orbit through a crowd. Space or click.")
-          : s.scrap === MAX_SCRAP
-            ? t("Full scrap storm. Aim for a crowd and let it fly.")
-            : t(
-                "Blue energy upgrades your build. Silver scrap reloads your orbit.",
-              );
   if (s.phase === "lost" && !showedResult) {
     showedResult = true;
     el("yard").classList.remove("is-playing");
@@ -567,13 +498,11 @@ function loop(now: number) {
       Number(keys.has("KeyW") || keys.has("ArrowUp")) +
       stick.z,
   };
-  const len = Math.hypot(m.x, m.z);
-  if (len > 0.1 && (!pointerAim || touch)) {
-    s.aim = { x: m.x / len, z: m.z / len };
-  }
   update(s, dt, m);
   if (s.events.length) {
     scene.events(s.events, s);
+    if (s.events.some((event) => event.kind === "launch"))
+      beep(160, 0.22, "sawtooth", 0.026);
     const e = s.events.find(
       (e) => e.kind === "kill" || e.kind === "hurt" || e.kind === "collect",
     );
@@ -593,7 +522,7 @@ async function boot() {
     scene.renderer.domElement.setAttribute(
       "aria-label",
       t(
-        "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.",
+        "Junk Magnet 3D scrapyard. Move with WASD, arrow keys, or touch. Attacks are automatic.",
       ),
     );
     await scene.load((n) => {
@@ -606,22 +535,6 @@ async function boot() {
     loaded = true;
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
-    scene.renderer.domElement.addEventListener("pointermove", (e) => {
-      if (e.pointerType === "touch" || s.phase !== "playing") return;
-      const p = scene.pointer(e.clientX, e.clientY);
-      if (p) {
-        const x = p.x - s.player.x,
-          z = p.z - s.player.z,
-          d = Math.hypot(x, z);
-        if (d > 0.3) {
-          pointerAim = true;
-          s.aim = { x: x / d, z: z / d };
-        }
-      }
-    });
-    scene.renderer.domElement.addEventListener("pointerdown", (e) => {
-      if (e.pointerType !== "touch" && e.button === 0) doLaunch();
-    });
     new ResizeObserver(() => scene.resize()).observe(el("yard"));
     requestAnimationFrame(loop);
     // Read-only state snapshot for browser QA, without gameplay mutation hooks.
@@ -686,15 +599,15 @@ function applyLanguage() {
     t(sound ? "Mute sound" : "Enable sound"),
   );
   document.querySelector<HTMLElement>(".workbench")!.dataset.touchHint = t(
-    "DRAG TO MOVE · TAP TO LAUNCH",
+    "DRAG TO MOVE · AUTO ATTACK",
   );
   document.querySelector<HTMLElement>(".intro-note")!.dataset.touchHint = t(
-    "Drag anywhere in the yard · Tap Launch to fire",
+    "Drag anywhere in the yard · Attacks are automatic",
   );
   scene?.renderer.domElement.setAttribute(
     "aria-label",
     t(
-      "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.",
+      "Junk Magnet 3D scrapyard. Move with WASD, arrow keys, or touch. Attacks are automatic.",
     ),
   );
   if (s.phase === "paused") {

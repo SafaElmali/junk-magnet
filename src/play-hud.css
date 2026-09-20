@@ -52,7 +52,6 @@
 }
 .in-run:not([data-phase="playing"]) .hud,
 .in-run:not([data-phase="playing"]) .ability-loadout,
-.in-run:not([data-phase="playing"]) .lower-hud,
 .in-run:not([data-phase="playing"]) #touch-stick,
 .in-run:not([data-phase="playing"]) #yard > .health-track {
   visibility: hidden;
@@ -161,64 +160,6 @@
 }
 .in-run .ability-chip b {
   font-size: 9px;
-}
-.in-run .lower-hud {
-  left: max(14px, env(safe-area-inset-left));
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
-  gap: 0;
-}
-.in-run .lower-hud .orbit-panel {
-  position: absolute;
-  left: auto;
-  right: 0;
-  bottom: 67px;
-  width: 60px;
-  padding: 0;
-  display: block;
-  background: none;
-  box-shadow: none;
-  text-align: center;
-}
-.in-run .orbit-icon,
-.in-run .orbit-caption strong,
-.in-run .scrap-pips {
-  display: none;
-}
-.in-run .orbit-caption {
-  display: block;
-  margin: 0;
-}
-.in-run #scrap-count {
-  display: inline-block;
-  padding: 2px 5px;
-  font-size: 10px;
-  border-radius: 3px;
-  background: #fff6e3d9;
-}
-.in-run .launch-btn {
-  width: 60px;
-  height: 60px;
-  min-height: 60px;
-  max-width: none;
-  margin-left: auto;
-  padding: 0;
-  border-radius: 50%;
-  justify-content: center;
-  gap: 0;
-  background: #173342de;
-  box-shadow: 0 2px 6px #17334226;
-}
-.in-run .launch-btn > svg {
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
-}
-.in-run .launch-btn > span {
-  display: none;
-}
-.in-run .launch-btn:disabled {
-  background: #17334270;
 }
 .in-run .touch-stick {
   width: 84px;

@@ -27,11 +27,11 @@ console.log(
   "MOVED",
   await page.evaluate(() => window.__JUNK_MAGNET__.snapshot()),
 );
-await page.mouse.move(1020, 430);
-await page.keyboard.press("Space");
-await page.waitForTimeout(100);
+await page.waitForFunction(
+  () => window.__JUNK_MAGNET__.snapshot().launched > 0,
+);
 console.log(
-  "LAUNCH",
+  "AUTO ATTACK",
   await page.evaluate(() => window.__JUNK_MAGNET__.snapshot()),
 );
 await page.getByRole("button", { name: "Pause game", exact: true }).click();

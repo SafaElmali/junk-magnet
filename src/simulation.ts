@@ -103,12 +103,13 @@ export function orbitPosition(s: State, index: number): Vec {
   const a = s.time * (2.3 + rank * 0.25) + index * Math.PI * 2 / Math.max(1, s.scrap), radius = ORBIT_RADIUS + rank * 0.12;
   return { x: s.player.x + Math.cos(a) * radius, z: s.player.z + Math.sin(a) * radius };
 }
-export function launch(s: State): boolean {
-  if (s.phase !== "playing" || s.cooldown > 0 || !s.scrap) return false;
+export function launch(s: State, target?: Vec): boolean {
+  if (s.phase !== "playing" || s.cooldown > 0 || !s.scrap || s.shots.length >= ENTITY_LIMITS.shots) return false;
   const base = Math.atan2(s.aim.z, s.aim.x), count = s.scrap;
   for (let i = 0; i < count && s.shots.length < ENTITY_LIMITS.shots; i++) {
-    const a = base + (i - (count - 1) / 2) * 0.075;
-    s.shots.push({ id: s.nextId++, ...orbitPosition(s, i), vx: Math.cos(a) * 17, vz: Math.sin(a) * 17, life: 1.6, kind: i % 3, damage: 4 + s.upgrades.saw });
+    const origin = orbitPosition(s, i);
+    const a = target ? Math.atan2(target.z - origin.z, target.x - origin.x) : base + (i - (count - 1) / 2) * 0.075;
+    s.shots.push({ id: s.nextId++, ...origin, vx: Math.cos(a) * 17, vz: Math.sin(a) * 17, life: 1.6, kind: i % 3, damage: 4 + s.upgrades.saw });
   }
   s.scrap = 0; s.cooldown = 1.15; s.launched++; emit(s, { kind: "launch", ...s.player }); return true;
 }
@@ -238,6 +239,13 @@ export function update(s: State, dt: number, movement: Vec) {
     if (target) { hurt(s, target, 2); emit(s, { kind: "pulse", x: target.x, z: target.z }); }
   }
   abilities(s, dt);
+  // Only spend ammunition on a living target within combat range.
+  const target = nearestEnemy(s, s.player, 8);
+  if (target && s.scrap > 0 && s.cooldown === 0) {
+    const d = distance(target, s.player) || 1;
+    s.aim = { x: (target.x - s.player.x) / d, z: (target.z - s.player.z) / d };
+    launch(s, target);
+  }
   for (const shot of s.shots) {
     const oldX = shot.x, oldZ = shot.z; shot.x += shot.vx * dt; shot.z += shot.vz * dt; shot.life -= dt;
     for (const e of s.enemies) if (e.hp > 0 && shot.life > 0) {

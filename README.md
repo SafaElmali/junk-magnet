@@ -1,6 +1,6 @@
 # Junk Magnet — endless scrapyard survival
 
-A tiny salvage robot in a sunny 3D scrapyard. Enemies become orbiting weapons. Launch your scrap storm, collect the wreckage, and build it again.
+A tiny salvage robot in a sunny 3D scrapyard. Enemies become orbiting weapons. Your scrap storm fires automatically; collect the wreckage and build it again.
 
 ## Run
 
@@ -12,8 +12,7 @@ npm run dev
 Open **http://127.0.0.1:5184/**. Click **LET’S MAKE A MESS**.
 
 - **Move:** WASD / arrow keys, or drag anywhere in the yard on a touch device.
-- **Aim:** mouse pointer, or movement direction. Pressing a movement key takes aiming back from the pointer.
-- **Launch:** Space, left click on the arena, or the Launch button.
+- **Attack:** automatic. Scrap targets the nearest living enemy within 8 units, with a 1.15-second cooldown. Collect wreckage to reload; the automatic close-range pulse keeps attacking when the orbit is empty.
 - **Upgrade:** collect blue energy nuts to level up; choose one of three modules with a tap, click, or keys 1–3. Combat freezes while choosing.
 - **Pause:** Escape or the pause button. Leaving the tab pauses; mobile browser focus changes do not interrupt a visible game.
 - **Sound:** optional; toggle the speaker button. Audio is synthesized locally.
@@ -28,12 +27,12 @@ Your orbit attacks automatically. Silver wreckage replenishes it; the automatic 
 - Ordinary cans, fast runners and durable brutes.
 - Upgradeable scrap orbit, chain lightning, deployed turrets, magnetic bursts, speed, pickup range, armor and repairs.
 - Keyboard, mouse and touch controls; paused background state; reduced-motion support without damage flicker.
-- Cream/navy HUD with health, XP, level, survival timer, equipped modules, orbit capacity and launch feedback.
+- Cream/navy HUD with health, XP, level, survival timer, equipped modules, automatic attack feedback.
 - A deterministic simulation separated from rendering, with focused progression, combat and endurance tests.
 
 ## Compact play screen
 
-The map fills the viewport during a run. A thin XP bar, small timer/level/kill counters and ability icons sit at the top. Health follows the centered robot. The bottom-right magnet button launches scrap; its small counter shows remaining ammunition. Pause reveals language, sound and help. The lobby retains its title and instructions.
+The map fills the viewport during a run. A thin XP bar, small timer/level/kill counters and ability icons sit at the top. Health follows the centered robot. Combat has no launch button, ammunition panel, or manual aiming. Pause reveals language, sound and help. The lobby retains its title and instructions.
 
 ## Language / Dil
 
@@ -72,7 +71,7 @@ node scripts/mobile-regressions.mjs
 node scripts/survival-browser.mjs
 ```
 
-The first covers loading, movement, launch, pause/restart and desktop/portrait/landscape captures. The regression check covers repeated Help, keyboard/pointer aiming ownership, actual emulated touch movement and launch, and 48px touch controls. The mobile regression checks drag-to-move, scrolling, multi-touch launching and pause behavior. The survival browser check reaches a real level-up, chooses an ability, and traverses beyond the old arena. New survival checks default to production preview on port 5185; set `GAME_URL` to verify a tunnel instead.
+The regression check covers repeated Help, movement facing, automatic targeting, actual emulated touch movement and automatic attacks, and 48px touch controls. The mobile regression checks drag-to-move, scrolling, automatic fire during movement and pause behavior. The HUD check verifies the absence of manual fire controls and reaches a real level-up in four viewport sizes. The survival browser check reaches a real level-up, chooses an ability, and traverses beyond the old arena. New survival checks default to production preview on port 5185; set `GAME_URL` to verify a tunnel instead.
 
 See `VERIFICATION.md` for measured results and limitations.
 

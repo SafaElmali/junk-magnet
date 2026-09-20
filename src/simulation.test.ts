@@ -137,3 +137,46 @@ test("a saturated pool of distant drops keeps new kill rewards locally collectib
   assert.equal(s.pickups.filter(p => p.kind === "scrap").reduce((sum, p) => sum + (p.value ?? 1), 0), ENTITY_LIMITS.pickups / 2);
   assert.ok(s.pickups.every(p => p.x >= 100 && p.z === 100));
 });
+
+test("automatic volleys aim from each orbit piece at the nearest living enemy", () => {
+  const s = playing();
+  s.enemies = [enemy(100, -2, 0, 0), enemy(101, 7, 0, 100), enemy(102, 0, -5, 100)];
+  s.pulseTimer = 100;
+  update(s, 0.01, { x: 1, z: 0 });
+  assert.equal(s.launched, 1);
+  assert.equal(s.scrap, 0);
+  assert.equal(s.shots.length, 6);
+  assert.ok(s.aim.z < -0.99, "Targeting ignores travel direction");
+  assert.deepEqual(s.facing, { x: 1, z: 0 });
+  const target = s.enemies.find(e => e.id === 102)!;
+  for (const shot of s.shots) {
+    const dx = target.x - shot.x, dz = target.z - shot.z;
+    assert.ok(Math.abs(dx * shot.vz - dz * shot.vx) < 1e-8, "Each shot converges on its target");
+  }
+  s.scrap = 2;
+  for (let i = 0; i < 20; i++) update(s, 0.05, still);
+  assert.equal(s.launched, 1, "Cooldown prevents early repeat fire");
+  for (let i = 0; i < 4; i++) update(s, 0.05, still);
+  assert.equal(s.launched, 2, "Reloaded scrap fires again automatically");
+  assert.ok(s.enemies.find(e => e.id === 102)!.hp < 100, "Automatic projectiles hit");
+});
+
+test("automatic fire saves ammunition without an in-range target and respects pause and capacity", () => {
+  const s = playing(); s.enemies = [enemy(100, 15, 0)];
+  update(s, 0.05, still);
+  assert.equal(s.launched, 0); assert.equal(s.scrap, 6);
+  s.enemies = [enemy(100, 5, 0)];
+  for (const phase of ["ready", "paused", "upgrade", "lost"] as const) {
+    s.phase = phase;
+    const before = structuredClone(s);
+    update(s, 0.05, still);
+    assert.deepEqual(s, before);
+  }
+  s.phase = "playing";
+  s.shots = Array.from({ length: ENTITY_LIMITS.shots }, (_, i) => ({ id: 200 + i, x: 100, z: 100, vx: 1, vz: 0, life: 1, kind: 0 }));
+  update(s, 0.01, still);
+  assert.equal(s.scrap, 6); assert.equal(s.launched, 0);
+  s.shots = [];
+  update(s, 0.01, still);
+  assert.equal(s.launched, 1);
+});

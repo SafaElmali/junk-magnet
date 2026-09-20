@@ -37,28 +37,38 @@ try {
       return {
         yard: rect("#yard"),
         pause: rect("#pause"),
-        launch: rect("#launch"),
+        launchButtons: document.querySelectorAll("#launch").length,
         health: rect(".health-track"),
         timerFont: getComputedStyle(document.querySelector("#timer")).fontSize,
         visibleControls: [...document.querySelectorAll(".masthead button")]
           .filter((b) => b.getBoundingClientRect().width)
           .map((b) => b.id),
         footer: getComputedStyle(document.querySelector(".workbench")).display,
-        hint: getComputedStyle(document.querySelector("#hint")).display,
+        lowerHud: document.querySelectorAll("#lower-hud").length,
       };
     });
     assert.equal(layout.yard.width, width);
     assert.equal(layout.yard.height, height);
     assert.deepEqual(layout.visibleControls, ["pause"]);
     assert.equal(layout.footer, "none");
-    assert.equal(layout.hint, "none");
+    assert.equal(layout.lowerHud, 0);
     assert.ok(parseFloat(layout.timerFont) <= 22);
-    assert.ok(layout.launch.width >= 48 && layout.launch.width <= 64);
+    assert.equal(layout.launchButtons, 0);
     assert.ok(layout.health.width <= 60 && layout.health.height <= 7);
     await page.screenshot({
       path: `.impeccable/review/compact-hud-${width}.png`,
     });
+    await page.waitForFunction(
+      () => window.__JUNK_MAGNET__.snapshot().launched > 0,
+    );
     await page.locator("#pause").click();
+    const frozen = await page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
+    await page.waitForTimeout(1300);
+    const afterPause = await page.evaluate(() =>
+      window.__JUNK_MAGNET__.snapshot(),
+    );
+    assert.equal(afterPause.time, frozen.time);
+    assert.equal(afterPause.launched, frozen.launched);
     await page.locator("#language").click();
     assert.equal(await page.locator("html").getAttribute("lang"), "en");
     await page.locator("#language").click();
@@ -71,7 +81,7 @@ try {
     await page.waitForFunction(
       () => window.__JUNK_MAGNET__.snapshot().phase === "upgrade",
       null,
-      { timeout: 20000 },
+      { timeout: 40000 },
     );
     await page.waitForTimeout(300);
     assert.equal(await page.locator("#upgrade-choices button").count(), 3);

@@ -69,8 +69,8 @@ export const turkish: Record<string, string> = {
   "Choose upgrades. Survive the swarm.":
     "Yetenek seç. Sürüye karşı hayatta kal.",
   "LET’S MAKE A MESS": "HAYDİ BAŞLAYALIM",
-  "Move with WASD or arrows · Space to launch":
-    "WASD veya oklarla hareket et · Boşluk ile fırlat",
+  "Move with WASD or arrows · Attacks are automatic":
+    "WASD veya oklarla hareket et · Saldırılar otomatik",
   "SCRAP ORBIT": "HURDA YÖRÜNGESİ",
   "Your orbit attacks automatically. Get close to loose scrap.":
     "Yörüngendeki hurdalar otomatik saldırır. Yerdeki hurdalara yaklaş.",
@@ -80,15 +80,16 @@ export const turkish: Record<string, string> = {
   "Taking a breather.": "Biraz soluklan.",
   Move: "Hareket",
   Collect: "Toplama",
-  Launch: "Fırlatma",
+  Attack: "Saldırı",
+  "AUTO ATTACK": "OTOMATİK SALDIRI",
   Upgrade: "Geliştirme",
   Recover: "Toparlanma",
   "WASD / arrow keys, or drag anywhere in the yard.":
     "WASD / ok tuşlarını kullan veya alanda parmağını sürükle.",
   "Get near silver scrap. It joins your orbit and attacks automatically.":
     "Gümüş hurdalara yaklaş. Yörüngene katılıp otomatik saldırırlar.",
-  "Aim with the pointer, then click or press Space. Without a pointer, move toward your target first.":
-    "Fareyle nişan al, ardından tıkla veya Boşluk tuşuna bas. Dokunmatik ekranda önce hedefe doğru hareket et.",
+  "Scrap fires at the nearest enemy automatically. Collect wreckage to reload.":
+    "Hurdalar en yakın düşmana otomatik fırlatılır. Yeniden doldurmak için hurda topla.",
   "Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.":
     "Mavi enerji topla. Her seviyede oyun duraklar: dokunarak veya 1–3 tuşlarıyla üç yetenekten birini seç.",
   "Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.":
@@ -150,11 +151,11 @@ export const turkish: Record<string, string> = {
   "A 3D asset or WebGL failed to load. Please reload in a browser with hardware acceleration enabled.":
     "3B model veya WebGL yüklenemedi. Donanım hızlandırması açık bir tarayıcıda sayfayı yeniden yükle.",
   "TRY AGAIN": "TEKRAR DENE",
-  "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.":
-    "Junk Magnet 3B hurdalık. WASD veya ok tuşlarıyla hareket et, Boşluk ile hurda fırlat.",
-  "DRAG TO MOVE · TAP TO LAUNCH": "SÜRÜKLEYEREK İLERLE · DOKUNARAK FIRLAT",
-  "Drag anywhere in the yard · Tap Launch to fire":
-    "Alanda parmağını sürükle · Ateş etmek için Fırlat’a dokun",
+  "Junk Magnet 3D scrapyard. Move with WASD, arrow keys, or touch. Attacks are automatic.":
+    "Junk Magnet 3B hurdalık. WASD, ok tuşları veya dokunarak hareket et. Saldırılar otomatik.",
+  "DRAG TO MOVE · AUTO ATTACK": "SÜRÜKLEYEREK İLERLE · OTOMATİK SALDIRI",
+  "Drag anywhere in the yard · Attacks are automatic":
+    "Alanda parmağını sürükle · Saldırılar otomatik",
 };
 export function t(
   source: string,

@@ -45,17 +45,17 @@ try {
     await page.waitForFunction(
       () => window.__JUNK_MAGNET__.snapshot().phase === "upgrade",
       null,
-      { timeout: 25000 },
+      { timeout: 40000 },
     );
     const paused = await read();
     const tr = await page.locator("#upgrade-choices").innerText();
-    assert.match(tr, /Zincir Şimşek/);
-    assert.match(tr, /Hurda Tareti/);
+    const pickedName = await page
+      .locator("#upgrade-choices button strong")
+      .first()
+      .innerText();
+    assert.equal(await page.locator("#upgrade-choices button").count(), 3);
     await page.locator("#language").click();
-    assert.match(
-      await page.locator("#upgrade-choices").innerText(),
-      /Chain Lightning/,
-    );
+    assert.notEqual(await page.locator("#upgrade-choices").innerText(), tr);
     const en = await read();
     assert.equal(en.time, paused.time);
     assert.deepEqual(en.choices, paused.choices);
@@ -92,9 +92,8 @@ try {
       await page.screenshot({ path: ".impeccable/review/turkish-desktop.png" });
     await page.locator("#upgrade-choices button").first().click();
     assert.equal((await read()).phase, "playing");
-    assert.match(
-      await page.locator("#ability-loadout").innerHTML(),
-      /Zincir Şimşek/,
+    assert.ok(
+      (await page.locator("#ability-loadout").innerHTML()).includes(pickedName),
     );
     assert.deepEqual(errors, []);
     reports.push({

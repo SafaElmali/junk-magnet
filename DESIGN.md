@@ -128,7 +128,7 @@ components:
 
 An endless warm concrete scrapyard frames a small yellow salvage robot, a red horseshoe magnet, and can enemies with runner and brute variants. The high-angle orthographic camera, bevelled models, and soft physical shadows make the world feel like a tabletop toy. Sparse tire stacks and salvage drums create navigable obstacles while keeping the robot and scrap orbit readable.
 
-Cream interface panels sit above the scene, with dark condensed titles and compact plain-language instructions. This documents the implemented endless survival prototype: increasing enemy pressure, blue XP pickups, and three paused upgrade choices at each level. Weapon and support upgrades build a run around the original collect, orbit, and optional launch loop. Bosses, evolutions, and CrazyGames integration are future work. The approved visual direction remains unchanged from the concept stage.
+Cream interface panels sit above the scene, with dark condensed titles and compact plain-language instructions. This documents the implemented endless survival prototype: increasing enemy pressure, blue XP pickups, and three paused upgrade choices at each level. Weapon and support upgrades build a run around the original collect, orbit, and automatic attack loop. Bosses, evolutions, and CrazyGames integration are future work. The approved visual direction remains unchanged from the concept stage.
 
 **Key Characteristics:**
 - Warm textured ground, cool salvage props, and a yellow/red player silhouette.
@@ -169,7 +169,7 @@ Both families are bundled through Fontsource imports in `src/main.ts`. Compact c
 - **Display:** intro title, using the frontmatter display role; reduces to 43px in the narrow layout and 36px in short landscape.
 - **Wordmark:** frontmatter wordmark role; 49px on wide screens, 31px on narrow screens, and 30px in short landscape.
 - **Headline:** modal titles; 36px narrow and 30px short landscape.
-- **Action:** primary buttons. Launch uses a separate 22px condensed label, reducing to 19px on narrow screens.
+- **Action:** primary buttons. Combat has no manual attack control.
 - **Body:** intro copy; modal copy uses 1.7 line height. Keep instructions short rather than filling the arena with text.
 - **Label:** small secondary context. HUD numbers use tabular numerals; essential counters remain larger than decorative captions.
 
@@ -177,7 +177,7 @@ Both families are bundled through Fontsource imports in `src/main.ts`. Compact c
 
 The lobby retains the cream masthead and instruction footer. Starting a run switches to a full-viewport map with no outer gutters, logo, slogans or persistent tutorial text. `src/play-hud.css` owns the run layout; `src/style.css` retains the lobby and base components.
 
-A 5px XP bar spans the top. Level and 25px ability chips sit at upper left, the 22px timer is centered, and an icon plus kill count sits beside the 48px pause control. Health is a 54×5px bar just below the centered robot, growing to 7px at critical health. The bottom-right launch action is a 60px magnet button with a small ammunition count above it. Mobile movement uses a subdued 84px stick that becomes opaque during a drag. Controls respect safe-area insets.
+A 5px XP bar spans the top. Level and 25px ability chips sit at upper left, the 22px timer is centered, and an icon plus kill count sits beside the 48px pause control. Health is a 54×5px bar just below the centered robot, growing to 7px at critical health. There is no launch button or lower ammunition HUD: scrap automatically targets nearby enemies. Mobile movement uses a subdued 84px stick that becomes opaque during a drag. Controls respect safe-area insets.
 
 During play, only Pause remains in the utility menu. Pausing reveals language, sound and help. Upgrade and result screens keep language/sound available while hiding inactive gameplay HUD elements. Upgrade choices are compact rows in a sheet up to 480px wide; short landscape uses three columns up to 720px wide. Titles are 26px and ability names 19px, with readable 12px mechanical descriptions. Keyboard choice shortcuts and focus handling remain intact.
 
@@ -194,7 +194,7 @@ Depth combines warm ambient interface shadows with actual 3D shadows. The scene 
 
 ## Shapes
 
-Rounded panels and lightly bevelled model edges share a toy-like form language. The yard and dialogs use the largest panel radius, with tighter corners for buttons, badges, and pips. The circular movement stick and orbit ring signal continuous movement. The magnet, treaded player silhouette, cylindrical enemies, bolts, nuts, and saw scraps carry identity without detailed textures on every object. Movement controls the robot's smoothed facing independently of launch aim, so its body remains legible while the pointer targets another direction.
+Rounded panels and lightly bevelled model edges share a toy-like form language. The yard and dialogs use the largest panel radius, with tighter corners for buttons, badges, and pips. The circular movement stick and orbit ring signal continuous movement. The magnet, treaded player silhouette, cylindrical enemies, bolts, nuts, and saw scraps carry identity without detailed textures on every object. Movement controls the robot's smoothed facing independently of launch aim, so its body remains legible while automatic fire targets nearby enemies.
 
 Editable models are in `art/junk-magnet-assets.blend`, with runtime GLBs under `public/models/`. The original generated ground image is `public/textures/yard-concrete.png`; its prompt is recorded in `art/FLOOR-PROMPT.md`. `art/concept-board.png` is art direction, not a gameplay screenshot.
 
@@ -202,7 +202,7 @@ Editable models are in `art/junk-magnet-assets.blend`, with runtime GLBs under `
 
 ### Buttons
 
-Tactile, compact, and high contrast. Primary buttons use ink/cream, action-radius corners, and an inline arrow. Launch adds a magnet icon, a larger condensed label, and an input hint. Disabled Launch uses a muted green background; disabled pause reduces opacity. Icon buttons are outlined by default; pause is filled.
+Tactile, compact, and high contrast. Primary buttons use ink/cream, action-radius corners, and an inline arrow. Attacks are automatic; disabled pause reduces opacity. Icon buttons are outlined by default; pause is filled.
 
 Hover changes the surface tone. Keyboard focus is a 3px blue outline offset by 4px. Pressed buttons move down 2px. Background and transform transitions last 150ms. Reduced-motion preference disables CSS transitions and the robot's idle bob; it does not remove gameplay movement or every effect.
 
@@ -216,7 +216,7 @@ The masthead's mute, help, and pause controls form a compact utility group. Thei
 
 ### Scrap Orbit
 
-A text count and twelve pips describe available capacity; filled teal and empty neutral pips accompany the number. The physical orbit shows individual scrap pieces. Launch visibly empties the orbit, and nearby wreckage rebuilds it. The translucent ring and pale direction arrow make the action readable without a full-screen flash.
+The physical orbit shows individual scrap pieces without a separate ammunition panel. Automatic volleys visibly empty the orbit, and nearby wreckage rebuilds it. The translucent ring and pale direction arrow make the action readable without a full-screen flash.
 
 ### XP and Build Chips
 

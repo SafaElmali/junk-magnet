@@ -155,7 +155,7 @@ export class YardScene {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.domElement.setAttribute(
       "aria-label",
-      "Junk Magnet 3D scrapyard. Move with WASD or arrow keys and launch scrap with Space.",
+      "Junk Magnet 3D scrapyard. Move with WASD, arrow keys, or touch. Attacks are automatic.",
     );
     host.prepend(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xdcb394);

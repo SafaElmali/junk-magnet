@@ -50,3 +50,9 @@ Reports and screenshots are in `.impeccable/review/`: `regressions.json`, `survi
 - Production build and 21 tests pass. `scripts/hud-browser.mjs` checks full-viewport play, one visible Pause control, compact timer/health/launch geometry, settings access, language switching and actual level-up selection at 1440×900, 390×844, 844×390 and 320×740.
 - The compact HUD checks also passed through the public Cloudflare link. Mobile gesture regressions still pass: simultaneous movement/launch, cancellation, scrolling prevention and pause behavior.
 - `compact-hud-*.png` and `compact-upgrade-*.png` record the redesigned live layout; earlier survival captures document the previous layout; Turkish captures were refreshed. Physical-device testing remains outstanding.
+
+## Automatic combat (2026-09-20)
+
+This revision replaces the earlier manual launch controls. `npm test` passes 23 tests, including nearest-living-target selection, converging projectiles, cooldown/reload, out-of-range ammo preservation, phase freezing and full projectile-pool behavior. Production build passes; the existing bundle-size advisory remains.
+
+`mobile-regressions.mjs` and `browser-regressions.mjs` pass automatic fire while moving, keyboard-facing behavior, pointer independence, cancellation, no page scrolling and pause checks. `hud-browser.mjs` passes four viewport sizes (1440×900, 390×844, 844×390, 320×740): no launch button or lower HUD, automatic fire, frozen attacks during pause, settings and real level-up selection. Refreshed compact screenshots and inspected the portrait capture. These are Chromium desktop/touch-emulation checks, not physical-phone tests. Earlier manual-launch and balance reports describe their original revision.
