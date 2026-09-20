@@ -1,0 +1,224 @@
+/* A compact workshop panel, scoped away from the illustrated Help dialog. */
+#modal:not(.is-help) {
+  background: #0c2026a3;
+  backdrop-filter: blur(5px);
+}
+#modal.is-help .pause-only {
+  display: none;
+}
+#modal:not(.is-help) .modal-card {
+  position: relative;
+  max-width: 480px;
+  padding: 28px;
+  border: 1px solid #708b79;
+  border-top: 4px solid #edbd58;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #29474c, #142f38 80%);
+  color: #fff1d0;
+  text-align: left;
+  box-shadow:
+    0 28px 90px #06181b80,
+    inset 0 1px #ffffff0a;
+}
+.pause-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.pause-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #b9c6b5;
+  font-weight: 700;
+}
+.pause-location > svg {
+  width: 18px;
+  height: 18px;
+  color: #edbd58;
+}
+.pause-badge {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #6d8272;
+  border-radius: 8px;
+  background: #ffffff06;
+}
+.pause-badge svg {
+  width: 17px;
+  height: 17px;
+  color: #edbd58;
+}
+#modal:not(.is-help) .modal-card h2 {
+  font-size: clamp(32px, 6vw, 46px);
+  line-height: 1;
+  margin: 0 0 8px;
+  letter-spacing: 0.01em;
+}
+#modal:not(.is-help) #modal-copy {
+  color: #b9c6b5;
+  font-size: 13px;
+  margin: 0 0 24px;
+  line-height: 1.4;
+}
+.pause-summary {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #ffffff1c;
+  border-bottom: 1px solid #ffffff1c;
+  margin-bottom: 24px;
+}
+.pause-summary > div {
+  min-width: 0;
+}
+.pause-summary span {
+  display: block;
+  color: #aebfae;
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  min-height: 24px;
+}
+.pause-summary strong {
+  display: block;
+  font:
+    700 30px/1.15 "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #f5e7c6;
+}
+#modal:not(.is-help) .pause-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+#modal:not(.is-help) #resume {
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 14px 18px;
+  background: #edbd58;
+  color: #17343b;
+  border: 1px solid #ffe5a0;
+  border-radius: 6px;
+  font-size: 23px;
+  box-shadow: 0 3px 0 #a87730;
+}
+#modal:not(.is-help) #resume:hover {
+  background: #ffcf70;
+}
+#resume-icon {
+  display: inline-flex;
+}
+#modal:not(.is-help) .text-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin: 4px 0 0;
+  padding: 10px 8px;
+  background: #ffffff04;
+  border: 1px solid #617b70;
+  border-radius: 6px;
+  color: #d4ddc9;
+  font:
+    700 16px/1.15 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.025em;
+  text-decoration: none;
+}
+#modal:not(.is-help) .text-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #a7bfae;
+}
+#modal:not(.is-help) .text-btn:hover {
+  background: #ffffff0e;
+  border-color: #c4d1b8;
+}
+#modal:not(.is-help) button:focus-visible {
+  outline: 2px solid #fff3cf;
+  outline-offset: 4px;
+}
+@media (max-width: 380px) {
+  #modal:not(.is-help) .modal-card {
+    padding: 22px 18px;
+  }
+  .pause-summary {
+    gap: 8px;
+  }
+  #modal:not(.is-help) .text-btn {
+    font-size: 14px;
+    gap: 6px;
+  }
+}
+@media (max-height: 500px) and (min-width: 521px) {
+  #modal:not(.is-help) {
+    padding: 66px 16px 12px;
+  }
+  #modal:not(.is-help) .modal-card {
+    max-width: 650px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 28px;
+    align-items: start;
+  }
+  .pause-heading {
+    grid-column: 1;
+    margin: 0 0 10px;
+  }
+  .pause-badge {
+    width: 26px;
+    height: 26px;
+  }
+  #modal:not(.is-help) .modal-card h2 {
+    grid-column: 1;
+    font-size: 32px;
+  }
+  #modal:not(.is-help) #modal-copy {
+    grid-column: 1;
+    font-size: 12px;
+    margin: 0;
+  }
+  .pause-summary {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    margin: 0 0 12px;
+    padding: 8px 0;
+  }
+  .pause-summary strong {
+    font-size: 27px;
+  }
+  #modal:not(.is-help) .pause-actions {
+    grid-column: 2;
+    grid-row: 4;
+    gap: 6px;
+  }
+  #modal:not(.is-help) #resume {
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: 20px;
+  }
+  #modal:not(.is-help) .text-btn {
+    margin-top: 2px;
+    padding: 6px;
+    font-size: 13px;
+    gap: 5px;
+  }
+  #modal:not(.is-help) .text-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+}

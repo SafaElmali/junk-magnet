@@ -1,6 +1,8 @@
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
+    PAUSED: "PAUSIERT",
+    "Your run is on hold.": "Dein Lauf wartet auf dich.",
     "SURVIVE. SALVAGE. REPEAT.": "ÜBERLEBEN. BERGEN. WIEDERHOLEN.",
     "Main menu": "Hauptmenü",
     PLAY: "SPIELEN",
@@ -233,6 +235,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Schrottnachschub",
   },
   fr: {
+    PAUSED: "EN PAUSE",
+    "Your run is on hold.": "Ta partie t’attend.",
     "SURVIVE. SALVAGE. REPEAT.": "SURVIS. RÉCUPÈRE. RECOMMENCE.",
     "Main menu": "Menu principal",
     PLAY: "JOUER",
@@ -467,6 +471,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recharge de ferraille",
   },
   es: {
+    PAUSED: "EN PAUSA",
+    "Your run is on hold.": "Tu partida te espera.",
     "SURVIVE. SALVAGE. REPEAT.": "SOBREVIVE. RECUPERA. REPITE.",
     "Main menu": "Menú principal",
     PLAY: "JUGAR",
@@ -699,6 +705,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de chatarra",
   },
   pt: {
+    PAUSED: "EM PAUSA",
+    "Your run is on hold.": "A tua partida espera por ti.",
     "SURVIVE. SALVAGE. REPEAT.": "SOBREVIVA. RECUPERE. REPITA.",
     "Main menu": "Menu principal",
     PLAY: "JOGAR",
@@ -932,6 +940,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de sucata",
   },
   tr: {
+    PAUSED: "DURAKLATILDI",
+    "Your run is on hold.": "Turun seni bekliyor.",
     "Graphics quality": "Grafik kalitesi",
     Performance: "Performans",
     Balanced: "Dengeli",

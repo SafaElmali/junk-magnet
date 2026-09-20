@@ -12,6 +12,7 @@ import "./style.css";
 import "./play-hud.css";
 import "./menu.css";
 import "./help-art.css";
+import "./pause-menu.css";
 import { helpIllustration } from "./help-art";
 import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
@@ -54,6 +55,7 @@ const icons = {
   boots: '<path d="M6 3h7v10l7 3v5H4v-8h2ZM6 8h7m-7 3h7"/>',
   shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/>',
   repair: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z"/>',
+  home: '<path d="m3 11 9-8 9 8M5 10v11h5v-7h4v7h5V10"/>',
   reset: '<path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/>',
 };
 const svg = (name: keyof typeof icons) =>
@@ -78,7 +80,7 @@ app.innerHTML = `
  <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
  <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
- <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button><button id="pause-menu" class="text-btn">MAIN MENU</button></div></div>
+ <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="pause-heading pause-only"><span class="pause-location">${svg("magnet")}<span>THE SCRAPYARD</span></span><span class="pause-badge">${svg("pause")}</span></div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div class="pause-summary pause-only"><div><span>SHIFT TIME</span><strong id="pause-time">00:00</strong></div><div><span>LEVEL REACHED</span><strong id="pause-level">1</strong></div><div><span>JUNK RECYCLED</span><strong id="pause-kills">0</strong></div></div><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><div class="pause-actions"><button class="primary-btn" id="resume"><span id="resume-label">CONTINUE</span><span id="resume-icon">${svg("play")}</span></button><button class="text-btn" id="restart">${svg("reset")}<span>NEW RUN</span></button><button id="pause-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div></div></div>
  <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button><button id="result-menu" class="text-btn">MAIN MENU</button></div></div>
 </main>
@@ -192,6 +194,21 @@ el("help-next").addEventListener("click", () => {
   helpStep = Math.min(4, helpStep + 1);
   renderHelp();
 });
+function renderModalText(help: boolean) {
+  el("modal-title").textContent = t(help ? "HOW TO PLAY" : "PAUSED");
+  el("modal-copy").textContent = t("Your run is on hold.");
+  el("resume-label").textContent = t(
+    help
+      ? app.classList.contains("in-menu")
+        ? "BACK"
+        : "BACK TO THE YARD"
+      : "CONTINUE",
+  );
+  el("resume-icon").innerHTML = svg(help ? "arrow" : "play");
+  el("pause-time").textContent = format(s.time);
+  el("pause-level").textContent = String(s.level);
+  el("pause-kills").textContent = String(s.kills);
+}
 function openModal(help = false) {
   if (!loaded || s.phase === "upgrade" || s.phase === "lost") return;
   if (s.phase !== "paused" || app.classList.contains("in-menu")) {
@@ -202,16 +219,7 @@ function openModal(help = false) {
   el("yard").classList.remove("is-playing");
   keys.clear();
   stopStick();
-  el("modal-title").textContent = help
-    ? t("HOW TO PLAY")
-    : t("Taking a breather.");
-  el("modal-copy").textContent = help
-    ? t(
-        "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can.",
-      )
-    : t("The yard can wait. Your orbit and the swarm are paused.");
-  el("resume").firstChild!.textContent =
-    t(app.classList.contains("in-menu") ? "BACK" : "BACK TO THE YARD") + " ";
+  renderModalText(help);
   el("modal").classList.toggle("is-help", help);
   helpStep = 0;
   renderHelp();
@@ -707,14 +715,7 @@ function applyLanguage() {
   );
   if (s.phase === "paused") {
     const help = !el("help-content").classList.contains("hidden");
-    el("modal-title").textContent = t(
-      help ? "HOW TO PLAY" : "Taking a breather.",
-    );
-    el("modal-copy").textContent = t(
-      help
-        ? "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can."
-        : "The yard can wait. Your orbit and the swarm are paused.",
-    );
+    renderModalText(help);
   }
   shownLoadout = "";
   shownUpgrade = "";
