@@ -73,6 +73,10 @@ const icons = {
   sound:
     '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   mute: '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="m17 9 5 6m0-6-5 6"/>',
+  music:
+    '<path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/>',
+  musicOff:
+    '<path d="M9 18v-5m0-6V5l11-2v12M9 9l3-.5"/><ellipse cx="6" cy="18" rx="3" ry="2"/><path d="M20 16a3 2 0 0 1-6 0M3 3l18 18"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
   play: '<path d="m8 4 12 8-12 8Z"/>',
@@ -96,7 +100,7 @@ app.innerHTML = `
 <header class="masthead">
  <div class="wordmark"><h1>JUNK MAGNET<span class="logo-bolt">${svg("bolt")}</span></h1><p>THE SWARM IS YOUR AMMO.</p></div>
  <div class="session-label"><span class="live-dot"></span> THE SCRAPYARD <span class="divider">/</span> ENDLESS SHIFT</div>
- <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
+ <nav aria-label="Game controls"><button class="icon-btn language-btn" id="language" aria-label="Türkçeye geç" title="Türkçe">TR</button><button class="icon-btn" id="sound" aria-label="Enable sound" aria-pressed="false">${svg("mute")}</button><button class="icon-btn" id="music" aria-label="Mute music" aria-pressed="true">${svg("music")}</button><button class="icon-btn" id="help" aria-label="How to play">${svg("help")}</button><button class="icon-btn pause-button" id="pause" aria-label="Pause game" disabled>${svg("pause")}</button></nav>
 </header>
 <main id="yard" aria-label="Game arena" tabindex="-1">
  <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i><span class="xp-meter-copy" aria-hidden="true"><strong id="xp-current-level"></strong><span id="xp-meter-count"></span><strong id="xp-next-level"></strong></span></div>
@@ -303,7 +307,7 @@ el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
 );
 el("help").addEventListener("click", () => openModal(true));
-function refreshSound() {
+function refreshAudio() {
   const sound = gameAudio.enabled;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
   el("sound").setAttribute("aria-pressed", String(sound));
@@ -311,11 +315,23 @@ function refreshSound() {
     "aria-label",
     t(sound ? "Mute sound" : "Enable sound"),
   );
+  const music = gameAudio.musicEnabled;
+  el("music").innerHTML = svg(music ? "music" : "musicOff");
+  el("music").setAttribute("aria-pressed", String(music));
+  el("music").setAttribute(
+    "aria-label",
+    t(music ? "Mute music" : "Enable music"),
+  );
+  el("music").title = t(music ? "Mute music" : "Enable music");
   menu.refresh();
+}
+function toggleMusic() {
+  gameAudio.toggleMusic();
+  refreshAudio();
 }
 function toggleSound() {
   void gameAudio.toggle();
-  refreshSound();
+  refreshAudio();
 }
 // Unlock only in a browser gesture, including keyboard and touch play.
 document.addEventListener("pointerdown", () => void gameAudio.unlock(), {
@@ -336,6 +352,7 @@ document.addEventListener(
       !button.classList.contains("audio-volume-step") &&
       ![
         "sound",
+        "music",
         "menu-sound",
         "menu-music",
         "start",
@@ -349,6 +366,7 @@ document.addEventListener(
   { capture: true },
 );
 el("sound").addEventListener("click", toggleSound);
+el("music").addEventListener("click", toggleMusic);
 window.addEventListener("keydown", (e) => {
   if (buildInspector.isOpen) return;
   const target = e.target as HTMLElement;
@@ -1009,10 +1027,7 @@ function applyLanguage() {
     `${t("Language")}: ${currentLanguage.name}`,
   );
   el("language").title = currentLanguage.name;
-  el("sound").setAttribute(
-    "aria-label",
-    t(gameAudio.enabled ? "Mute sound" : "Enable sound"),
-  );
+  refreshAudio();
   document.querySelector<HTMLElement>(".workbench")!.dataset.touchHint = t(
     "DRAG TO MOVE · AUTO ATTACK",
   );
@@ -1059,10 +1074,7 @@ const menu = setupMenu({
   quality: chooseQuality,
   sound: toggleSound,
   soundEnabled: () => gameAudio.enabled,
-  music: () => {
-    gameAudio.toggleMusic();
-    menu.refresh();
-  },
+  music: toggleMusic,
   musicEnabled: () => gameAudio.musicEnabled,
   volume: (channel) =>
     channel === "sound" ? gameAudio.effectsVolume : gameAudio.musicVolume,
@@ -1150,5 +1162,5 @@ el("ability-loadout").addEventListener("click", event => {
   if (tile) buildInspector.open(tile.dataset.ownedAbility as UpgradeId, tile);
 });
 applyLanguage();
-refreshSound();
+refreshAudio();
 void boot();

@@ -137,6 +137,8 @@ export const turkish: Record<string, string> = {
   "Game controls": "Oyun kontrolleri",
   "Enable sound": "Sesi aç",
   "Mute sound": "Sesi kapat",
+  "Enable music": "Müziği aç",
+  "Mute music": "Müziği kapat",
   "How to play": "Nasıl oynanır?",
   "Pause game": "Oyunu duraklat",
   "Game arena": "Oyun alanı",
