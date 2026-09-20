@@ -112,16 +112,18 @@ try {
     );
     assert.equal(chest.phase, "upgrade");
     await choose();
-    await page.locator("#world-hint").waitFor({ state: "visible" });
+    // Taking a chest dismisses its card, including after the level-up selection.
+    await page.waitForFunction(() => {
+      const hint = document.querySelector("#world-hint");
+      return (
+        hint.classList.contains("hidden") &&
+        !hint.classList.contains("is-reward")
+      );
+    });
+    await page.waitForTimeout(300);
     const chestHint = await hintLayout();
-
-    assert.ok(
-      chestHint.visible && chestHint.fits && !chestHint.joystickOverlap,
-    );
-    assert.match(chestHint.text, /Alındı/);
-    assert.match(chestHint.text, /Deneyim/);
-    assert.match(chestHint.text, /Atölye parçası/);
-    assert.match(chestHint.text, /tur sonunda/);
+    assert.equal(chestHint.visible, false);
+    assert.equal(chestHint.text, "");
     assert.equal(chest.discoveryReward.xp, 5);
     assert.equal(chest.discoveryReward.parts, 3);
     await page.screenshot({
@@ -134,12 +136,6 @@ try {
       (p) => p.id === "0,0:salvage",
     ).progress;
     assert.ok(progress > 0 && progress < 8);
-    // Wait out the previous reward notice before measuring the quest hint.
-    const receiptRemaining = Math.max(
-      0,
-      ((await read()).discoveryReward?.until ?? 0) - (await read()).time,
-    );
-    await waitPlayingTime(receiptRemaining + 0.15);
     const questHint = await hintLayout();
     assert.ok(
       questHint.visible && questHint.fits && !questHint.joystickOverlap,

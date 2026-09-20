@@ -154,3 +154,7 @@ Production build, five i18n tests and formatting checks pass. `scripts/level-up-
 - `node scripts/discovery-art-browser.mjs`: controlled real-GLB renderer verifies lid/loot nodes, opening, pause, reduced motion, reset, independent spent lights and stable GPU geometry (75 → 75) across streaming. All 180 receipt/preview layouts pass (six languages × five sizes × three kinds × two states), with exact localized-title checks. No page errors. This is a fixture, not a physical-device benchmark.
 - `node scripts/discovery-browser.mjs`: real keyboard/UI play at 1440×900 and 390×844 opens a chest, chooses the resulting upgrade, reads the translated itemized receipt, finishes a salvage contract and verifies frozen pause. Parts go from 3 to 11; notification fits and stays clear of the joystick. No state injection or page errors.
 - Visually inspected all three rendered assets, the open-chest scene, Turkish mobile receipt and real mobile chest capture. TypeScript/Vite build and changed-file formatting checks pass; existing bundle-size advisory remains.
+
+### Supply-chest card dismissal
+
+The post-collection supply-chest receipt is now suppressed at the user's request. Nearby unopened-chest previews and actual rewards remain; repair/salvage receipts retain their behavior. Updated real-gameplay `scripts/discovery-browser.mjs` passes at 1440×900 and 390×844: the chest card stays hidden after ability selection, 5 XP and 3 parts are still awarded, salvage reaches 11 earned parts, and pause remains frozen. No page errors. Build and changed-file formatting checks pass.

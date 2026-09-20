@@ -624,6 +624,7 @@ function renderExpansionHUD() {
   } else if (
     playing &&
     s.discovery.lastReward &&
+    s.discovery.lastReward.kind !== "chest" &&
     s.discovery.lastReward.until > s.time
   ) {
     const receipt = s.discovery.lastReward;
