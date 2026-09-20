@@ -1,4 +1,5 @@
 import { ROBOTS, getProgress } from "./progression";
+import { track } from "./analytics";
 import { setupWorkshop, workshopIcon, robotPortrait } from "./workshop";
 import { evolutionGuideMarkup } from "./evolutions";
 import {
@@ -237,6 +238,7 @@ export function setupMenu(actions: {
 
   function show(next: typeof page, focus = true) {
     const previous = page;
+    if (next !== previous) track("menu_opened", { menu: next });
     page = next;
     detailOpen = false;
     document

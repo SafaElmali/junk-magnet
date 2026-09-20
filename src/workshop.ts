@@ -1,4 +1,5 @@
 import { t, upgradeName } from "./i18n";
+import { track } from "./analytics";
 import {
   ROBOTS,
   getProgress,
@@ -70,15 +71,28 @@ export function setupWorkshop(host: HTMLElement, changed: () => void) {
       focusSelector = `[data-robot-step="${button.dataset.robotStep}"]`;
     }
     if (button.dataset.robotAction) {
-      if (button.dataset.robotAction === "unlock")
-        unlockRobot(ROBOTS[index].id);
-      else selectRobot(ROBOTS[index].id);
+      const robot = ROBOTS[index];
+      if (button.dataset.robotAction === "unlock") {
+        if (unlockRobot(robot.id))
+          track("robot_unlocked", {
+            robot_id: robot.id,
+            cost_parts: robot.cost,
+          });
+      } else if (selectRobot(robot.id))
+        track("robot_selected", { robot_id: robot.id });
       changed();
       focusSelector =
         '[data-robot-action]:not(:disabled), [data-robot-step="1"]';
     }
     if (button.dataset.permanentUpgrade) {
-      buyUpgrade(button.dataset.permanentUpgrade as PermanentUpgrade);
+      const id = button.dataset.permanentUpgrade as PermanentUpgrade;
+      const rank = getProgress().upgrades[id];
+      if (buyUpgrade(id))
+        track("workshop_upgrade_purchased", {
+          upgrade_id: id,
+          rank: rank + 1,
+          cost_parts: UPGRADE_PRICES[rank],
+        });
       changed();
       focusSelector = `[data-permanent-upgrade="${button.dataset.permanentUpgrade}"]:not(:disabled), [data-workshop-tab="upgrades"]`;
     }

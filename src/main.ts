@@ -1,4 +1,6 @@
 import { CoopClient } from "./coop-client";
+import { initAnalytics, track } from "./analytics";
+import { createRunAnalytics } from "./run-analytics";
 import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
@@ -38,7 +40,11 @@ import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
-import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
+import {
+  getGraphicsQuality,
+  setGraphicsQuality,
+  type GraphicsQuality,
+} from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
 import {
   t,
@@ -141,6 +147,14 @@ let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0;
 const touch = window.matchMedia("(pointer: coarse)").matches;
+initAnalytics();
+const runAnalytics = createRunAnalytics(track);
+const analyticsContext = () => ({
+  language: getLanguage(),
+  graphics_quality: getGraphicsQuality(),
+  input_type: touch ? "touch" : "keyboard",
+});
+const bootStarted = performance.now();
 function beep(
   freq: number,
   duration = 0.06,
@@ -176,6 +190,7 @@ function start() {
     runId = crypto.randomUUID();
     runReceipt = null;
     scene.clear();
+    runAnalytics.start(runId, "solo", s, analyticsContext());
   }
   keys.clear();
   stopStick();
@@ -197,6 +212,7 @@ function returnToMenu() {
   el("pause").innerHTML = svg("pause");
   el("pause").setAttribute("aria-label", t("Pause game"));
   if (coop.active) {
+    runAnalytics.abandon(s, "coop_left");
     coop.leave();
     s = createState(getRunConfig());
     scene.clear();
@@ -224,6 +240,7 @@ function restart() {
     coop.again();
     return;
   }
+  runAnalytics.abandon(s, "restart");
   s = createState(getRunConfig());
   scene.clear();
   keys.clear();
@@ -553,6 +570,7 @@ function pickUpgrade(id: UpgradeId | undefined) {
   )
     return;
   if (!chooseUpgrade(s, id)) return;
+  runAnalytics.observe(s);
   keys.clear();
   stopStick();
   shownUpgrade = "";
@@ -780,6 +798,7 @@ function hud() {
       kills: s.kills,
       earnedParts: s.earnedParts,
     });
+    runAnalytics.complete(s, runReceipt?.earned ?? 0);
     el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
       parts: runReceipt?.earned ?? 0,
       total: runReceipt?.parts ?? 0,
@@ -821,6 +840,7 @@ function loop(now: number) {
   };
   if (coop.active) coop.input(m, now);
   else update(s, dt, m);
+  runAnalytics.observe(s);
   if (s.events.length) {
     scene.events(s.events, s);
     if (s.events.some((event) => event.kind === "launch"))
@@ -863,6 +883,10 @@ async function boot() {
       );
     });
     loaded = true;
+    track("game_loaded", {
+      ...analyticsContext(),
+      load_duration_ms: Math.round(performance.now() - bootStarted),
+    });
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
     menu.enter(false);
@@ -939,6 +963,10 @@ async function boot() {
     });
   } catch (error) {
     loadFailed = true;
+    track("game_load_failed", {
+      ...analyticsContext(),
+      stage: "assets_or_webgl",
+    });
     console.error(error);
     el("loading").classList.add("has-error");
     el("load-title").textContent = t("The yard couldn’t open.");
@@ -991,6 +1019,7 @@ function applyLanguage() {
 }
 function chooseLanguage(next: Language) {
   setLanguage(next);
+  track("setting_changed", { setting: "language", value: next });
   applyLanguage();
 }
 function toggleLanguage() {
@@ -999,6 +1028,7 @@ function toggleLanguage() {
 }
 function chooseQuality(next: GraphicsQuality) {
   setGraphicsQuality(next);
+  track("setting_changed", { setting: "graphics_quality", value: next });
   scene?.setQuality(next);
   menu.refresh();
 }
@@ -1014,11 +1044,16 @@ const menu = setupMenu({
 });
 const coop = new CoopClient({
   snapshot(packet, first) {
+    if (first) runAnalytics.abandon(s, "mode_changed");
     const events = [...s.events, ...packet.events].slice(-160);
     s = packet.state;
     s.events = events;
     if (first) {
       runId = packet.runId as typeof runId;
+      runAnalytics.start(runId, "coop", s, {
+        ...analyticsContext(),
+        player_role: coop.index === 0 ? "host" : "guest",
+      });
       runReceipt = null;
       showedResult = false;
       shownUpgrade = "";
@@ -1043,6 +1078,7 @@ const coop = new CoopClient({
     );
   },
   leave() {
+    runAnalytics.abandon(s, "coop_left");
     s = createState(getRunConfig());
     scene.clear();
     el<HTMLButtonElement>("again").disabled = false;

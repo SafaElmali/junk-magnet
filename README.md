@@ -54,4 +54,6 @@ npm run build         # Type-check and production build
 
 [Gameplay guide](docs/gameplay.md) · [Development and artwork](docs/development.md) · [Verification notes](VERIFICATION.md)
 
+[Analytics setup and event catalog](docs/analytics.md) · [PostHog chart definitions](docs/posthog-charts.json)
+
 This is a playable prototype; balancing and physical-device testing are ongoing. No accounts, ads, or platform SDK integration. Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.

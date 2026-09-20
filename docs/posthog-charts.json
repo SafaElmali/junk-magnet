@@ -1,0 +1,394 @@
+[
+  {
+    "name": "Daily active players",
+    "description": "Unique browsers starting a run each day. Anonymous identity is per browser/device.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "run_started",
+            "math": "dau"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "showLegend": true
+        }
+      }
+    }
+  },
+  {
+    "name": "Runs started and completed",
+    "description": "Player-runs per day. Co-op counts each participant; completed means defeated. Restarts and co-op exits are separate.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "run_started",
+            "math": "total"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "run_completed",
+            "math": "total"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "run_abandoned",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "showLegend": true
+        }
+      }
+    }
+  },
+  {
+    "name": "Solo and co-op participation",
+    "description": "Started player-runs by mode. A two-player co-op match counts twice.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "run_started",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "showLegend": true
+        },
+        "breakdownFilter": {
+          "breakdowns": [
+            {
+              "property": "mode",
+              "type": "event"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "Average survival time",
+    "description": "Average gameplay seconds in completed runs, excluding pauses. Does not include restarts or closed tabs.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "run_completed",
+            "math": "avg",
+            "math_property": "duration_seconds"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "aggregationAxisFormat": "duration"
+        }
+      }
+    }
+  },
+  {
+    "name": "Survival milestones",
+    "description": "Player-runs reaching 30s, 60s, 3m, 5m and 10m. One event per milestone per run.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "survival_milestone",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsBarValue",
+          "showLegend": true
+        },
+        "breakdownFilter": {
+          "breakdowns": [
+            {
+              "property": "milestone_seconds",
+              "type": "event"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "Robot popularity",
+    "description": "Started player-runs by the robot actually equipped for that run.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "run_started",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsBarValue",
+          "showLegend": true
+        },
+        "breakdownFilter": {
+          "breakdowns": [
+            {
+              "property": "robot_id",
+              "type": "event"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "Upgrade choices",
+    "description": "Accepted ability selections, including repeatable supplies; starting weapons excluded.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "upgrade_selected",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsBarValue",
+          "showLegend": true
+        },
+        "breakdownFilter": {
+          "breakdowns": [
+            {
+              "property": "upgrade_id",
+              "type": "event"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "Workshop progression",
+    "description": "Robot unlocks and permanent upgrades paid for with earned parts.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "robot_unlocked",
+            "math": "total"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "workshop_upgrade_purchased",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "showLegend": true
+        }
+      }
+    }
+  },
+  {
+    "name": "Loading and co-op failures",
+    "description": "Boot failures and co-op connection failures per day.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "TrendsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "game_load_failed",
+            "math": "total"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "coop_connection_failed",
+            "math": "total"
+          }
+        ],
+        "trendsFilter": {
+          "display": "ActionsLineGraph",
+          "showLegend": true
+        }
+      }
+    }
+  },
+  {
+    "name": "Load → play → first upgrade",
+    "description": "Players loading the game, starting a run and selecting an upgrade within one hour. Browser-level conversion may span multiple runs.",
+    "query": {
+      "kind": "InsightVizNode",
+      "source": {
+        "dateRange": {
+          "date_from": "-30d"
+        },
+        "interval": "day",
+        "properties": [
+          {
+            "key": "environment",
+            "type": "event",
+            "operator": "exact",
+            "value": "production"
+          }
+        ],
+        "kind": "FunnelsQuery",
+        "series": [
+          {
+            "kind": "EventsNode",
+            "event": "game_loaded"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "run_started"
+          },
+          {
+            "kind": "EventsNode",
+            "event": "upgrade_selected"
+          }
+        ],
+        "funnelsFilter": {
+          "funnelOrderType": "ordered",
+          "funnelWindowInterval": 1,
+          "funnelWindowIntervalUnit": "hour",
+          "funnelVizType": "steps"
+        }
+      }
+    }
+  }
+]

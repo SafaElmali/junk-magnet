@@ -1,4 +1,5 @@
 import { getRunConfig } from "./progression";
+import { track } from "./analytics";
 import { ct } from "./coop-text";
 import { upgradeChoicesMarkup } from "./level-up";
 import type { CoopSnapshot } from "./coop-session";
@@ -130,6 +131,7 @@ export class CoopClient {
     this.panel.classList.remove("hidden");
   }
   open() {
+    track("coop_lobby_opened");
     this.lobbyOpen = true;
     this.shell(
       `<p>${ct("intro")}</p><div class="coop-robots"><img src="robots/scrap.png" alt="SCRAP-01"><span>+</span><img src="robots/volt.png" alt="VOLT"></div><div class="coop-connect"><button data-coop="create" class="primary-btn">${ct("create")}</button><div><label for="coop-code">${ct("code")}</label><div class="coop-code-entry"><input id="coop-code" maxlength="6" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="A1B2C3"><button data-coop="join" class="menu-back">${ct("join")}</button></div></div></div><p class="coop-rule">${ct("rule")}</p><p id="coop-message" role="status"></p>`,
@@ -146,13 +148,22 @@ export class CoopClient {
     if (this.socket?.readyState === WebSocket.CONNECTING) return;
     this.leave();
     this.lobbyOpen = true;
+    track("coop_connection_attempted", { action: type });
     this.message(ct("connecting"));
     const socket = new WebSocket(
       `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/coop`,
     );
     this.socket = socket;
+    let joined = false;
+    let failureReported = false;
+    const reportFailure = (reason: string) => {
+      if (failureReported) return;
+      failureReported = true;
+      track("coop_connection_failed", { action: type, reason });
+    };
     const timeout = window.setTimeout(() => {
       if (this.socket === socket && socket.readyState !== WebSocket.OPEN) {
+        reportFailure("timeout");
         socket.close();
         this.message(ct("offline"));
       }
@@ -165,6 +176,7 @@ export class CoopClient {
       if (this.socket !== socket) return;
       const m = JSON.parse(e.data);
       if (m.type === "error") {
+        reportFailure(m.reason === "room" ? "room_not_found" : "room_busy");
         this.message(ct(m.reason === "room" ? "room" : "busy"));
         return;
       }
@@ -173,6 +185,13 @@ export class CoopClient {
         return;
       }
       if (m.type === "lobby") {
+        if (!joined) {
+          joined = true;
+          track("coop_lobby_joined", {
+            action: type,
+            player_role: m.index === 0 ? "host" : "guest",
+          });
+        }
         this.code = m.code;
         this.index = m.index;
         const ready = m.players.length === 2;
@@ -210,7 +229,10 @@ export class CoopClient {
       clearTimeout(timeout);
       if (this.socket === socket) this.ended(ct("offline"));
     };
-    socket.onerror = () => this.message(ct("offline"));
+    socket.onerror = () => {
+      reportFailure("network");
+      this.message(ct("offline"));
+    };
   }
   private message(text: string) {
     const target = this.panel.querySelector("#coop-message");
