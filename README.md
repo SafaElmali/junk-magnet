@@ -50,9 +50,9 @@ Open [localhost:5185](http://127.0.0.1:5185), choose **Play Together**, and shar
 
 ## Sound and music
 
-Sound effects and music are enabled by default and start on your first interaction. Settings has independent toggles, volume sliders, and −/+ buttons for each; your preferences are remembered. Effects default to 80% and music to 60%.
+Sound effects and music are enabled by default and start on your first interaction. Settings has independent toggles, volume sliders, and −/+ buttons for each; your preferences are remembered. Both volumes default to 50%.
 
-The game uses 22 CC0 effects and separate menu/gameplay music loops. See [audio credits](public/licenses/audio-credits.md) for sources and licenses. Run `node scripts/audio-browser.mjs` against a production preview (or set `GAME_URL`) to check playback, controls, and persistence.
+The game uses 22 CC0 effects and separate menu/gameplay music loops. See [audio credits](public/licenses/audio-credits.md) for sources and licenses, and the [audio guide](docs/audio.md) for conversion, event mapping, and mixing. Run `node scripts/audio-browser.mjs` against a production preview (or set `GAME_URL`) to check playback, controls, and persistence.
 
 ## Development
 
@@ -61,6 +61,8 @@ npm test              # Simulation and gameplay tests
 npm run test:coop     # Co-op session and server tests
 npm run build         # Type-check and production build
 ```
+
+[Technology and tools index](docs/technology.md) · [Asset pipeline](docs/assets.md)
 
 [Gameplay guide](docs/gameplay.md) · [Development and artwork](docs/development.md) · [Verification notes](VERIFICATION.md)
 

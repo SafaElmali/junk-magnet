@@ -4,15 +4,17 @@
 
 ## Start a room
 
+Co-op is hidden by default while performance issues are being fixed. Enable it explicitly for local development; the flag is read when Vite starts or builds.
+
 ```sh
 npm ci
-npm run build
+VITE_COOP_ENABLED=true npm run build
 npm run serve
 ```
 
 Open [localhost:5185](http://127.0.0.1:5185). Choose **Play Together**, create a room, and share its six-character code. A friend opens the same hosted game and joins with that code; the host starts the match. Each player uses the robot selected in their own workshop.
 
-For development, keep the server running and launch `npm run dev` in another terminal. Vite on port 5184 proxies `/coop` to the server on port 5185.
+For development, keep the server running and launch `VITE_COOP_ENABLED=true npm run dev` in another terminal. Vite on port 5184 proxies `/coop` to the server on port 5185.
 
 ## Shared survival
 

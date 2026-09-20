@@ -1,8 +1,28 @@
 # Generated reference provenance
 
-Built-in ImageGen. The concept board was copied from `../../junk-magnet-concept/art/concept-board.png`; its exact prompt is in that project's PROMPTS.md.
+Built-in ImageGen. The concept board was originally copied from `junk-magnet-concept/art/concept-board.png`. Its exact prompt is preserved below from the original project's `PROMPTS.md`, so that project is no longer needed to read the provenance.
+
+See the [asset pipeline](../docs/assets.md) for regeneration and review. These images are concept references; the concept's controls and HUD are not a specification of the current game.
+
+## Concept board — exact prompt
+
+Output: [concept-board.png](concept-board.png). New generation, with no vampire-concept image reference.
+
+```text
+Use case: ui-mockup
+Asset type: art-directed original browser horde-survival game concept sheet, wide landscape 16:9 high resolution.
+Primary request: Create a genuinely original game concept called "JUNK MAGNET". It uses the auto-attacking escalating horde-survival GENRE loop, but absolutely NO vampires, gothic elements, graveyards, magic, fantasy weapons, coffins, darkness or medieval imagery. The hero is a very small lovable round yellow salvage robot with two stubby tank treads, a cream faceplate, two simple blue eyes and a big red horseshoe magnet mounted on its back. It fights swarms of malfunctioning appliances and industrial pests in a sunny toy-like scrapyard. Destroyed enemies become physical scrap pieces orbiting the robot, forming an improvised rotating weapon. Player can launch the entire orbit as a directional burst.
+Art direction: charming premium tactile 3D game diorama with slightly imperfect painted materials, broad chunky bevels, stop-motion model feel, beautifully controlled soft shadows, bold toy silhouettes. Sunlit apricot concrete, dusty turquoise scrap, butter yellow robot, warm coral danger, cream UI, navy text. Bright and sophisticated, not neon or dark sci-fi. Tiny dents and scuffs, simple readable shapes, not photorealistic, not gritty military, no pixel art.
+Board composition: warm off-white overall sheet with a compact 12%-height top heading band, very large wide 64%-height gameplay screenshot below, and 24%-height bottom explanatory strip. Header left: chunky bespoke friendly condensed dark-navy title "JUNK MAGNET"; right a short dark-navy line "THE SWARM IS YOUR AMMO." and smaller "SURVIVOR-LIKE GAME CONCEPT".
+The huge central gameplay panel must look like a convincing playable high-angle top-down 3D arena screenshot, not a promotional character illustration. A large apricot concrete junkyard floor with open navigation space and edge dressing consisting of turquoise shipping containers, neatly stacked tires, orange traffic cones, a compacted car cube and a crane claw entering only at one corner. A SMALL yellow robot at center occupies about 5% screen height, surrounded by a crisp readable loose orbital ring of salvaged saw blades, bolts, a toaster and horseshoe-shaped scrap with soft cyan magnetic trails, damaging nearby enemies. A varied horde of 45 SMALL junk enemies advances from all directions: angry tin cans on legs, red hopping toasters, tiny wheel drones, green vacuum bots. Many enemies separated by clear floor gaps. Orange impact sparks, just a few comic hit numbers. Small blue hex nuts on the ground are XP. One clear salmon-colored danger lane is telegraphed by an enemy off to the right. Player faces a navigable gap. No dense unreadable VFX.
+Gameplay HUD: top left simple small robot portrait and health bar reading "80 / 100"; top center bold navy timer on cream "03:24"; top right "LV 8" and pause icon. Thin turquoise XP bar along top edge. Bottom left three small illustrated weapon slots; bottom right one cream action control with a red magnet icon and text "SPACE  LAUNCH". No web navigation, no sidebars, no modern SaaS cards.
+Bottom strip uses three small clean playful 3D mini-vignettes on warm ivory, connected by simple thin arrows, with generous space and flat typesetting, no surrounding cards. Left: robot drawing in loose metal pieces, title "COLLECT", subline "Their wreckage. Your weapon." Center: robot encircled by a much larger ring of scrap, title "ORBIT", subline "Build a ridiculous scrap storm." Right: robot firing that ring in a spectacular focused stream into appliance enemies, title "LAUNCH", subline "Clear a path. Build it again."
+Distinct polished actual game design, composition prioritizes readable arena action and playful mechanics. Header lettering professional and beautiful, exact text, no additional labels, no watermarks, no third party logos.
+```
 
 ## Robot turnaround
+
+Output: [robot-turnaround.png](robot-turnaround.png). Input: [concept-board.png](concept-board.png).
 
 Use case: stylized-concept
 Asset type: production model reference sheet for a 3D browser game robot.

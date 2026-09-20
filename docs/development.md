@@ -1,6 +1,6 @@
 # Development and artwork
 
-[Back to README](../README.md)
+[Back to README](../README.md) · [Technology index](technology.md) · [Asset pipeline](assets.md) · [Audio guide](audio.md)
 
 ## Checks
 
@@ -53,6 +53,8 @@ See [How the characters are built](character-builds.md) for the tools, enemy mod
 | Ability illustrations | `npm run assets:abilities` | [Ability assets](../art/ABILITY-ASSETS.md) |
 | Robot variants and portraits | `npm run assets:robots` | [Robot assets](../art/ROBOT-ASSETS.md) |
 | Discovery props and previews | `npm run assets:discoveries` | [Discovery assets](../art/DISCOVERY-ASSETS.md) |
+| Boss and miniboss | `npm run assets:bosses` | [Boss assets](../art/BOSS-ASSETS.md) |
+| Helper drone and preview | `npm run assets:drone` | [Builder](../scripts/build_drone_asset.py), [character workflow](character-builds.md) |
 
 These commands use `/Applications/Blender.app/Contents/MacOS/Blender`. On another machine, invoke your Blender executable with `--background --factory-startup --python` followed by the corresponding builder script. The base asset builder uses an isolated background scene, preserving an open Blender session.
 
