@@ -4,7 +4,7 @@
 
 A tiny robot. An endless scrapyard. Your enemies become your ammunition.
 
-Collect wreckage, build an orbit of scrap, and survive increasingly chaotic waves in this 3D browser game. Play solo or team up with a friend in two-player online co-op.
+Collect wreckage, build an orbit of scrap, and survive increasingly chaotic waves in this 3D browser game. Online co-op is temporarily hidden while performance issues are being fixed.
 
 **[Play Junk Magnet](https://playjunkmagnet.com)**
 
@@ -37,10 +37,10 @@ Solo pauses during upgrade selection; **co-op keeps running**. Workshop progress
 
 ## Play together
 
-After installing dependencies, build the game and start the co-op server:
+Co-op is disabled by default. For development, enable it when building and start the co-op server:
 
 ```sh
-npm run build
+VITE_COOP_ENABLED=true npm run build
 npm run serve
 ```
 

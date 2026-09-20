@@ -6,6 +6,9 @@ import type { CoopSnapshot } from "./coop-session";
 import type { State, Vec, UpgradeId } from "./simulation";
 import "./coop.css";
 
+// Keep co-op opt-in while its performance issues are being addressed.
+const coopEnabled = import.meta.env.VITE_COOP_ENABLED === "true";
+
 const groupIcon =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8" cy="7" r="3"/><path d="M2 21v-5a6 6 0 0 1 12 0v5M16 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 5 5v2"/></svg>';
 export class CoopClient {
@@ -38,10 +41,12 @@ export class CoopClient {
     },
   ) {
     const nav = document.querySelector(".menu-actions")!;
-    nav.insertAdjacentHTML(
-      "beforeend",
-      `<button id="menu-coop" class="menu-button">${groupIcon}<span>${ct("play")}</span></button>`,
-    );
+    if (coopEnabled) {
+      nav.insertAdjacentHTML(
+        "beforeend",
+        `<button id="menu-coop" class="menu-button">${groupIcon}<span>${ct("play")}</span></button>`,
+      );
+    }
     document.getElementById("yard")!.insertAdjacentHTML(
       "beforeend",
       `
@@ -53,8 +58,8 @@ export class CoopClient {
     this.status = document.getElementById("coop-status")!;
     this.upgrades = document.getElementById("coop-upgrades")!;
     document
-      .getElementById("menu-coop")!
-      .addEventListener("click", () => this.open());
+      .getElementById("menu-coop")
+      ?.addEventListener("click", () => this.open());
     this.panel.addEventListener("click", (e) => {
       const action = (e.target as Element).closest<HTMLElement>("[data-coop]")
         ?.dataset.coop;
@@ -62,7 +67,7 @@ export class CoopClient {
         this.leave();
         this.panel.classList.add("hidden");
         this.lobbyOpen = false;
-        document.getElementById("menu-coop")!.focus();
+        document.getElementById("menu-coop")?.focus();
       }
       if (action === "create") this.connect("create");
       if (action === "join")
@@ -131,6 +136,7 @@ export class CoopClient {
     this.panel.classList.remove("hidden");
   }
   open() {
+    if (!coopEnabled) return;
     track("coop_lobby_opened");
     this.lobbyOpen = true;
     this.shell(
@@ -141,6 +147,7 @@ export class CoopClient {
       ?.focus();
   }
   private connect(type: "create" | "join", code?: string) {
+    if (!coopEnabled) return;
     if (type === "join" && !/^[A-Fa-f0-9]{6}$/.test(code?.trim() ?? "")) {
       this.message(ct("room"));
       return;
@@ -394,7 +401,8 @@ export class CoopClient {
     document.getElementById("app")!.classList.remove("is-coop");
   }
   refresh() {
-    document.querySelector("#menu-coop span")!.textContent = ct("play");
+    const label = document.querySelector("#menu-coop span");
+    if (label) label.textContent = ct("play");
     this.lastChoice = "";
   }
 }

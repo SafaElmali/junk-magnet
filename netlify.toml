@@ -4,6 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "22.22.0"
+  VITE_COOP_ENABLED = "false"
   VITE_COOP_URL = "wss://coop.playjunkmagnet.com/coop"
 
 [[headers]]

@@ -10,6 +10,11 @@
 
 ## How it works
 
+Co-op is temporarily hidden while performance issues are being fixed. The client
+only exposes it when `VITE_COOP_ENABLED=true` at build time; production explicitly
+sets this to `false` in `netlify.toml`. To restore it, change that value to `true`
+and redeploy. The backend remains available for development and testing.
+
 Netlify builds and serves `dist/`. `netlify.toml` supplies `VITE_COOP_URL` at build
 time, so browsers connect directly to `wss://coop.playjunkmagnet.com/coop`.
 WebSockets do not pass through Netlify Functions or an HTTP proxy.
@@ -84,7 +89,7 @@ To test the Cloudflare backend locally:
 
 ```sh
 npx wrangler dev --port 8797 --var ALLOWED_ORIGINS:http://127.0.0.1:5184
-VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
+VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 ```
 
 ## Limits and costs
