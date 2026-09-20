@@ -38,6 +38,8 @@ const mat = (color: number, roughness = 0.65, metalness = 0.05) =>
   new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const models = new Map<string, THREE.Group>();
 const tempV = new THREE.Vector3();
+const PULSE_DURATION = 0.26;
+const PULSE_SEGMENTS = 16;
 function prepare(group: THREE.Object3D) {
   group.traverse((o) => {
     if (o instanceof THREE.Mesh) {
@@ -266,9 +268,20 @@ export class YardScene {
   private hurtRed = new THREE.Color(0xff3b24);
   private hurtWhite = new THREE.Color(0xfff4d8);
   pulse!: THREE.Group;
-  private pulseBeam!: THREE.Mesh;
-  private pulseCore!: THREE.Mesh;
-  private pulseHead!: THREE.Mesh;
+  private pulseBeam!: THREE.InstancedMesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
+  private pulseCore!: THREE.InstancedMesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
+  private pulseHead!: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  private pulseRing!: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  private pulsePoints = Array.from(
+    { length: PULSE_SEGMENTS + 1 },
+    () => new THREE.Vector3(),
+  );
   private pulseStart = new THREE.Vector3();
   private pulseEnd = new THREE.Vector3();
   private beamDirection = new THREE.Vector3();
@@ -532,22 +545,50 @@ export class YardScene {
       color: 0x10ded0,
       toneMapped: false,
     });
-    const outline = new THREE.MeshBasicMaterial({
-      color: 0x126675,
-      toneMapped: false,
-    });
     const hot = new THREE.MeshBasicMaterial({
       color: 0xffde72,
       toneMapped: false,
     });
     this.pulse = new THREE.Group();
-    this.pulseBeam = new THREE.Mesh(beamGeometry, outline);
-    this.pulseCore = new THREE.Mesh(beamGeometry, magnetic);
-    this.pulseHead = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.26, 1),
-      hot,
+    const pulseMaterial = (color: number, opacity: number) =>
+      new THREE.MeshBasicMaterial({
+        color,
+        opacity,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      });
+    this.pulseBeam = new THREE.InstancedMesh(
+      beamGeometry,
+      pulseMaterial(0x39cbbb, 0.28),
+      PULSE_SEGMENTS,
     );
-    this.pulse.add(this.pulseBeam, this.pulseCore, this.pulseHead);
+    this.pulseCore = new THREE.InstancedMesh(
+      beamGeometry,
+      pulseMaterial(0xcaffdf, 1),
+      PULSE_SEGMENTS,
+    );
+    for (const mesh of [this.pulseBeam, this.pulseCore]) {
+      mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    }
+    this.pulseBeam.renderOrder = 11;
+    this.pulseCore.renderOrder = 12;
+    this.pulseHead = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.18, 1),
+      pulseMaterial(0xfff0b0, 1),
+    );
+    this.pulseRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.86, 1, 32),
+      pulseMaterial(0xffd56d, 0.8),
+    );
+    this.pulseRing.material.side = THREE.DoubleSide;
+    this.pulse.add(
+      this.pulseBeam,
+      this.pulseCore,
+      this.pulseHead,
+      this.pulseRing,
+    );
     this.pulse.visible = false;
     this.scene.add(this.pulse);
     this.shotTrails = new THREE.InstancedMesh(
@@ -874,7 +915,7 @@ export class YardScene {
         lightning: this.lightning.diagnostics(),
         pulseVisible: this.pulse?.visible ?? false,
         pulseLife: this.pulseLife,
-        pulseWidth: 0.28,
+        pulseWidth: 0.15,
         shotTrails: this.shotTrails?.count ?? 0,
         impacts: this.impacts.length,
         impactLimit: 24,
@@ -971,13 +1012,24 @@ export class YardScene {
           ev.fromZ ?? s.player.z,
         );
         this.pulseEnd.set(ev.x, 1.15, ev.z);
-        this.pulseLife = 0.26;
+        // Bow the magnetic filament away from the direct aim line. Keep the
+        // curve fixed for the strike so it stays still when gameplay pauses.
+        const dx = this.pulseEnd.x - this.pulseStart.x;
+        const dz = this.pulseEnd.z - this.pulseStart.z;
+        const distance = Math.hypot(dx, dz);
+        const bend = Math.min(0.42, distance * 0.18);
+        for (let i = 0; i <= PULSE_SEGMENTS; i++) {
+          const t = i / PULSE_SEGMENTS;
+          const bow = Math.sin(t * Math.PI) * bend;
+          this.pulsePoints[i].copy(this.pulseStart).lerp(this.pulseEnd, t);
+          this.pulsePoints[i].x -= (dz / (distance || 1)) * bow;
+          this.pulsePoints[i].z += (dx / (distance || 1)) * bow;
+          this.pulsePoints[i].y += bow * 0.65;
+        }
+        this.pulseLife = PULSE_DURATION;
         this.pulse.visible = true;
       }
-      if (
-        (ev.kind === "hit" || ev.kind === "pulse") &&
-        this.impacts.length < 24
-      )
+      if (ev.kind === "hit" && this.impacts.length < 24)
         this.impacts.push({ x: ev.x, z: ev.z, life: 0.26 });
       if (ev.kind === "collect") continue;
       const count = ev.kind === "kill" ? 12 : ev.kind === "launch" ? 10 : 4;
@@ -1223,21 +1275,43 @@ export class YardScene {
     this.pulseLife = Math.max(0, this.pulseLife - dt);
     this.pulse.visible = this.pulseLife > 0;
     if (this.pulse.visible) {
-      this.beamDirection.subVectors(this.pulseEnd, this.pulseStart);
-      const length = this.beamDirection.length();
-      this.beamDirection.normalize();
-      for (const [mesh, radius] of [
-        [this.pulseBeam, 0.14],
-        [this.pulseCore, 0.075],
-      ] as const) {
-        mesh.position.copy(this.pulseStart).lerp(this.pulseEnd, 0.5);
-        // Raise the luminous inner core above its dark silhouette.
-        if (mesh === this.pulseCore) mesh.position.y += 0.11;
-        mesh.quaternion.setFromUnitVectors(this.beamUp, this.beamDirection);
-        mesh.scale.set(radius, length, radius);
+      const progress = 1 - this.pulseLife / PULSE_DURATION;
+      const fade = Math.max(0, 1 - progress / 0.72) ** 2;
+      this.pulseBeam.material.opacity = fade * 0.28;
+      this.pulseCore.material.opacity = fade;
+      for (let i = 0; i < PULSE_SEGMENTS; i++) {
+        const from = this.pulsePoints[i],
+          to = this.pulsePoints[i + 1];
+        this.beamDirection.subVectors(to, from);
+        const length = this.beamDirection.length();
+        transform.position.copy(from).lerp(to, 0.5);
+        transform.quaternion.setFromUnitVectors(
+          this.beamUp,
+          this.beamDirection.normalize(),
+        );
+        const taper =
+          0.3 + Math.sin(((i + 0.5) / PULSE_SEGMENTS) * Math.PI) * 0.7;
+        for (const [mesh, radius] of [
+          [this.pulseBeam, 0.075],
+          [this.pulseCore, 0.027],
+        ] as const) {
+          const width = radius * taper * (0.5 + fade * 0.5);
+          transform.scale.set(width, length * 1.06, width);
+          transform.updateMatrix();
+          mesh.setMatrixAt(i, transform.matrix);
+        }
       }
+      this.pulseBeam.instanceMatrix.needsUpdate = true;
+      this.pulseCore.instanceMatrix.needsUpdate = true;
       this.pulseHead.position.copy(this.pulseEnd);
-      this.pulseHead.scale.setScalar(this.reduced ? 1 : 0.85 + this.pulseLife);
+      this.pulseHead.scale.setScalar(this.reduced ? 0.8 : 1.2 - progress * 0.9);
+      this.pulseHead.material.opacity = (1 - progress) ** 2;
+      this.pulseRing.position.copy(this.pulseEnd);
+      this.pulseRing.quaternion.copy(this.camera.quaternion);
+      this.pulseRing.scale.setScalar(
+        this.reduced ? 0.28 : 0.12 + progress * 0.4,
+      );
+      this.pulseRing.material.opacity = (1 - progress) ** 2 * 0.8;
     }
     for (const impact of this.impacts) impact.life -= dt;
     this.impacts = this.impacts.filter((impact) => impact.life > 0);
