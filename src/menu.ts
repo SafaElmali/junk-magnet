@@ -83,7 +83,7 @@ export const menuMarkup = `
     </nav>
     <aside class="pilot-card" aria-label="Your character">
       <span class="pilot-tag">YOUR SURVIVOR</span>
-      <svg class="pilot-art" viewBox="0 0 260 220" aria-hidden="true"><ellipse cx="130" cy="195" rx="81" ry="12" fill="#0b2029"/><g transform="rotate(-7 130 120)"><path d="M95 68V28h20v35c0 17 30 17 30 0V28h20v40c0 43-70 43-70 0" fill="#cd4e39" stroke="#142f3b" stroke-width="5"/><path d="M95 28h20v17H95zm50 0h20v17h-20z" fill="#fff6e3"/><rect x="61" y="132" width="33" height="63" rx="12" fill="#263c41" stroke="#071e29" stroke-width="5"/><rect x="166" y="132" width="33" height="63" rx="12" fill="#263c41" stroke="#071e29" stroke-width="5"/><path d="M67 146h20m-20 14h20m-20 14h20m86-28h20m-20 14h20m-20 14h20" stroke="#67736a" stroke-width="5"/><rect x="82" y="91" width="96" height="91" rx="25" fill="#edba4b" stroke="#132f3b" stroke-width="5"/><path d="M97 102h65" stroke="#ffe8a0" stroke-width="6" stroke-linecap="round"/><rect x="96" y="117" width="68" height="39" rx="18" fill="#173342"/><ellipse cx="115" cy="133" rx="6" ry="9" fill="#a2eced"/><ellipse cx="145" cy="133" rx="6" ry="9" fill="#a2eced"/><path d="M117 169h26" stroke="#b17832" stroke-width="5" stroke-linecap="round"/></g><path d="m38 87 8 8-8 8-8-8zm177 46 7 7-7 7-7-7z" fill="#74b6b6"/><circle cx="212" cy="68" r="10" fill="none" stroke="#bcbaa0" stroke-width="5"/></svg>
+      <div class="pilot-art" aria-hidden="true"></div>
       <h3 id="menu-pilot-name">SCRAP-01</h3><p id="menu-pilot-copy">Tiny robot. Endless potential.</p>
       <div class="pilot-weapon"><span>STARTING WEAPON</span><strong id="menu-weapon"></strong></div>
     </aside>
@@ -188,9 +188,7 @@ export function setupMenu(actions: {
     el("menu-weapon").textContent = upgradeName(robot.startingWeapon);
     el("menu-pilot-name").textContent = robot.name;
     el("menu-pilot-copy").textContent = t(robot.description);
-    document.querySelector(".pilot-art")!.outerHTML = robotPortrait(
-      robot.id,
-    ).replace('class="workshop-robot"', 'class="pilot-art"');
+    document.querySelector(".pilot-art")!.innerHTML = robotPortrait(robot.id);
     el("menu-workshop").querySelector("span")!.textContent = t("WORKSHOP");
     el("menu-evolutions-open").setAttribute("aria-label", t("EVOLUTIONS"));
     el("menu-evolutions-open").setAttribute("title", t("EVOLUTIONS"));
