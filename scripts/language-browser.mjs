@@ -20,19 +20,16 @@ try {
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
     const read = () => page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
     assert.equal(await page.locator("html").getAttribute("lang"), "tr");
-    assert.match(await page.locator("#start").innerText(), /HAYDİ BAŞLAYALIM/);
-    await page.locator("#help").click();
+    assert.match(await page.locator("#start").innerText(), /OYNA/);
+    await page.locator("#menu-help").click();
     assert.match(
       await page.locator("#help-content").innerText(),
       /Mavi enerji topla/,
     );
-    await page.locator("#language").click();
-    assert.equal(await page.locator("html").getAttribute("lang"), "en");
-    assert.match(
-      await page.locator("#modal-title").innerText(),
-      /A little scrap/,
-    );
     await page.locator("#resume").click();
+    await page.locator("#menu-settings").click();
+    await page.locator("#menu-language").click();
+    assert.equal(await page.locator("html").getAttribute("lang"), "en");
     await page.reload();
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
     assert.equal(
@@ -40,7 +37,9 @@ try {
       "en",
       "Saved choice persists over Turkish browser locale",
     );
-    await page.locator("#language").click();
+    await page.locator("#menu-settings").click();
+    await page.locator("#menu-language").click();
+    await page.locator("#menu-back").click();
     await page.locator("#start").click();
     await page.waitForFunction(
       () => window.__JUNK_MAGNET__.snapshot().phase === "upgrade",

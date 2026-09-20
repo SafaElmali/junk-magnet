@@ -248,3 +248,7 @@ Visual reference checks: `.impeccable/review/survival-desktop.png`, `survival-mo
 ## Language
 
 The utility menu includes a 48px touch target for TR/EN, revealed by pausing during a run. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.
+
+## Main menu
+
+The title screen now fills the viewport with a dimmed scrapyard behind a cream/gold, stacked Junk Magnet wordmark. A column of beveled arcade buttons prioritizes Play (or Continue for an unfinished run); a compact character card presents SCRAP-01 and its starting weapon. The robot portrait is original inline SVG, matching the existing yellow body and red magnet. The stage strip identifies the endless scrapyard without suggesting additional playable maps or characters. The ability reference and language/sound options replace the menu body, with explicit Back controls. On portrait phones the character card becomes a compact row under the actions; short landscape screens place the title beside the controls. Sources: `src/menu.ts`, `src/menu.css`, and lifecycle integration in `src/main.ts`. The sparse combat HUD is unchanged.

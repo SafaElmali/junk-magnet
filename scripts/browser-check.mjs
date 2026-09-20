@@ -13,7 +13,7 @@ page.on("console", (m) => {
 await page.goto("http://127.0.0.1:5184/");
 await page.waitForFunction(() => window.__JUNK_MAGNET__, { timeout: 20000 });
 await page.screenshot({ path: ".impeccable/review/desktop-ready.png" });
-await page.getByRole("button", { name: "LET’S MAKE A MESS" }).click();
+await page.locator("#start").click();
 await page.waitForTimeout(1000);
 await page.screenshot({ path: ".impeccable/review/desktop.png" });
 console.log(
@@ -56,7 +56,7 @@ const mobile = await browser.newPage({
 mobile.on("pageerror", (e) => errors.push(String(e)));
 await mobile.goto("http://127.0.0.1:5184/");
 await mobile.waitForFunction(() => window.__JUNK_MAGNET__);
-await mobile.getByRole("button", { name: "LET’S MAKE A MESS" }).click();
+await mobile.locator("#start").click();
 await mobile.waitForTimeout(350);
 await mobile.screenshot({ path: ".impeccable/review/mobile.png" });
 console.log(

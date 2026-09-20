@@ -41,6 +41,28 @@ export function setLanguage(next: Language) {
 // English source copy is the translation key. Static DOM bindings retain original
 // text nodes, preserving icons, controls and the current run when language changes.
 export const turkish: Record<string, string> = {
+  "SURVIVE. SALVAGE. REPEAT.": "DAYAN. TOPLA. TEKRARLA.",
+  "Main menu": "Ana menü",
+  PLAY: "OYNA",
+  CONTINUE: "DEVAM ET",
+  "NEW RUN": "YENİ TUR",
+  ABILITIES: "YETENEKLER",
+  SETTINGS: "AYARLAR",
+  "HOW TO PLAY": "NASIL OYNANIR?",
+  "MAIN MENU": "ANA MENÜ",
+  BACK: "GERİ",
+  "Your character": "Karakterin",
+  "YOUR SURVIVOR": "KARAKTERİN",
+  "Tiny robot. Endless potential.": "Küçük robot. Sınırsız potansiyel.",
+  "STARTING WEAPON": "BAŞLANGIÇ SİLAHI",
+  "Endless survival · Increasing difficulty": "Sonsuz mücadele · Artan zorluk",
+  READY: "HAZIR",
+  Language: "Dil",
+  Sound: "Ses",
+  ON: "AÇIK",
+  OFF: "KAPALI",
+  "Move. Collect. Choose your upgrades. Attacks are automatic.":
+    "Hareket et. Topla. Yetenek seç. Saldırılar otomatik.",
   "Level up": "Seviye atladın",
   "Level {level} · Choose one upgrade.": "Seviye {level} · Bir yetenek seç.",
   "THE SWARM IS YOUR AMMO.": "SÜRÜ SENİN CEPHANEN.",

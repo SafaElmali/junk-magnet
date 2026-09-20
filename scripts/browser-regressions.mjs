@@ -10,16 +10,17 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.goto("http://127.0.0.1:5184");
 await page.waitForFunction(() => window.__JUNK_MAGNET__);
-await page.getByRole("button", { name: "How to play" }).click();
-await page.getByRole("button", { name: "How to play" }).click();
-await page.getByRole("button", { name: "BACK TO THE YARD" }).click();
+await page.locator("#menu-help").click();
+await page.locator("#resume").click();
+await page.locator("#menu-help").click();
+await page.locator("#resume").click();
 assert.equal(
   await page.evaluate(() => window.__JUNK_MAGNET__.snapshot().phase),
   "ready",
 );
 assert.equal(await page.locator("#intro").isVisible(), true);
 assert.equal(await page.locator("#lower-hud").count(), 0);
-await page.getByRole("button", { name: "LET’S MAKE A MESS" }).click();
+await page.locator("#start").click();
 await page.keyboard.down("KeyD");
 await page.waitForTimeout(200);
 await page.keyboard.down("KeyW");
@@ -67,7 +68,7 @@ const mobile = await browser.newPage({
 mobile.on("pageerror", (e) => errors.push(e.message));
 await mobile.goto("http://127.0.0.1:5184");
 await mobile.waitForFunction(() => window.__JUNK_MAGNET__);
-await mobile.getByRole("button", { name: "LET’S MAKE A MESS" }).tap();
+await mobile.locator("#start").tap();
 await mobile.waitForTimeout(150);
 const sizes = await mobile
   .locator(".masthead button:visible")

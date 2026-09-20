@@ -10,6 +10,8 @@ import "@fontsource/dm-sans/latin-ext-500.css";
 import "@fontsource/dm-sans/latin-ext-700.css";
 import "./style.css";
 import "./play-hud.css";
+import "./menu.css";
+import { menuMarkup, setupMenu } from "./menu";
 import {
   t,
   getLanguage,
@@ -67,13 +69,14 @@ app.innerHTML = `
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
  <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
- <div class="intro hidden" id="intro"><div class="intro-content"><h2>Small robot.<br>Endless trouble.</h2><p>Keep moving. Your weapons fire automatically.<br>Collect blue energy to level up.<br><strong>Choose upgrades. Survive the swarm.</strong></p><button class="primary-btn" id="start">LET’S MAKE A MESS ${svg("arrow")}</button><span class="intro-note">Move with WASD or arrows · Attacks are automatic</span></div></div>
+ <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
- <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button></div></div>
+ <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button><button id="pause-menu" class="text-btn">MAIN MENU</button></div></div>
  <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
- <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button></div></div>
+ <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button><button id="result-menu" class="text-btn">MAIN MENU</button></div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
+app.classList.add("in-menu");
 const translateStatic = bindStaticTranslations(app);
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -121,8 +124,11 @@ function beep(
   }
 }
 function start() {
-  if (!loaded) return;
+  if (!loaded || !menu.isHome()) return;
+  keys.clear();
+  stopStick();
   s.phase = "playing";
+  app.classList.remove("in-menu");
   app.classList.add("in-run");
   el("yard").classList.add("is-playing");
   showedResult = false;
@@ -132,7 +138,25 @@ function start() {
   shownUpgrade = "";
   el<HTMLButtonElement>("pause").disabled = false;
   if (touch) el("touch-stick").classList.remove("hidden");
+  el("yard").focus({ preventScroll: true });
   beep(320, 0.12);
+}
+function returnToMenu() {
+  const canResume = s.phase !== "lost" && s.time > 0;
+  keys.clear();
+  stopStick();
+  if (canResume) s.phase = "paused";
+  else {
+    s = createState();
+    scene.clear();
+  }
+  app.classList.remove("in-run");
+  app.classList.add("in-menu");
+  el("yard").classList.remove("is-playing");
+  for (const id of ["modal", "result", "upgrade", "touch-stick"])
+    el(id).classList.add("hidden");
+  el("intro").classList.remove("hidden");
+  menu.enter(canResume);
 }
 function restart() {
   s = createState();
@@ -144,8 +168,8 @@ function restart() {
 }
 function openModal(help = false) {
   if (!loaded || s.phase === "upgrade" || s.phase === "lost") return;
-  if (s.phase !== "paused") {
-    modalBefore = s.phase === "ready" ? "ready" : "playing";
+  if (s.phase !== "paused" || app.classList.contains("in-menu")) {
+    modalBefore = app.classList.contains("in-menu") ? "ready" : "playing";
     lastFocus = document.activeElement as HTMLElement;
   }
   s.phase = "paused";
@@ -160,6 +184,8 @@ function openModal(help = false) {
         "The scrapyard keeps going. Collect blue energy, build your abilities, and survive as long as you can.",
       )
     : t("The yard can wait. Your orbit and the swarm are paused.");
+  el("resume").firstChild!.textContent =
+    t(app.classList.contains("in-menu") ? "BACK" : "BACK TO THE YARD") + " ";
   el("help-content").classList.toggle("hidden", !help);
   el("modal").classList.remove("hidden");
   el("resume").focus({ preventScroll: true });
@@ -167,11 +193,13 @@ function openModal(help = false) {
 function closeModal() {
   if (s.phase !== "paused" || document.hidden) return;
   el("modal").classList.add("hidden");
-  s.phase = modalBefore;
+  s.phase =
+    app.classList.contains("in-menu") && s.time > 0 ? "paused" : modalBefore;
   el("yard").classList.toggle("is-playing", s.phase === "playing");
   lastFocus?.focus({ preventScroll: true });
 }
-el("start").addEventListener("click", start);
+el("pause-menu").addEventListener("click", returnToMenu);
+el("result-menu").addEventListener("click", returnToMenu);
 el("again").addEventListener("click", restart);
 el("restart").addEventListener("click", restart);
 el("resume").addEventListener("click", closeModal);
@@ -179,7 +207,7 @@ el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
 );
 el("help").addEventListener("click", () => openModal(true));
-el("sound").addEventListener("click", () => {
+function toggleSound() {
   sound = !sound;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
   el("sound").setAttribute("aria-pressed", String(sound));
@@ -188,11 +216,43 @@ el("sound").addEventListener("click", () => {
     sound ? t("Mute sound") : t("Enable sound"),
   );
   if (sound) beep(600);
-});
+  menu.refresh();
+}
+el("sound").addEventListener("click", toggleSound);
 window.addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement;
+  if (
+    app.classList.contains("in-menu") &&
+    el("modal").classList.contains("hidden") &&
+    menu.isHome() &&
+    ["ArrowUp", "ArrowDown"].includes(e.key)
+  ) {
+    e.preventDefault();
+    const buttons = [
+      ...el("menu-home").querySelectorAll<HTMLButtonElement>("button"),
+    ].filter((button) => button.getClientRects().length > 0);
+    const current = buttons.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    buttons[
+      (current +
+        (e.key === "ArrowDown" ? 1 : buttons.length - 1) +
+        buttons.length) %
+        buttons.length
+    ]?.focus();
+    return;
+  }
   if (e.key === "Tab") {
     trapFocus(e);
+    return;
+  }
+  if (
+    e.key === "Escape" &&
+    app.classList.contains("in-menu") &&
+    el("modal").classList.contains("hidden")
+  ) {
+    e.preventDefault();
+    menu.back();
     return;
   }
   if (e.key === "Escape") {
@@ -224,7 +284,7 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
   keys.add(e.code);
   if (e.code === "Space" && !e.repeat) {
-    if (s.phase === "ready") start();
+    if (s.phase === "ready" && menu.isHome()) start();
   }
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -253,7 +313,7 @@ function trapFocus(e: KeyboardEvent) {
   if (!panel) return;
   const buttons = [
     ...panel.querySelectorAll<HTMLButtonElement>("button:not([disabled])"),
-  ];
+  ].filter((button) => button.getClientRects().length > 0);
   const first = buttons[0],
     end = buttons.at(-1);
   if (!panel.contains(document.activeElement)) {
@@ -535,6 +595,7 @@ async function boot() {
     loaded = true;
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
+    menu.enter(false);
     new ResizeObserver(() => scene.resize()).observe(el("yard"));
     requestAnimationFrame(loop);
     // Read-only state snapshot for browser QA, without gameplay mutation hooks.
@@ -586,6 +647,7 @@ async function boot() {
   }
 }
 function applyLanguage() {
+  menu.refresh();
   document.documentElement.lang = getLanguage();
   translateStatic();
   el("language").textContent = getLanguage() === "en" ? "TR" : "EN";
@@ -626,9 +688,18 @@ function applyLanguage() {
   if (s.phase === "lost") showedResult = false;
   hud();
 }
-el("language").addEventListener("click", () => {
+function toggleLanguage() {
   setLanguage(getLanguage() === "en" ? "tr" : "en");
   applyLanguage();
+}
+el("language").addEventListener("click", toggleLanguage);
+const menu = setupMenu({
+  start,
+  restart,
+  help: () => openModal(true),
+  language: toggleLanguage,
+  sound: toggleSound,
+  soundEnabled: () => sound,
 });
 applyLanguage();
 void boot();

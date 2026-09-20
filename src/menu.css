@@ -1,0 +1,439 @@
+/* A full-screen arcade title screen, separate from the compact combat HUD. */
+#app.in-menu {
+  display: block;
+  padding: 0;
+  background: #112a35;
+}
+.in-menu #yard {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+.in-menu .masthead,
+.in-menu .workbench,
+.in-menu .hud,
+.in-menu .top-progress,
+.in-menu .yard-caption,
+.in-menu .ability-loadout,
+.in-menu #yard > .health-track {
+  display: none;
+}
+.in-menu #intro {
+  position: absolute;
+  inset: 0;
+  transform: none;
+  max-width: none;
+  z-index: 6;
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: radial-gradient(ellipse at 50% 35%, #183e45d9, #091e2af5 85%);
+  color: var(--cream);
+  padding: max(26px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+}
+.menu-shell {
+  width: min(620px, 100%);
+  min-height: 100%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.menu-brand {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.menu-eyebrow {
+  color: #91b4ac;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.27em;
+}
+#intro .menu-brand h2 {
+  font-size: clamp(64px, 9vw, 104px);
+  line-height: 0.82;
+  letter-spacing: -0.035em;
+  color: #fff1ce;
+  margin: 20px 0 12px;
+  font-weight: 800;
+  text-shadow:
+    0 4px 0 #a96c37,
+    0 8px 0 #091d27;
+}
+.menu-brand h2 span {
+  display: block;
+  color: #efbd56;
+}
+#intro .menu-brand p {
+  margin: 18px 0 0;
+  color: #b7c4b1;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+.menu-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: center;
+}
+.menu-actions {
+  display: grid;
+  gap: 10px;
+}
+.menu-button {
+  width: 100%;
+  min-height: 51px;
+  padding: 10px 18px;
+  border: 1px solid #61776d;
+  border-bottom: 4px solid #0a202a;
+  border-radius: 5px;
+  background: #2c484e;
+  color: #f8edd4;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  box-shadow: inset 0 1px #a5b6a72b;
+}
+.menu-button:hover {
+  background: #3d6062;
+  border-color: #9db9a8;
+}
+.menu-play {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #edbb53;
+  border-color: #f4d58d;
+  border-bottom-color: #a16734;
+  color: #172f38;
+  min-height: 66px;
+  font-size: 30px;
+  box-shadow:
+    0 0 25px #e5b24f16,
+    inset 0 2px #fff0bf;
+}
+.menu-play:hover {
+  background: #ffcf68;
+  border-color: #ffe4aa;
+}
+.menu-play > span:last-child {
+  font-size: 19px;
+}
+.pilot-card {
+  text-align: center;
+  border: 1px solid #69867a66;
+  border-radius: 6px;
+  background: #18333b99;
+  padding: 16px 12px 14px;
+  position: relative;
+}
+.pilot-tag {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #98b8aa;
+}
+.pilot-art {
+  width: 100%;
+  height: 164px;
+  display: block;
+}
+.pilot-card h3 {
+  margin: 0;
+  font:
+    700 27px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.1em;
+}
+#intro .pilot-card p {
+  font-size: 10px;
+  color: #b3c0b4;
+  margin: 5px 0 14px;
+  line-height: 1.5;
+}
+.pilot-weapon {
+  border-top: 1px solid #78908044;
+  padding-top: 10px;
+  display: grid;
+  gap: 4px;
+}
+.pilot-weapon span {
+  color: #94b1a3;
+  font-size: 8px;
+  letter-spacing: 0.13em;
+}
+.pilot-weapon strong {
+  font-size: 17px;
+  color: #efcd82;
+}
+.menu-stage {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-top: 1px solid #77908555;
+  border-bottom: 1px solid #77908555;
+  margin-top: 26px;
+  padding: 14px 0;
+}
+.stage-mark {
+  font-size: 34px;
+  color: #edbb53;
+  line-height: 1;
+}
+.menu-stage > div {
+  display: grid;
+  gap: 3px;
+}
+.menu-stage strong {
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+.menu-stage div span {
+  font-size: 10px;
+  color: #a3bcb0;
+}
+.stage-status {
+  margin-left: auto;
+  color: #99c6a9;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+#intro .intro-note {
+  text-align: center;
+  font-size: 10px;
+  color: #8da79e;
+  margin: 16px 0 0;
+}
+.menu-panel {
+  min-height: 300px;
+  border: 1px solid #7d928065;
+  border-radius: 6px;
+  padding: 20px;
+  background: #16333beb;
+}
+.menu-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #75927a55;
+}
+.menu-panel h3 {
+  font:
+    700 28px "Barlow Condensed",
+    sans-serif;
+  margin: 0;
+}
+.menu-back {
+  min-height: 48px;
+  padding: 0 16px;
+  color: #f2cb7d;
+  background: #263f46;
+  border: 1px solid #6c8171;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.menu-library {
+  max-height: 300px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #779082 #19343e;
+}
+.menu-library article {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #75927a30;
+}
+.menu-library article > span {
+  color: #d7b46d;
+  font:
+    700 20px "Barlow Condensed",
+    sans-serif;
+}
+.menu-library h4 {
+  margin: 0 0 5px;
+  font:
+    700 22px "Barlow Condensed",
+    sans-serif;
+}
+#intro .menu-library p {
+  color: #bacabd;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+.menu-options > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid #75927a30;
+}
+.menu-options .menu-button {
+  width: 145px;
+  font-size: 20px;
+}
+#intro .menu-options p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #aac0b3;
+  margin: 20px 0 0;
+}
+#pause-menu,
+#result-menu {
+  min-height: 48px;
+}
+.in-menu #restart,
+.in-menu #pause-menu {
+  display: none;
+}
+.in-menu .modal-backdrop {
+  z-index: 30;
+}
+.in-menu .modal-card {
+  border: 2px solid #cfa965;
+  border-radius: 8px;
+}
+@media (max-width: 500px) {
+  .in-menu #intro {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .menu-brand {
+    margin-bottom: 22px;
+  }
+  #intro .menu-brand h2 {
+    font-size: 76px;
+    margin-top: 16px;
+  }
+  .menu-home {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .menu-actions {
+    gap: 8px;
+  }
+  .menu-button {
+    min-height: 49px;
+  }
+  .menu-play {
+    min-height: 61px;
+  }
+  .pilot-card {
+    display: grid;
+    grid-template-columns: 75px 1fr;
+    text-align: left;
+    padding: 10px 14px;
+    align-items: center;
+  }
+  .pilot-art {
+    grid-column: 1;
+    grid-row: 1 / 5;
+    height: 86px;
+  }
+  .pilot-tag {
+    grid-column: 2;
+    font-size: 8px;
+  }
+  .pilot-card h3 {
+    grid-column: 2;
+    font-size: 23px;
+  }
+  #intro .pilot-card p {
+    display: none;
+  }
+  .pilot-weapon {
+    grid-column: 2;
+    border: 0;
+    padding-top: 4px;
+    gap: 1px;
+  }
+  .pilot-weapon strong {
+    font-size: 15px;
+  }
+  .pilot-weapon span {
+    font-size: 7px;
+  }
+  .menu-stage {
+    margin-top: 18px;
+    padding: 12px 0;
+  }
+  .menu-panel {
+    padding: 14px;
+  }
+}
+@media (max-height: 550px) and (min-width: 600px) {
+  .menu-shell {
+    width: min(850px, 100%);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    align-content: center;
+    align-items: center;
+    gap: 10px 26px;
+  }
+  .menu-brand {
+    margin: 0;
+  }
+  #intro .menu-brand h2 {
+    font-size: 70px;
+  }
+  .menu-eyebrow {
+    font-size: 8px;
+  }
+  .menu-home {
+    gap: 16px;
+  }
+  .menu-actions {
+    gap: 6px;
+  }
+  .menu-button {
+    min-height: 48px;
+    padding: 6px 12px;
+    font-size: 20px;
+  }
+  .menu-play {
+    min-height: 52px;
+    font-size: 26px;
+  }
+  .pilot-art {
+    height: 105px;
+  }
+  .pilot-card {
+    padding: 10px;
+  }
+  .menu-stage {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 9px 0;
+  }
+  #intro .intro-note {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .menu-panel {
+    min-height: 220px;
+    padding: 12px;
+  }
+  .menu-library {
+    max-height: 155px;
+  }
+  .menu-options > div {
+    padding: 8px 0;
+  }
+  #intro .menu-options p {
+    margin-top: 10px;
+  }
+}
+
+@media (pointer: coarse) {
+  #intro .intro-note {
+    font-size: 0;
+  }
+}

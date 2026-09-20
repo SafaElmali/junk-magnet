@@ -82,3 +82,9 @@ The game is local, single-player, and has no server, accounts, ads or CrazyGames
 Weapon evolutions, bosses, permanent progression and alternate characters are not included. Physical mobile/Chromebook profiling, broader browser coverage, further art work and platform integration are still needed before submission.
 
 Font and Three.js licenses are included in `public/licenses/`. Game geometry and UI icons are original to this prototype; generated reference provenance is recorded alongside the art.
+
+### Main menu
+
+The full-screen title menu includes Play/Continue, New Run, the ten-ability reference, language/sound settings, and How to Play. Pause → Main Menu preserves the current run in memory; Continue resumes it. New Run resets the run. Returning from the results screen prepares a fresh run. Reloading the page does not save an unfinished run. Menu buttons support keyboard focus, Enter/Space, and up/down navigation; Escape returns from a submenu. The portrait layout stacks the character card below the actions, while landscape keeps the controls beside the title.
+
+`node scripts/menu-browser.mjs` checks the menu, settings, reference, fresh starts and same-run resume at desktop, portrait, narrow portrait and landscape sizes.
