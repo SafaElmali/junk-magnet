@@ -149,9 +149,17 @@
   color: #98b8aa;
 }
 .pilot-art {
-  width: 100%;
-  height: min(17vh, 155px);
-  display: block;
+  width: min(100%, 210px);
+  height: min(23vh, 210px);
+  margin-inline: auto;
+}
+.pilot-art .workshop-stage {
+  height: 100%;
+}
+.pilot-art .workshop-robot {
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
 }
 .pilot-card h3 {
   margin: 0;
