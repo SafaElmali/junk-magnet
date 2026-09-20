@@ -2,6 +2,7 @@ import type { PartnerState } from "./coop-session";
 import * as THREE from "three";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
+import { createTurretTemplate } from "./turret-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -813,15 +814,7 @@ export class YardScene {
     label.rotation.x = -Math.PI / 2;
     label.position.set(-3, 0.012, 2);
     this.scene.add(label);
-    this.turretTemplate = new THREE.Group();
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.4, 0.54, 0.3, 8),
-      mat(C.ink),
-    );
-    base.position.y = 0.15;
-    const head = box(0.62, 0.52, 0.62, mat(C.teal), 0, 0.57, 0, 0.1);
-    const barrel = box(0.2, 0.2, 0.72, mat(0xffcf54), 0, 0.67, 0.36);
-    this.turretTemplate.add(base, head, barrel);
+    this.turretTemplate = createTurretTemplate();
     this.updateWorld(0, 0);
   }
   private updateWorld(x: number, z: number) {
@@ -1238,8 +1231,10 @@ export class YardScene {
         this.scene.add(model);
       }
       model.position.set(turret.x, 0, turret.z);
-      let target = s.enemies[0],
-        nearest = Infinity;
+      const head = model.getObjectByName("head")!;
+      const barrels = head.getObjectByName("barrels")!;
+      let target: (typeof s.enemies)[number] | undefined,
+        nearest = 8;
       for (const enemy of s.enemies) {
         const d = Math.hypot(enemy.x - turret.x, enemy.z - turret.z);
         if (d < nearest) {
@@ -1248,7 +1243,15 @@ export class YardScene {
         }
       }
       if (target)
-        model.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
+        head.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
+      const interval =
+        (0.9 - turret.rank * 0.1) * (s.evolutions.fortress ? 0.7 : 1);
+      const shotAge = interval - turret.fireTimer;
+      const recoil =
+        target && turret.fireTimer > 0 && shotAge >= 0 && shotAge < 0.16
+          ? Math.pow(1 - shotAge / 0.16, 2)
+          : 0;
+      barrels.position.z = this.reduced ? 0 : -0.1 * recoil;
       model.scale.setScalar(turret.life < 1 ? Math.max(0.1, turret.life) : 1);
     }
     this.lightning.update(dt, this.reduced);
