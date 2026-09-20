@@ -63,6 +63,39 @@ export const turkish: Record<string, string> = {
   OFF: "KAPALI",
   "Move. Collect. Choose your upgrades. Attacks are automatic.":
     "Hareket et. Topla. Yetenek seç. Saldırılar otomatik.",
+  All: "Tümü",
+  Weapons: "Silahlar",
+  Support: "Destek",
+  Supplies: "Takviyeler",
+  "Filter abilities": "Yetenekleri filtrele",
+  "Know your tools. Build your survival.":
+    "Ekipmanını tanı. Mücadeleye hazırlan.",
+  "MAX RANK": "EN YÜKSEK SEVİYE",
+  REPEATABLE: "TEKRAR SEÇİLEBİLİR",
+  "Your starting weapon": "Başlangıç silahın",
+  "Available through level-up choices": "Seviye atladığında seçilebilir",
+  "A field guide, not a loadout. Choose your upgrades when you level up.":
+    "Bu ekran yetenek rehberidir. Geliştirmelerini oyun içinde seviye atlayınca seçersin.",
+  "Scrap blades circle your robot and hit nearby enemies. More ranks increase damage, orbit size and speed.":
+    "Hurdalar robotunun çevresinde dönerek yakındaki düşmanlara vurur. Seviye arttıkça hasar, yörünge genişliği ve dönüş hızı artar.",
+  "An electric arc jumps between 2 enemies, dealing 4 damage every 2.8 seconds. More ranks add targets and damage.":
+    "Her 2,8 saniyede 2 düşman arasında sıçrayan bir şimşek, her birine 4 hasar verir. Seviye arttıkça hedef sayısı ve hasar artar.",
+  "Deploy a stationary turret every 8 seconds. Each shot deals 3 damage. More ranks improve fire rate, damage and lifetime.":
+    "Her 8 saniyede sabit bir taret kurar. Her atış 3 hasar verir. Seviye arttıkça daha hızlı ateş eder, güçlenir ve daha uzun dayanır.",
+  "A magnetic shockwave hits nearby enemies for 4 damage and pushes them back every 5 seconds. More ranks widen and strengthen the blast.":
+    "Her 5 saniyede bir manyetik dalga, yakındaki düşmanlara 4 hasar verir ve onları geri iter. Seviye arttıkça etki alanı ve hasar büyür.",
+  "Move 12% faster per rank. Slip through gaps and keep ahead of the swarm.":
+    "Her seviyede %12 daha hızlı hareket et. Boşluklardan sıyrıl ve sürünün önünde kal.",
+  "Extend your pickup radius by 0.9 metres per rank. Collect energy and reload your scrap from farther away.":
+    "Her seviyede toplama yarıçapını 0,9 metre genişlet. Enerjiyi ve hurdaları daha uzaktan topla.",
+  "Reduce contact damage by 2 per rank. Every enemy hit still deals at least 1 damage.":
+    "Her seviyede düşman temasının hasarını 2 azaltır. Her vuruş yine de en az 1 hasar verir.",
+  "Restore 35 health immediately, up to 100. Can be selected again on a later level.":
+    "Hemen 35 can yeniler; canın en fazla 100 olur. Sonraki seviyelerde tekrar seçilebilir.",
+  "Refill all 12 scrap pieces and reset the automatic attack cooldown. Can be selected again.":
+    "Yörüngendeki 12 hurdayı doldurur ve otomatik atışın bekleme süresini sıfırlar. Tekrar seçilebilir.",
+  "Gain 25% damage and 15% movement speed for 20 seconds. Choosing it again refreshes the duration.":
+    "20 saniye boyunca %25 hasar ve %15 hareket hızı kazan. Tekrar seçmek süreyi yeniler.",
   "Level up": "Seviye atladın",
   "Level {level} · Choose one upgrade.": "Seviye {level} · Bir yetenek seç.",
   "THE SWARM IS YOUR AMMO.": "SÜRÜ SENİN CEPHANEN.",

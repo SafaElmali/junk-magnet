@@ -1,10 +1,10 @@
+import { getLanguage, t, upgradeName } from "./i18n";
+import { UPGRADES, type UpgradeId } from "./simulation";
 import {
-  getLanguage,
-  t,
-  upgradeName,
-  localizedUpgradeDescription,
-} from "./i18n";
-import { createState, UPGRADES, type UpgradeId } from "./simulation";
+  abilityGuide,
+  abilityImage,
+  type AbilityCategory,
+} from "./ability-art";
 
 export const menuMarkup = `
 <div class="menu-shell">
@@ -48,6 +48,28 @@ export function setupMenu(actions: {
   const el = (id: string) => document.getElementById(id)!;
   let page: "home" | "abilities" | "settings" = "home";
   let resumable = false;
+  let category: AbilityCategory | "All" = "All";
+  let selected: UpgradeId = "saw";
+  function renderLibrary() {
+    const ids = (Object.keys(UPGRADES) as UpgradeId[]).filter(
+      (id) => category === "All" || abilityGuide[id].category === category,
+    );
+    if (!ids.includes(selected)) selected = ids[0];
+    const maxRank = UPGRADES[selected].maxRank;
+    el("menu-library").innerHTML = `
+      <p class="library-intro">${t("Know your tools. Build your survival.")}</p>
+      <div class="ability-filters" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${t(filter)}<span>${Object.values(abilityGuide).filter((entry) => filter === "All" || entry.category === filter).length}</span></button>`).join("")}</div>
+      <div class="ability-browser"><div class="ability-grid">${ids.map((id) => `<button class="ability-tile" data-ability="${id}" aria-pressed="${selected === id}" aria-controls="ability-detail">${abilityImage(id)}<strong>${upgradeName(id)}</strong><span class="tile-category">${t(abilityGuide[id].category)}</span></button>`).join("")}</div>
+      <section class="ability-detail" id="ability-detail" aria-live="polite" aria-labelledby="ability-detail-name">
+        <div class="detail-art">${abilityImage(selected)}</div>
+        <span class="detail-category">${t(abilityGuide[selected].category)}</span>
+        <h4 id="ability-detail-name">${upgradeName(selected)}</h4>
+        <p>${t(abilityGuide[selected].description)}</p>
+        <div class="detail-meta"><span>${t(Number.isFinite(maxRank) ? "MAX RANK" : "REPEATABLE")}</span><strong>${Number.isFinite(maxRank) ? maxRank : "∞"}</strong></div>
+        <span class="detail-acquisition">${t(selected === "saw" ? "Your starting weapon" : "Available through level-up choices")}</span>
+      </section></div>
+      <p class="library-note">${t("A field guide, not a loadout. Choose your upgrades when you level up.")}</p>`;
+  }
   function refresh() {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
@@ -62,20 +84,15 @@ export function setupMenu(actions: {
     el("menu-panel-title").textContent = t(
       page === "abilities" ? "ABILITIES" : "SETTINGS",
     );
-    if (page === "abilities") {
-      const base = createState();
-      base.upgrades.saw = 0;
-      el("menu-library").innerHTML = (Object.keys(UPGRADES) as UpgradeId[])
-        .map(
-          (id, index) =>
-            `<article><span>${String(index + 1).padStart(2, "0")}</span><div><h4>${upgradeName(id)}</h4><p>${localizedUpgradeDescription(base, id)}</p></div></article>`,
-        )
-        .join("");
-    }
+    if (page === "abilities") renderLibrary();
   }
+
   function show(next: typeof page, focus = true) {
     const previous = page;
     page = next;
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-library", page === "abilities");
     el("menu-home").classList.toggle("hidden", page !== "home");
     el("menu-panel").classList.toggle("hidden", page === "home");
     el("menu-library").classList.toggle("hidden", page !== "abilities");
@@ -90,6 +107,31 @@ export function setupMenu(actions: {
           : "menu-back",
       ).focus();
   }
+  el("menu-library").addEventListener("click", (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "button",
+    );
+    if (!button) return;
+    if (button.dataset.filter)
+      category = button.dataset.filter as typeof category;
+    if (button.dataset.ability) selected = button.dataset.ability as UpgradeId;
+    const focusSelector = button.dataset.filter
+      ? `[data-filter="${category}"]`
+      : `[data-ability="${selected}"]`;
+    renderLibrary();
+    el("menu-library")
+      .querySelector<HTMLElement>(focusSelector)
+      ?.focus({ preventScroll: true });
+    if (
+      button.dataset.ability &&
+      window.matchMedia("(max-width: 700px)").matches
+    ) {
+      el("ability-detail").scrollIntoView({
+        block: "nearest",
+        behavior: "instant",
+      });
+    }
+  });
   el("start").addEventListener("click", actions.start);
   el("new-run").addEventListener("click", actions.restart);
   el("menu-help").addEventListener("click", actions.help);

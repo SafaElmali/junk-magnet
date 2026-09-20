@@ -60,3 +60,11 @@ This revision replaces the earlier manual launch controls. `npm test` passes 23 
 ## Arcade main menu (2026-09-20)
 
 Production build, formatting checks and all 23 unit tests pass. `scripts/menu-browser.mjs` passes desktop (1440×900), portrait (390×844), landscape (844×390) and narrow portrait (320×740): ten ability entries, Turkish/English settings, sound toggle, Help, no sideways overflow, pause-to-menu with frozen simulation, Continue preserving the run, and New Run resetting it. Menu captures were opened and visually inspected; corrected duplicate mobile input hints during review. `browser-regressions.mjs` and `mobile-regressions.mjs` also pass against the updated UI. Physical devices remain untested. Current runs are retained in memory only, not across page reloads.
+
+## Illustrated ability assets (2026-09-20)
+
+Blender successfully generated ten 384×384 RGBA icons and an editable scene collection in `art/ability-kit.blend`. Production build, TypeScript and Prettier checks pass; Python asset script compilation passes. The existing Vite bundle-size advisory remains.
+
+`ability-browser.mjs` verifies all ten images decode at their expected resolution, 4/3/3 category filtering, all detail selections, repeatable status, Turkish/English copy, unchanged game time/upgrades while browsing, and real level-up cards with the new artwork. `menu-browser.mjs` continues to pass start, resume, new run, settings and Help. Coverage includes 1440×900, 390×844, 844×390 and 320×740 Chromium viewports with touch emulation. Inspected ability-guide and upgrade captures, then gave level-up artwork its own 48px column to avoid touching text. Physical-device testing remains outstanding.
+
+The final ability-browser checks also passed through the public Cloudflare tunnel, including image delivery and level-up image/text separation at desktop and portrait widths.

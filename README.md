@@ -88,3 +88,9 @@ Font and Three.js licenses are included in `public/licenses/`. Game geometry and
 The full-screen title menu includes Play/Continue, New Run, the ten-ability reference, language/sound settings, and How to Play. Pause → Main Menu preserves the current run in memory; Continue resumes it. New Run resets the run. Returning from the results screen prepares a fresh run. Reloading the page does not save an unfinished run. Menu buttons support keyboard focus, Enter/Space, and up/down navigation; Escape returns from a submenu. The portrait layout stacks the character card below the actions, while landscape keeps the controls beside the title.
 
 `node scripts/menu-browser.mjs` checks the menu, settings, reference, fresh starts and same-run resume at desktop, portrait, narrow portrait and landscape sizes.
+
+### Illustrated ability guide
+
+Blender renders now illustrate all ten abilities. The guide filters Weapons, Support and Supplies, and selecting a card shows its effect, maximum rank or repeatable status, and how to acquire it. Browsing does not equip upgrades or modify the run. The same artwork appears in level-up choices. Both languages and mobile layouts are supported.
+
+`npm run assets:abilities` rebuilds the transparent icons and editable `art/ability-kit.blend`. See `art/ABILITY-ASSETS.md` for provenance and build details. `node scripts/ability-browser.mjs` verifies image delivery, categories, all detail selections, translation, read-only browsing and level-up images.

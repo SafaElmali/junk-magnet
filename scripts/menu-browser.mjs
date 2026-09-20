@@ -31,7 +31,7 @@ try {
       true,
     );
     await page.locator("#menu-abilities").click();
-    assert.equal(await page.locator("#menu-library article").count(), 10);
+    assert.equal(await page.locator("#menu-library .ability-tile").count(), 10);
     await page.keyboard.press("Space");
     assert.equal(
       (await state()).phase,

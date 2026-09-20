@@ -252,3 +252,9 @@ The utility menu includes a 48px touch target for TR/EN, revealed by pausing dur
 ## Main menu
 
 The title screen now fills the viewport with a dimmed scrapyard behind a cream/gold, stacked Junk Magnet wordmark. A column of beveled arcade buttons prioritizes Play (or Continue for an unfinished run); a compact character card presents SCRAP-01 and its starting weapon. The robot portrait is original inline SVG, matching the existing yellow body and red magnet. The stage strip identifies the endless scrapyard without suggesting additional playable maps or characters. The ability reference and language/sound options replace the menu body, with explicit Back controls. On portrait phones the character card becomes a compact row under the actions; short landscape screens place the title beside the controls. Sources: `src/menu.ts`, `src/menu.css`, and lifecycle integration in `src/main.ts`. The sparse combat HUD is unchanged.
+
+## Illustrated ability field guide
+
+The ability submenu replaces the large title with a focused collection view: category controls, ten selectable object cards and a detail panel. Desktop uses five columns beside the selected ability; narrow screens use three columns and bring the detail into view on selection. Warm gold marks selection against the established navy/teal surfaces. Descriptions explain existing mechanics, with maximum ranks or repeatable status rather than invented unlocks or prices. The collection is informational; in-run level-up choices still control the build.
+
+Each icon is an original Blender object rendered with shared materials, an orthographic camera and studio lights. Transparent 384px PNGs let the illustrated parts sit naturally on the menu background. Full-size detail artwork and level-up thumbnails reuse the same files. Sources are `scripts/build_ability_assets.py`, `art/ability-kit.blend`, `src/ability-art.ts`, `src/menu.ts` and `src/menu.css`.

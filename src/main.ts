@@ -12,6 +12,7 @@ import "./style.css";
 import "./play-hud.css";
 import "./menu.css";
 import { menuMarkup, setupMenu } from "./menu";
+import { abilityImage } from "./ability-art";
 import {
   t,
   getLanguage,
@@ -471,7 +472,7 @@ function renderUpgrades() {
         : rank
           ? t("RANK {rank} → {next}", { rank, next: rank + 1 })
           : t("NEW ABILITY");
-      return `<button type="button" class="upgrade-choice" data-upgrade="${id}" data-choice="${index}"><span class="upgrade-icon">${svg(abilityIcons[id])}</span><span class="upgrade-text"><span class="upgrade-rank">${label}</span><strong>${upgradeName(id)}</strong><span class="upgrade-description">${localizedUpgradeDescription(s, id)}</span></span><kbd>${index + 1}</kbd></button>`;
+      return `<button type="button" class="upgrade-choice" data-upgrade="${id}" data-choice="${index}"><span class="upgrade-icon">${abilityImage(id)}</span><span class="upgrade-text"><span class="upgrade-rank">${label}</span><strong>${upgradeName(id)}</strong><span class="upgrade-description">${localizedUpgradeDescription(s, id)}</span></span><kbd>${index + 1}</kbd></button>`;
     })
     .join("");
   el("upgrade").classList.remove("hidden");
