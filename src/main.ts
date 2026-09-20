@@ -24,13 +24,15 @@ import "./loading-screen.css";
 import "./expansion.css";
 import "./level-up.css";
 import { upgradeChoicesMarkup } from "./level-up";
+import { abilityLoadoutMarkup } from "./ability-loadout";
+import { setupBuildInspector } from "./build-inspector";
 import {
   getRunConfig,
   recordRun,
   ROBOTS,
   type RunReceipt,
 } from "./progression";
-import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
+import { EVOLUTIONS } from "./evolution-core";
 import { getDiscoveryHint } from "./discovery";
 import {
   discoveryFeedback,
@@ -55,7 +57,6 @@ import {
   getLanguage,
   setLanguage,
   bindStaticTranslations,
-  upgradeName,
 } from "./i18n";
 import { YardScene } from "./scene";
 import {
@@ -181,6 +182,7 @@ function start() {
   gameAudio.play("start");
 }
 function returnToMenu() {
+  buildInspector.close();
   el("pause").innerHTML = svg("pause");
   el("pause").setAttribute("aria-label", t("Pause game"));
   if (coop.active) {
@@ -339,6 +341,7 @@ document.addEventListener(
 );
 el("sound").addEventListener("click", toggleSound);
 window.addEventListener("keydown", (e) => {
+  if (buildInspector.isOpen) return;
   const target = e.target as HTMLElement;
   if (coop.lobbyOpen || ["INPUT", "TEXTAREA"].includes(target.tagName)) return;
   if (coop.active && !e.repeat) {
@@ -551,18 +554,6 @@ const format = (t: number) =>
     .padStart(2, "0")}:${Math.floor(t % 60)
     .toString()
     .padStart(2, "0")}`;
-const abilityIcons: Record<UpgradeId, keyof typeof icons> = {
-  saw: "nut",
-  lightning: "bolt",
-  turret: "turret",
-  burst: "burst",
-  boots: "boots",
-  magnet: "magnet",
-  armor: "shield",
-  repair: "repair",
-  refill: "magnet",
-  overclock: "bolt",
-};
 function ownedAbilities() {
   return (Object.keys(s.upgrades) as UpgradeId[]).filter(
     (id) => Number.isFinite(UPGRADES[id].maxRank) && s.upgrades[id] > 0,
@@ -594,17 +585,7 @@ function renderUpgrades() {
       .join("|") + Object.values(s.evolutions).join();
   if (loadout !== shownLoadout) {
     shownLoadout = loadout;
-    el("ability-loadout").innerHTML = ownedAbilities()
-      .map((id) => {
-        const evolution = (Object.keys(EVOLUTIONS) as EvolutionId[]).find(
-          (key) => s.evolutions[key] && EVOLUTIONS[key].weapon === id,
-        );
-        const name = evolution
-          ? t(EVOLUTIONS[evolution].name)
-          : upgradeName(id);
-        return `<span class="ability-chip${evolution ? " is-evolved" : ""}" title="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`;
-      })
-      .join("");
+    el("ability-loadout").innerHTML = abilityLoadoutMarkup(s);
   }
   if (coop.active || s.phase !== "upgrade") return;
   const signature = `${s.level}:${s.choices.join(",")}:${loadout}`;
@@ -842,7 +823,7 @@ function loop(now: number) {
       Number(keys.has("KeyW") || keys.has("ArrowUp")) +
       stick.z,
   };
-  if (coop.active) coop.input(m, now);
+  if (coop.active) coop.input(buildInspector.isOpen ? { x: 0, z: 0 } : m, now);
   else update(s, dt, m);
   runAnalytics.observe(s);
   gameAudio.sync(s, app.classList.contains("in-menu"));
@@ -1060,6 +1041,7 @@ const coop = new CoopClient({
     if (first) runAnalytics.abandon(s, "mode_changed");
     const events = [...s.events, ...packet.events].slice(-160);
     s = packet.state;
+    if (s.phase !== "playing") buildInspector.close();
     s.events = events;
     if (first) {
       gameAudio.play("start");
@@ -1099,6 +1081,32 @@ const coop = new CoopClient({
     el("again").querySelector("span")!.textContent = t("ONE MORE SHIFT");
     returnToMenu();
   },
+});
+const buildInspector = setupBuildInspector({
+  state: () => s,
+  notice: () => coop.active ? ct("running") : "",
+  open() {
+    keys.clear();
+    stopStick();
+    if (coop.active) coop.stopInput();
+    else {
+      s.phase = "paused";
+      el("yard").classList.remove("is-playing");
+    }
+  },
+  close() {
+    keys.clear();
+    stopStick();
+    if (!coop.active && s.phase === "paused" && !app.classList.contains("in-menu")) {
+      s.phase = "playing";
+      el("yard").classList.add("is-playing");
+    }
+    hud();
+  },
+});
+el("ability-loadout").addEventListener("click", event => {
+  const tile = (event.target as Element).closest<HTMLButtonElement>("[data-owned-ability]");
+  if (tile) buildInspector.open(tile.dataset.ownedAbility as UpgradeId, tile);
 });
 applyLanguage();
 refreshSound();
