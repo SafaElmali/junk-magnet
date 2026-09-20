@@ -12,6 +12,8 @@ export class DroneView {
   private status: THREE.MeshStandardMaterial[] = [];
   private glow = new THREE.MeshBasicMaterial({ color: COLORS.collector, transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false });
   private beam = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1, 5), this.glow);
+  private pulseMaterial = new THREE.MeshBasicMaterial({ color: COLORS.collector, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+  private pulseRing = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 40), this.pulseMaterial);
   private up = new THREE.Vector3(0, 1, 0);
   private start = new THREE.Vector3();
   private end = new THREE.Vector3();
@@ -22,7 +24,8 @@ export class DroneView {
   private lastZ = 0;
   constructor(private scene: THREE.Scene) {
     this.group.add(this.body);
-    scene.add(this.group, this.beam);
+    this.pulseRing.rotation.x = -Math.PI / 2;
+    scene.add(this.group, this.beam, this.pulseRing);
     this.clear();
   }
   setModel(source: THREE.Object3D) {
@@ -76,6 +79,13 @@ export class DroneView {
     }
     this.glow.color.setHex(COLORS[d.mode]);
     this.glow.opacity = d.mode === "guard" ? 0.8 : 0.42;
+    this.pulseRing.visible = d.specialPulse > 0;
+    if (this.pulseRing.visible) {
+      this.pulseMaterial.color.setHex(COLORS[d.mode]);
+      this.pulseMaterial.opacity = Math.min(0.75, d.specialPulse * 1.5);
+      this.pulseRing.position.set(d.x, 0.18, d.z);
+      this.pulseRing.scale.setScalar(reduced ? 1.5 : 1 + (1 - d.specialPulse / 0.65) * 2);
+    }
     this.beam.visible = aiming;
     if (aiming) {
       this.start.copy(this.group.position); this.start.y -= 0.3;
@@ -88,10 +98,11 @@ export class DroneView {
     }
     this.lastTime = s.time; this.lastX = d.x; this.lastZ = d.z;
   }
-  clear() { this.group.visible = false; this.beam.visible = false; this.lastTime = -1; }
+  clear() { this.group.visible = false; this.beam.visible = false; this.pulseRing.visible = false; this.lastTime = -1; }
   dispose() {
-    this.scene.remove(this.group, this.beam);
+    this.scene.remove(this.group, this.beam, this.pulseRing);
     this.beam.geometry.dispose(); this.glow.dispose();
+    this.pulseRing.geometry.dispose(); this.pulseMaterial.dispose();
     this.materials.forEach(m => m.dispose());
     // GLB geometry belongs to the scene's shared asset cache.
   }

@@ -11,6 +11,7 @@ function state(): DroneGameState {
   return {
     drone: createDroneState(), player: { x: 0, z: 0 }, facing: { x: 0, z: 1 },
     phase: "playing", openingRemaining: 0, time: 10, hp: 100, scrap: 0, pickups: [], enemies: [],
+    upgrades: { drone_collector: 0, drone_repair: 0, drone_guard: 0 },
   };
 }
 test("collector retrieves existing distant salvage without granting or duplicating it", () => {
@@ -118,6 +119,7 @@ test("drone renderer reuses bounded meshes and removes owned GPU resources", () 
     const drone = createDroneState();
     drone.mode = i % 2 ? "repair" : "guard";
     drone.pulse = 0.3;
+    drone.specialPulse = 0.4;
     view.update({ drone, time: i / 60 }, i % 3 === 0);
   }
   let after = 0;
@@ -158,4 +160,139 @@ test("Blender drone switches actual role tools and owns materials without destro
   assert.equal(fan.rotation.y, 0);
   let after = 0; scene.traverse(() => after++); assert.equal(count, after);
   view.dispose(); assert.equal(disposed, 0); assert.equal(scene.children.length, 0);
+});
+
+test("each drone rank improves retrieval reach, healing cadence and guard fire", () => {
+  for (const rank of [1, 2, 3]) {
+    const collector = state();
+    collector.upgrades.drone_collector = rank;
+    collector.drone.actionTimer = 100;
+    const pickup = { id: 1, kind: "xp" as const, x: 6 + 2 * rank, z: 0, born: 0 };
+    collector.pickups = [pickup];
+    for (let i = 0; i < 180; i++) updateDrone(collector, 1 / 60, hooks);
+    assert.ok(pickup.x < 3.2, `rank ${rank} retrieves beyond the base range`);
+    const repair = state();
+    repair.upgrades.drone_repair = rank;
+    repair.hp = 50;
+    setDroneMode(repair, "repair");
+    const interval = 5 - rank * 0.5;
+    updateDrone(repair, interval - 0.01, hooks);
+    assert.equal(repair.hp, 50);
+    updateDrone(repair, 0.02, hooks);
+    assert.equal(repair.hp, 53 + rank);
+    assert.equal(repair.drone.actionTimer, interval);
+    const guard = state();
+    guard.upgrades.drone_guard = rank;
+    guard.enemies = [{ id: 1, x: 2, z: 0, hp: 100, hit: 0, seed: 0, type: "can" }];
+    setDroneMode(guard, "guard");
+    updateDrone(guard, 2, hooks);
+    assert.equal(guard.enemies[0].hp, 97 - 2 * rank);
+    assert.equal(guard.drone.actionTimer, 2 - rank * 0.25);
+    assert.equal(guard.enemies[0].slowUntil, rank === 3 ? 11 : undefined);
+  }
+});
+
+test("max-rank cluster pulls at most five existing eligible pickups on a six-second cooldown", () => {
+  const s = state();
+  s.upgrades.drone_collector = 3;
+  s.drone.actionTimer = 0;
+  s.scrap = 12;
+  s.pickups = Array.from({ length: 7 }, (_, i) => ({ id: i, kind: "xp" as const, x: 10 + i * 0.1, z: 0, born: 0, value: 2 }));
+  s.pickups.push({ id: 20, kind: "scrap", x: 8, z: 0, born: 0 });
+  s.pickups.push({ id: 21, kind: "xp", x: 8, z: 0, born: 10 });
+  s.pickups.push({ id: 22, kind: "xp", x: 14, z: 0, born: 0 });
+  const before = structuredClone(s.pickups);
+  updateDrone(s, 0.01, hooks);
+  assert.equal(s.pickups.filter((p, i) => p.x !== before[i].x).length, 5);
+  assert.equal(s.pickups.length, before.length);
+  assert.equal(s.scrap, 12);
+  assert.equal(s.drone.actions, 1);
+  assert.equal(s.drone.actionTimer, 6);
+  assert.ok(s.drone.specialPulse > 0);
+  updateDrone(s, 0.1, hooks);
+  assert.equal(s.drone.actions, 1);
+  assert.ok(s.pickups.slice(0, 7).every(p => p.value === 2));
+  setDroneMode(s, "repair");
+  updateDrone(s, 0.5, hooks);
+  setDroneMode(s, "collector");
+  assert.equal(s.drone.actionTimer, 6, "switching back cannot grant another pull");
+  updateDrone(s, 6, hooks);
+  assert.equal(s.drone.actions, 2);
+});
+
+test("cluster ownership respects different co-op drone ranges and never tugs a partner's pickup", () => {
+  const a = state(), b = state();
+  a.upgrades.drone_collector = 3;
+  a.drone.actionTimer = 0;
+  b.player.x = 20;
+  const distant = { id: 1, kind: "xp" as const, x: 12, z: 0, born: 0 };
+  const partner = { id: 2, kind: "xp" as const, x: 16, z: 0, born: 0 };
+  a.pickups = b.pickups = [distant, partner];
+  updateDrone(a, 0.01, { ...hooks, players: [a, b] });
+  assert.equal(distant.x, 8, "closer partner is out of base drone range");
+  assert.equal(partner.x, 16, "partner owns its in-range pickup");
+});
+
+test("emergency repair is stored until low health in Repair mode, consumed once and never revives", () => {
+  const s = state();
+  s.upgrades.drone_repair = 3;
+  s.hp = 20;
+  s.drone.actionTimer = 10;
+  updateDrone(s, 0.1, hooks);
+  assert.equal(s.hp, 20, "Collector mode cannot spend the heal");
+  setDroneMode(s, "repair");
+  updateDrone(s, 0.1, hooks);
+  assert.equal(s.hp, 40);
+  assert.equal(s.drone.emergencyUsed, true);
+  s.hp = 20;
+  updateDrone(s, 0.5, hooks);
+  setDroneMode(s, "guard");
+  updateDrone(s, 0.5, hooks);
+  setDroneMode(s, "repair");
+  updateDrone(s, 0.1, hooks);
+  assert.equal(s.hp, 20, "role switching does not replenish the charge");
+  const fresh = state();
+  fresh.upgrades.drone_repair = 3;
+  fresh.hp = 31;
+  setDroneMode(fresh, "repair");
+  updateDrone(fresh, 0.1, hooks);
+  assert.equal(fresh.hp, 31);
+  assert.equal(fresh.drone.emergencyUsed, false);
+  fresh.hp = 0;
+  updateDrone(fresh, 10, hooks);
+  assert.equal(fresh.hp, 0);
+  assert.equal(fresh.drone.emergencyUsed, false);
+  fresh.hp = 30;
+  updateDrone(fresh, 0.1, hooks);
+  assert.equal(fresh.hp, 50);
+  assert.equal(fresh.drone.emergencyUsed, true);
+  assert.equal(createDroneState().emergencyUsed, false);
+});
+
+test("maxing Collector never grants Repair or Guard stats or final-rank abilities", () => {
+  const s = state();
+  s.upgrades.drone_collector = 3;
+  s.hp = 20;
+  setDroneMode(s, "repair");
+  updateDrone(s, 5, hooks);
+  assert.equal(s.hp, 23);
+  assert.equal(s.drone.emergencyUsed, false);
+  assert.equal(s.drone.actionTimer, 5);
+  s.enemies = [{ id: 1, x: 2, z: 0, hp: 100, hit: 0, seed: 0, type: "can" }];
+  setDroneMode(s, "guard");
+  updateDrone(s, 5, hooks);
+  assert.equal(s.enemies[0].hp, 97);
+  assert.equal(s.enemies[0].slowUntil, undefined);
+  assert.equal(s.drone.actionTimer, 2);
+});
+
+test("maxing Repair and Guard never grants Collector reach or cluster pulls", () => {
+  const s = state();
+  s.upgrades.drone_repair = s.upgrades.drone_guard = 3;
+  s.drone.actionTimer = 0;
+  const pickup = { id: 1, kind: "xp" as const, x: 10, z: 0, born: 0 };
+  s.pickups = [pickup];
+  for (let i = 0; i < 120; i++) updateDrone(s, 1 / 60, hooks);
+  assert.equal(pickup.x, 10);
+  assert.equal(s.drone.actions, 0);
 });

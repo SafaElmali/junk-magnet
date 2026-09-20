@@ -184,3 +184,21 @@ test("large hordes retain bounded warning pools and clean dead brains", () => {
   assert.equal(f.s.encounters.brains.size, 0);
   assert.equal(f.s.encounters.warnings.length, 0);
 });
+
+test("guard slow affects special movement and charges without slowing attack clocks", () => {
+  for (const type of ["charger", "spitter", "warden", "miniboss", "boss"] as const) {
+    const normal = fixture(), slowed = fixture();
+    const a = normal.enemy(type, 10), b = slowed.enemy(type, 10);
+    b.slowUntil = 1;
+    updateEnemyBehavior(normal.s, a, 0.1, normal.hooks);
+    updateEnemyBehavior(slowed.s, b, 0.1, slowed.hooks);
+    assert.ok(Math.abs((10 - a.x) / 2 - (10 - b.x)) < 1e-8, type);
+    assert.equal(normal.s.encounters.brains.get(a.id)!.cooldown, slowed.s.encounters.brains.get(b.id)!.cooldown);
+  }
+  const f = fixture(), e = f.enemy("charger", 10);
+  e.slowUntil = 1;
+  f.s.encounters.brains.set(e.id, { cooldown: 1, dash: 0.5, dx: -1, dz: 0 });
+  updateEnemyBehavior(f.s, e, 0.1, f.hooks);
+  assert.equal(e.x, 9.4);
+  assert.equal(f.s.encounters.brains.get(e.id)!.dash, 0.4);
+});

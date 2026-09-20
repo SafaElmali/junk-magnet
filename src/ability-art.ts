@@ -1,4 +1,4 @@
-import { type UpgradeId } from "./simulation";
+import { UPGRADES, type UpgradeId } from "./simulation";
 
 export type AbilityCategory = "Weapons" | "Support" | "Supplies";
 export const abilityGuide: Record<
@@ -40,6 +40,18 @@ export const abilityGuide: Record<
     description:
       "Reduce contact damage by 2 per rank. Every enemy hit still deals at least 1 damage.",
   },
+  drone_collector: {
+    category: "Support",
+    description: UPGRADES.drone_collector.description,
+  },
+  drone_repair: {
+    category: "Support",
+    description: UPGRADES.drone_repair.description,
+  },
+  drone_guard: {
+    category: "Support",
+    description: UPGRADES.drone_guard.description,
+  },
   repair: {
     category: "Supplies",
     description:
@@ -57,6 +69,6 @@ export const abilityGuide: Record<
   },
 };
 export const abilityAsset = (id: UpgradeId) =>
-  `${(import.meta.env?.BASE_URL ?? "/")}abilities/${id}.png`;
+  `${(import.meta.env?.BASE_URL ?? "/")}abilities/${id.startsWith("drone_") ? "drone" : id}.png`;
 export const abilityImage = (id: UpgradeId, className = "ability-art") =>
   `<img class="${className}" src="${abilityAsset(id)}" width="384" height="384" alt="" decoding="async">`;

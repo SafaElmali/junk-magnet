@@ -1,6 +1,6 @@
 import { getObstacles } from "./world";
 import { SPECIALIZATIONS, weaponBranches, type SpecializationId, type Specializations, type WeaponId } from "./specializations";
-import { createDroneState, updateDrone, type DroneState } from "./drone";
+import { createDroneState, updateDrone, droneUpgradeDescription, DRONE_MAX_RANK, type DroneState, type DroneUpgradeId } from "./drone";
 import {
   createEncounterState,
   updateEncounters,
@@ -25,6 +25,7 @@ export type UpgradeId =
   | "boots"
   | "magnet"
   | "armor"
+  | DroneUpgradeId
   | "repair"
   | "refill"
   | "overclock";
@@ -33,6 +34,8 @@ export type Enemy = Vec & {
   hp: number;
   hit: number;
   seed: number;
+  /** Guard shots halve movement until this simulation timestamp. */
+  slowUntil?: number;
   type:
     | "can"
     | "runner"
@@ -173,6 +176,21 @@ export const UPGRADES: Record<
     description: "Reduce damage from enemy contact.",
     maxRank: 4,
   },
+  drone_collector: {
+    name: "Collector Drone",
+    description: "Improve Collector range and retrieval speed. Rank 3 pulls up to 5 pickups every 6 seconds.",
+    maxRank: DRONE_MAX_RANK,
+  },
+  drone_repair: {
+    name: "Repair Drone",
+    description: "Improve Repair healing and cooldown. Rank 3 stores one emergency heal per run.",
+    maxRank: DRONE_MAX_RANK,
+  },
+  drone_guard: {
+    name: "Guard Drone",
+    description: "Improve Guard damage and fire rate. Rank 3 shots slow enemies by 50% for 1 second.",
+    maxRank: DRONE_MAX_RANK,
+  },
   refill: {
     name: "Scrap Delivery",
     description:
@@ -194,6 +212,12 @@ export function upgradeDescription(s: State, id: UpgradeId): string {
   const rank = s.upgrades[id],
     next = rank + 1;
   switch (id) {
+    case "drone_collector":
+      return droneUpgradeDescription("collector", rank);
+    case "drone_repair":
+      return droneUpgradeDescription("repair", rank);
+    case "drone_guard":
+      return droneUpgradeDescription("guard", rank);
     case "saw":
       return `${2 + rank - 1} → ${2 + next - 1} blade damage; wider and faster orbit.`;
     case "lightning":
@@ -276,6 +300,9 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
       boots: 0,
       magnet: 0,
       armor: 0,
+      drone_collector: 0,
+      drone_repair: 0,
+      drone_guard: 0,
       repair: 0,
       refill: 0,
       overclock: 0,
@@ -792,7 +819,7 @@ export function update(
       }
       const speed =
         (e.type === "runner" ? 2.5 : e.type === "brute" ? 0.95 : 1.25) *
-        (1 + Math.min(0.85, s.time / 600));
+        (1 + Math.min(0.85, s.time / 600)) * ((e.slowUntil ?? 0) > s.time ? 0.5 : 1);
       if (!customMovement && d > 0.01) {
         e.x += ((target.player.x - e.x) / d) * speed * dt;
         e.z += ((target.player.z - e.z) / d) * speed * dt;

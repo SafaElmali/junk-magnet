@@ -476,3 +476,45 @@ test("pause freezes opening and a fresh restart restores uncollected ground scra
     restarted.pickups.every((p) => Math.abs(Math.hypot(p.x, p.z) - 2.4) < 1e-8),
   );
 });
+
+test("each drone role has its own upgrade choices, rank cap and new-run reset", () => {
+  const droneIds = ["drone_collector", "drone_repair", "drone_guard"] as const;
+  for (const chosen of droneIds) {
+    const s = playing();
+    for (const id of Object.keys(UPGRADES) as UpgradeId[])
+      if (Number.isFinite(UPGRADES[id].maxRank) && !droneIds.includes(id as typeof chosen)) s.upgrades[id] = UPGRADES[id].maxRank;
+    for (let rank = 1; rank <= 3; rank++) {
+      collectXP(s, s.xpNeeded);
+      assert.ok(s.choices.includes(chosen));
+      assert.equal(chooseUpgrade(s, chosen), true);
+      assert.equal(s.upgrades[chosen], rank);
+      for (const other of droneIds.filter(id => id !== chosen)) assert.equal(s.upgrades[other], 0);
+      assert.equal(s.phase, "playing");
+      assert.deepEqual(s.specializationChoices, []);
+    }
+    collectXP(s, s.xpNeeded);
+    assert.equal(s.choices.includes(chosen), false);
+    assert.equal(chooseUpgrade(s, chosen), false);
+    for (const other of droneIds.filter(id => id !== chosen)) assert.ok(s.choices.includes(other));
+  }
+  const fresh = createState();
+  for (const id of droneIds) assert.equal(fresh.upgrades[id], 0);
+  assert.equal(fresh.drone.emergencyUsed, false);
+});
+
+test("guard slow halves ordinary enemy movement and expires on simulation time", () => {
+  const normal = playing();
+  normal.scrap = 0;
+  normal.pulseTimer = 100;
+  normal.enemies = [enemy(1, 0, 6, 100)];
+  const slowed = structuredClone(normal);
+  slowed.enemies[0].slowUntil = 1;
+  update(normal, 0.05, still);
+  update(slowed, 0.05, still);
+  assert.ok(Math.abs((6 - normal.enemies[0].z) / 2 - (6 - slowed.enemies[0].z)) < 1e-8);
+  normal.enemies[0].z = slowed.enemies[0].z = 6;
+  normal.time = slowed.time = 1;
+  update(normal, 0.05, still);
+  update(slowed, 0.05, still);
+  assert.equal(normal.enemies[0].z, slowed.enemies[0].z);
+});

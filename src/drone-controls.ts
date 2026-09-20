@@ -1,5 +1,5 @@
-import { getLanguage, type Language } from "./i18n";
-import { DRONE_MODES, type DroneMode, type DroneGameState } from "./drone";
+import { getLanguage, t, type Language } from "./i18n";
+import { DRONE_MODES, DRONE_MAX_RANK, DRONE_SPECIAL_DESCRIPTIONS, droneRank, droneStats, type DroneMode, type DroneGameState } from "./drone";
 import "./drone.css";
 
 type Copy = { helper: string; change: string; modes: Record<DroneMode, [string, string]> };
@@ -63,14 +63,29 @@ export class DroneControls {
     this.mode = s.drone.mode;
     this.button.disabled = s.drone.modeCooldown > 0;
     const language = getLanguage(), copy = DRONE_COPY[language];
-    const [name, description] = copy.modes[this.mode];
-    const key = `${language}:${this.mode}`;
+    const [name] = copy.modes[this.mode];
+    const rank = droneRank(s);
+    const key = `${language}:${this.mode}:${rank}:${s.drone.emergencyUsed}`;
     if (this.rendered === key) return;
     this.rendered = key;
+    const benefit = (rank: number) => {
+      const stats = droneStats(rank);
+      const number = (value: number) => value.toLocaleString(language, { maximumFractionDigits: 2 });
+      return this.mode === "collector" ? t("{range} m · faster retrieval", { range: stats.range }) :
+        this.mode === "repair" ? t("{healing} health / {seconds}s", { healing: stats.healing, seconds: number(stats.repairInterval) }) :
+          t("{damage} damage / {seconds}s", { damage: stats.damage, seconds: number(stats.guardInterval) });
+    };
+    const status = this.mode === "repair" && rank === DRONE_MAX_RANK
+      ? t(s.drone.emergencyUsed ? "Emergency heal used" : "Emergency heal ready") : "";
+    const detail = t(DRONE_SPECIAL_DESCRIPTIONS[this.mode]);
+    const description = `${benefit(rank)}. ${rank === DRONE_MAX_RANK ? detail : ""}`;
     this.button.dataset.mode = this.mode;
-    this.button.title = `${description} ${copy.change} (Q)`;
-    this.button.setAttribute("aria-label", `${copy.helper}: ${name}. ${description} ${copy.change}`);
-    this.button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[this.mode]}</svg><span class="drone-control-copy"><small>${copy.helper}</small><strong>${name}</strong></span><span class="drone-cycle" aria-hidden="true"><kbd>Q</kbd><span>↻</span></span>`;
+    this.button.dataset.rank = String(rank);
+    const statusDescription = status ? `${status}. ` : "";
+    this.button.title = `${description} ${statusDescription}${copy.change} (Q)`;
+    this.button.setAttribute("aria-label", `${t("{name}, rank {rank}", { name: `${copy.helper}: ${name}`, rank })}. ${description} ${statusDescription}${copy.change}`);
+    const rankBar = Array.from({ length: DRONE_MAX_RANK }, (_, index) => `<i${index < rank ? ' class="is-filled"' : ""}></i>`).join("");
+    this.button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[this.mode]}</svg><span class="drone-control-copy"><small>${copy.helper}</small><strong>${name}</strong><span class="drone-rank" aria-hidden="true">${rankBar}</span>${status ? `<span class="drone-status">${status}</span>` : ""}</span><span class="drone-cycle" aria-hidden="true"><kbd>Q</kbd><span>↻</span></span>`;
   }
   dispose() {
     this.button.removeEventListener("click", this.choose);

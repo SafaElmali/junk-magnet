@@ -40,3 +40,29 @@ test("co-op rank-three branch decision never freezes the world and rejects stale
   assert.equal(p.level, 4);
   assert.equal(c.specialize(0, "saw_reaper", 3), false);
 });
+
+test("drone upgrades stay per-player, cap at three and synchronize rank and emergency charge", () => {
+  const c = quiet(), p = c.players[1];
+  for (let rank = 1; rank <= 3; rank++) {
+    p.choices = ["drone_repair"]; p.level = rank + 1;
+    assert.equal(c.choose(1, "drone_repair", p.level - 1), false);
+    assert.equal(c.choose(1, "drone_repair", p.level), true);
+    assert.equal(p.upgrades.drone_repair, rank);
+    assert.equal(p.phase, "playing");
+    assert.deepEqual(p.specializationChoices, []);
+  }
+  p.choices = ["drone_repair"];
+  assert.equal(c.choose(1, "drone_repair", p.level), false);
+  assert.equal(c.players[0].upgrades.drone_repair, 0);
+  assert.equal(p.upgrades.drone_collector, 0);
+  assert.equal(p.upgrades.drone_guard, 0);
+  p.openingRemaining = 0;
+  p.hp = 20;
+  c.droneMode(1, "repair");
+  c.tick(0.05, [zero, zero]);
+  assert.equal(p.hp, 40);
+  const snapshot = JSON.parse(JSON.stringify(c.snapshot(0)));
+  assert.equal(snapshot.partner.upgrades.drone_repair, 3);
+  assert.equal(snapshot.partner.drone.emergencyUsed, true);
+  assert.equal(c.snapshot(1).state.upgrades.drone_repair, 3);
+});

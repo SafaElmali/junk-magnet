@@ -1,4 +1,6 @@
 import { locales } from "./locales";
+import { droneStats, DRONE_MAX_RANK, DRONE_SPECIAL_DESCRIPTIONS } from "./drone";
+import { droneLocales } from "./drone-locales";
 import {
   upgradeDescription,
   UPGRADES,
@@ -258,6 +260,8 @@ export const translationCatalogs = {
   es: locales.es,
   pt: locales.pt,
 };
+for (const code of ["tr", "de", "fr", "es", "pt"] as const)
+  Object.assign(translationCatalogs[code], droneLocales[code]);
 export function t(
   source: string,
   values: Record<string, string | number> = {},
@@ -295,6 +299,17 @@ export function upgradeName(id: UpgradeId) {
   return t(UPGRADES[id].name);
 }
 export function localizedUpgradeDescription(s: State, id: UpgradeId): string {
+  if (id === "drone_collector" || id === "drone_repair" || id === "drone_guard") {
+    const rank = s.upgrades[id], before = droneStats(rank), stats = droneStats(rank + 1);
+    const number = (value: number) => value.toLocaleString(language, { maximumFractionDigits: 2 });
+    const description = id === "drone_collector"
+      ? t("Collection range {before} → {after} m; faster retrieval.", { before: before.range, after: stats.range })
+      : id === "drone_repair"
+        ? t("Healing {before} → {after} health; every {seconds}s.", { before: before.healing, after: stats.healing, seconds: number(stats.repairInterval) })
+        : t("Shot damage {before} → {after}; every {seconds}s.", { before: before.damage, after: stats.damage, seconds: number(stats.guardInterval) });
+    const mode = id === "drone_collector" ? "collector" : id === "drone_repair" ? "repair" : "guard";
+    return description + (rank + 1 >= DRONE_MAX_RANK ? ` ${t(DRONE_SPECIAL_DESCRIPTIONS[mode])}` : "");
+  }
   if (language === "en") return upgradeDescription(s, id);
   const rank = s.upgrades[id],
     next = rank + 1;

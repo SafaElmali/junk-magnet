@@ -159,6 +159,7 @@ export function updateEnemyBehavior(
 ): boolean {
   if (!isSpecial(e)) return false;
   if (!canRun(s) || e.hp <= 0 || dt <= 0) return true;
+  const movementScale = (e.slowUntil ?? 0) > s.time ? 0.5 : 1;
   const c = s.encounters;
   let b = c.brains.get(e.id);
   if (!b) {
@@ -167,7 +168,7 @@ export function updateEnemyBehavior(
     c.brains.set(e.id, b);
   }
   if (b.dash > 0) {
-    const step = Math.min(dt, b.dash) * (e.type === "miniboss" ? 10 : 12);
+    const step = Math.min(dt, b.dash) * (e.type === "miniboss" ? 10 : 12) * movementScale;
     e.x += b.dx * step;
     e.z += b.dz * step;
     b.dash = Math.max(0, b.dash - dt);
@@ -219,7 +220,7 @@ export function updateEnemyBehavior(
   b.cooldown -= dt;
   const desired = charging ? 1.6 : e.type === "boss" ? 5 : 6;
   const direction = d > desired + 1 ? 1 : !charging && d < desired - 1 ? -1 : 0;
-  const speed = e.type === "boss" ? 0.9 : charging ? 2 : 1.3;
+  const speed = (e.type === "boss" ? 0.9 : charging ? 2 : 1.3) * movementScale;
   e.x += dx * speed * direction * dt;
   e.z += dz * speed * direction * dt;
   if (

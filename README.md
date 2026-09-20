@@ -8,8 +8,8 @@ Collect wreckage, build an orbit of scrap, and survive increasingly chaotic wave
 
 **[Play Junk Magnet](https://playjunkmagnet.com)**
 
-- **Build your scrap storm:** automatic weapons, ten abilities, eight weapon specializations, and three weapon evolutions.
-- **Bring a helper:** switch your drone between collecting, repair, and guard roles.
+- **Build your scrap storm:** automatic weapons, thirteen abilities, eight weapon specializations, and three weapon evolutions.
+- **Bring a helper:** switch your drone between collecting, repair, and guard roles. Upgrade each role separately across three ranks. Collector rank 3 unlocks cluster pulls, Repair rank 3 stores one emergency heal per run, and Guard rank 3 unlocks slowing shots.
 - **Explore the yard:** bosses, supply chests, repair stations, and salvage contracts.
 - **Upgrade between runs:** three robots, permanent workshop upgrades, and locally saved progress.
 - **Play your way:** keyboard or touch, six languages, adjustable graphics, and reduced-motion support.
