@@ -1031,7 +1031,7 @@ export class YardScene {
       }
       if (ev.kind === "hit" && this.impacts.length < 24)
         this.impacts.push({ x: ev.x, z: ev.z, life: 0.26 });
-      if (ev.kind === "collect") continue;
+      if (ev.kind === "collect" || ev.kind === "turret") continue;
       const count = ev.kind === "kill" ? 12 : ev.kind === "launch" ? 10 : 4;
       for (let i = 0; i < count && this.fx.length < 160; i++) {
         const o = new THREE.Mesh(this.particles, this.sparkMat);

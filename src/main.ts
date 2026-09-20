@@ -1,3 +1,4 @@
+import { GameAudio } from "./audio";
 import { CoopClient } from "./coop-client";
 import { initAnalytics, track } from "./analytics";
 import { createRunAnalytics } from "./run-analytics";
@@ -134,15 +135,14 @@ let s = createState(getRunConfig()),
   scene: YardScene,
   loaded = false,
   last = 0,
-  sound = false,
   modalBefore: "ready" | "playing" = "playing",
   lastFocus: HTMLElement | null = null;
 let runId = crypto.randomUUID();
 let runReceipt: RunReceipt | null = null;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
-  showedResult = false,
-  audio: AudioContext | undefined;
+  showedResult = false;
+const gameAudio = new GameAudio();
 let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0;
@@ -155,34 +155,6 @@ const analyticsContext = () => ({
   input_type: touch ? "touch" : "keyboard",
 });
 const bootStarted = performance.now();
-function beep(
-  freq: number,
-  duration = 0.06,
-  type: OscillatorType = "sine",
-  gain = 0.03,
-) {
-  if (!sound) return;
-  try {
-    audio ??= new AudioContext();
-    if (audio.state === "suspended") void audio.resume();
-    const osc = audio.createOscillator(),
-      g = audio.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, audio.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(
-      freq * 0.6,
-      audio.currentTime + duration,
-    );
-    g.gain.setValueAtTime(gain, audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
-    osc.connect(g);
-    g.connect(audio.destination);
-    osc.start();
-    osc.stop(audio.currentTime + duration);
-  } catch {
-    sound = false;
-  }
-}
 function start() {
   if (!loaded || !menu.isHome()) return;
   if (s.time === 0) {
@@ -206,7 +178,7 @@ function start() {
   el<HTMLButtonElement>("pause").disabled = false;
   if (touch) el("touch-stick").classList.remove("hidden");
   el("yard").focus({ preventScroll: true });
-  beep(320, 0.12);
+  gameAudio.play("start");
 }
 function returnToMenu() {
   el("pause").innerHTML = svg("pause");
@@ -320,17 +292,51 @@ el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
 );
 el("help").addEventListener("click", () => openModal(true));
-function toggleSound() {
-  sound = !sound;
+function refreshSound() {
+  const sound = gameAudio.enabled;
   el("sound").innerHTML = svg(sound ? "sound" : "mute");
   el("sound").setAttribute("aria-pressed", String(sound));
   el("sound").setAttribute(
     "aria-label",
-    sound ? t("Mute sound") : t("Enable sound"),
+    t(sound ? "Mute sound" : "Enable sound"),
   );
-  if (sound) beep(600);
   menu.refresh();
 }
+function toggleSound() {
+  void gameAudio.toggle();
+  refreshSound();
+}
+// Unlock only in a browser gesture, including keyboard and touch play.
+document.addEventListener("pointerdown", () => void gameAudio.unlock(), {
+  capture: true,
+});
+document.addEventListener("keydown", () => void gameAudio.unlock(), {
+  capture: true,
+});
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "button",
+    );
+    if (
+      button &&
+      !button.disabled &&
+      !button.classList.contains("audio-volume-step") &&
+      ![
+        "sound",
+        "menu-sound",
+        "menu-music",
+        "start",
+        "again",
+        "restart",
+        "new-run",
+      ].includes(button.id)
+    )
+      gameAudio.play("ui");
+  },
+  { capture: true },
+);
 el("sound").addEventListener("click", toggleSound);
 window.addEventListener("keydown", (e) => {
   const target = e.target as HTMLElement;
@@ -439,6 +445,7 @@ window.addEventListener("blur", () => {
   if (s.phase === "playing" && (!touch || document.hidden)) openModal();
 });
 document.addEventListener("visibilitychange", () => {
+  gameAudio.setHidden(document.hidden);
   if (document.hidden) {
     keys.clear();
     stopStick();
@@ -578,7 +585,6 @@ function pickUpgrade(id: UpgradeId | undefined) {
   el("yard").classList.toggle("is-playing", s.choices.length === 0);
   // Do not leave keyboard focus on a hidden choice, where a held key could fire again.
   el("yard").focus({ preventScroll: true });
-  beep(720, 0.14, "triangle");
   renderUpgrades();
 }
 function renderUpgrades() {
@@ -617,7 +623,6 @@ function renderUpgrades() {
   el("upgrade-choices")
     .querySelector<HTMLButtonElement>("button")
     ?.focus({ preventScroll: true });
-  beep(480, 0.18, "triangle");
 }
 el("upgrade-choices").addEventListener("click", (e) => {
   const button = (e.target as Element).closest<HTMLButtonElement>(
@@ -822,7 +827,6 @@ function hud() {
     el("result-level").textContent = String(s.level);
     el("result-build").innerHTML = resultBuildMarkup(s);
     el("again").focus({ preventScroll: true });
-    beep(120, 0.3);
   }
 }
 function loop(now: number) {
@@ -841,16 +845,10 @@ function loop(now: number) {
   if (coop.active) coop.input(m, now);
   else update(s, dt, m);
   runAnalytics.observe(s);
+  gameAudio.sync(s, app.classList.contains("in-menu"));
   if (s.events.length) {
     scene.events(s.events, s);
-    if (s.events.some((event) => event.kind === "launch"))
-      beep(160, 0.22, "sawtooth", 0.026);
-    const e = s.events.find(
-      (e) => e.kind === "kill" || e.kind === "hurt" || e.kind === "collect",
-    );
-    if (e?.kind === "kill") beep(240, 0.07, "triangle");
-    else if (e?.kind === "hurt") beep(80, 0.12, "triangle");
-    else if (e) beep(650, 0.025, "sine", 0.009);
+    gameAudio.events(s.events, s.player);
     s.events = [];
   }
   scene.renderPartner(coop.active ? coop.partner : null, dt);
@@ -905,6 +903,7 @@ async function boot() {
               ? { player: { ...coop.partner.player }, hp: coop.partner.hp }
               : null,
           },
+          audio: gameAudio.diagnostics(),
           phase: s.phase,
           time: s.time,
           openingRemaining: s.openingRemaining,
@@ -994,7 +993,7 @@ function applyLanguage() {
   el("language").title = currentLanguage.name;
   el("sound").setAttribute(
     "aria-label",
-    t(sound ? "Mute sound" : "Enable sound"),
+    t(gameAudio.enabled ? "Mute sound" : "Enable sound"),
   );
   document.querySelector<HTMLElement>(".workbench")!.dataset.touchHint = t(
     "DRAG TO MOVE · AUTO ATTACK",
@@ -1040,7 +1039,21 @@ const menu = setupMenu({
   language: chooseLanguage,
   quality: chooseQuality,
   sound: toggleSound,
-  soundEnabled: () => sound,
+  soundEnabled: () => gameAudio.enabled,
+  music: () => {
+    gameAudio.toggleMusic();
+    menu.refresh();
+  },
+  musicEnabled: () => gameAudio.musicEnabled,
+  volume: (channel) =>
+    channel === "sound" ? gameAudio.effectsVolume : gameAudio.musicVolume,
+  changeVolume: (channel, amount) => {
+    const volume =
+      channel === "sound" ? gameAudio.effectsVolume : gameAudio.musicVolume;
+    gameAudio.setVolume(channel, volume + amount);
+    if (channel === "sound") gameAudio.play("ui");
+    menu.refresh();
+  },
 });
 const coop = new CoopClient({
   snapshot(packet, first) {
@@ -1049,6 +1062,7 @@ const coop = new CoopClient({
     s = packet.state;
     s.events = events;
     if (first) {
+      gameAudio.play("start");
       runId = packet.runId as typeof runId;
       runAnalytics.start(runId, "coop", s, {
         ...analyticsContext(),
@@ -1087,4 +1101,5 @@ const coop = new CoopClient({
   },
 });
 applyLanguage();
+refreshSound();
 void boot();

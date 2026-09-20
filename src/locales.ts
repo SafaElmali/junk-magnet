@@ -34,6 +34,9 @@ export const locales: Record<string, Record<string, string>> = {
     READY: "BEREIT",
     Language: "Sprache",
     Sound: "Ton",
+    Music: "Musik",
+    "Volume down": "Leiser",
+    "Volume up": "Lauter",
     ON: "AN",
     OFF: "AUS",
     "Move. Collect. Choose your upgrades. Attacks are automatic.":
@@ -277,6 +280,9 @@ export const locales: Record<string, Record<string, string>> = {
     READY: "PRÊT",
     Language: "Langue",
     Sound: "Son",
+    Music: "Musique",
+    "Volume down": "Baisser le volume",
+    "Volume up": "Augmenter le volume",
     ON: "ACTIVÉ",
     OFF: "DÉSACTIVÉ",
     "Move. Collect. Choose your upgrades. Attacks are automatic.":
@@ -521,6 +527,9 @@ export const locales: Record<string, Record<string, string>> = {
     READY: "LISTO",
     Language: "Idioma",
     Sound: "Sonido",
+    Music: "Música",
+    "Volume down": "Bajar volumen",
+    "Volume up": "Subir volumen",
     ON: "SÍ",
     OFF: "NO",
     "Move. Collect. Choose your upgrades. Attacks are automatic.":
@@ -763,6 +772,9 @@ export const locales: Record<string, Record<string, string>> = {
     READY: "PRONTO",
     Language: "Idioma",
     Sound: "Som",
+    Music: "Música",
+    "Volume down": "Diminuir volume",
+    "Volume up": "Aumentar volume",
     ON: "LIGADO",
     OFF: "DESLIGADO",
     "Move. Collect. Choose your upgrades. Attacks are automatic.":

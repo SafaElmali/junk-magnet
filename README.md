@@ -44,6 +44,12 @@ npm run serve
 
 Open [localhost:5185](http://127.0.0.1:5185), choose **Play Together**, and share the room code with a friend using the same hosted game. To play over the internet, deploy the Node server with WebSocket support. See [co-op setup and hosting](docs/multiplayer.md).
 
+## Sound and music
+
+Sound effects and music are enabled by default and start on your first interaction. Settings has independent toggles, volume sliders, and −/+ buttons for each; your preferences are remembered. Effects default to 80% and music to 60%.
+
+The game uses 22 CC0 effects and separate menu/gameplay music loops. See [audio credits](public/licenses/audio-credits.md) for sources and licenses. Run `node scripts/audio-browser.mjs` against a production preview (or set `GAME_URL`) to check playback, controls, and persistence.
+
 ## Development
 
 ```sh

@@ -59,7 +59,7 @@ try {
     await page.locator("#menu-sound").click();
     assert.equal(
       await page.locator("#menu-sound").getAttribute("aria-pressed"),
-      "true",
+      "false",
     );
     await chooseMenuLanguage(page, "en");
     assert.equal(await page.locator("html").getAttribute("lang"), "en");
