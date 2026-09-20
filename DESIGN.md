@@ -175,13 +175,11 @@ Both families are bundled through Fontsource imports in `src/main.ts`. Compact c
 
 ## Layout
 
-The page is a viewport-height grid: an 88px masthead, flexible yard, and 68px controls footer, with 22px horizontal gutters. At 1500px and above it uses 98px/76px outer rows and 32px gutters. At 700px and below it uses 66px/42px rows and 10px gutters. A separate short-landscape query (height at most 560px, width at least 700px) uses 54px/34px rows.
+The lobby retains the cream masthead and instruction footer. Starting a run switches to a full-viewport map with no outer gutters, logo, slogans or persistent tutorial text. `src/play-hud.css` owns the run layout; `src/style.css` retains the lobby and base components.
 
-Health and level sit at upper left; elapsed time and pressure sit at upper center on desktop and upper right on narrow screens. The recycled-enemy count moves below the timer on narrow screens. XP fills the slim top bar and appears as a numeric caption; compact build chips sit beneath it. Orbit capacity and Launch sit near the lower edges. On coarse pointers, the orbit meter lifts above the left movement stick and Launch stays at lower right. Dragging in the yard moves the robot; a second touch can launch simultaneously. Masthead controls have 48px square coarse-pointer targets; primary actions are at least 48px high and touch Launch is at least 68px high.
+A 5px XP bar spans the top. Level and 25px ability chips sit at upper left, the 22px timer is centered, and an icon plus kill count sits beside the 48px pause control. Health is a 54×5px bar just below the centered robot, growing to 7px at critical health. The bottom-right launch action is a 60px magnet button with a small ammunition count above it. Mobile movement uses a subdued 84px stick that becomes opaque during a drag. Controls respect safe-area insets.
 
-The desktop intro card sits left of the robot. On narrow screens it moves to a bottom card. Dialogs center over a dimmed yard and scroll internally when height is limited. Decorative labels and desktop input hints disappear as available space shrinks. The game canvas fills the yard rather than presenting the concept board's explanatory strip.
-
-The upgrade sheet is at most 800px wide, with three equal columns, 12px gaps, and 235px minimum-height cards. At widths up to 700px, choices stack as horizontal rows with a 105px minimum height. Short landscape keeps three columns with 155px minimum-height cards and tighter type/padding. The sheet scrolls internally when necessary; coarse-pointer views hide keyboard shortcut hints.
+During play, only Pause remains in the utility menu. Pausing reveals language, sound and help. Upgrade and result screens keep language/sound available while hiding inactive gameplay HUD elements. Upgrade choices are compact rows in a sheet up to 480px wide; short landscape uses three columns up to 720px wide. Titles are 26px and ability names 19px, with readable 12px mechanical descriptions. Keyboard choice shortcuts and focus handling remain intact.
 
 ## Elevation & Depth
 
@@ -249,4 +247,4 @@ Visual reference checks: `.impeccable/review/survival-desktop.png`, `survival-mo
 
 ## Language
 
-The header includes a 48px touch target for TR/EN. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.
+The utility menu includes a 48px touch target for TR/EN, revealed by pausing during a run. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.

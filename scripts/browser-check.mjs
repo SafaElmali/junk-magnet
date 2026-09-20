@@ -40,6 +40,7 @@ await page.waitForTimeout(350);
 const still = await page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
 if (paused.time !== still.time) errors.push("Pause did not freeze time");
 await page.getByRole("button", { name: "BACK TO THE YARD" }).click();
+await page.getByRole("button", { name: "Pause game", exact: true }).click();
 await page.getByRole("button", { name: "How to play" }).click();
 await page.getByRole("button", { name: "Start a fresh shift" }).click();
 console.log(

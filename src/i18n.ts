@@ -41,6 +41,8 @@ export function setLanguage(next: Language) {
 // English source copy is the translation key. Static DOM bindings retain original
 // text nodes, preserving icons, controls and the current run when language changes.
 export const turkish: Record<string, string> = {
+  "Level up": "Seviye atladın",
+  "Level {level} · Choose one upgrade.": "Seviye {level} · Bir yetenek seç.",
   "THE SWARM IS YOUR AMMO.": "SÜRÜ SENİN CEPHANEN.",
   "THE SCRAPYARD": "HURDALIK",
   "ENDLESS SHIFT": "SONSUZ VARDİYA",

@@ -44,3 +44,9 @@ Reports and screenshots are in `.impeccable/review/`: `regressions.json`, `survi
 - `node scripts/language-browser.mjs` verifies Turkish browser-language detection, saved English override, switching during Help and level-up without resetting time/choices/abilities, and localized upgrade selection.
 - Inspected Turkish captures at 1440×900, 390×844, 844×390 and 320×740; mobile header buttons remain at least 48×48px. Turkish character subsets are bundled.
 - `src/i18n.test.ts` covers preference fallback, dynamic values and translations for all ten upgrade/consumable IDs without simulation mutation.
+
+## Compact gameplay HUD
+
+- Production build and 21 tests pass. `scripts/hud-browser.mjs` checks full-viewport play, one visible Pause control, compact timer/health/launch geometry, settings access, language switching and actual level-up selection at 1440×900, 390×844, 844×390 and 320×740.
+- The compact HUD checks also passed through the public Cloudflare link. Mobile gesture regressions still pass: simultaneous movement/launch, cancellation, scrolling prevention and pause behavior.
+- `compact-hud-*.png` and `compact-upgrade-*.png` record the redesigned live layout; earlier survival captures document the previous layout; Turkish captures were refreshed. Physical-device testing remains outstanding.

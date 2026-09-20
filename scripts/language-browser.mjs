@@ -75,12 +75,14 @@ try {
           ),
           true,
         );
-        const sizes = await page.locator(".masthead button").evaluateAll((b) =>
-          b.map((e) => ({
-            width: e.getBoundingClientRect().width,
-            height: e.getBoundingClientRect().height,
-          })),
-        );
+        const sizes = await page
+          .locator(".masthead button:visible")
+          .evaluateAll((b) =>
+            b.map((e) => ({
+              width: e.getBoundingClientRect().width,
+              height: e.getBoundingClientRect().height,
+            })),
+          );
         assert.ok(sizes.every((s) => s.width >= 48 && s.height >= 48));
         await page.screenshot({
           path: `.impeccable/review/turkish-${viewport.width}.png`,

@@ -9,6 +9,7 @@ import "@fontsource/dm-sans/latin-ext-400.css";
 import "@fontsource/dm-sans/latin-ext-500.css";
 import "@fontsource/dm-sans/latin-ext-700.css";
 import "./style.css";
+import "./play-hud.css";
 import {
   t,
   getLanguage,
@@ -60,10 +61,11 @@ app.innerHTML = `
 <main id="yard" aria-label="Game arena" tabindex="-1">
  <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i></div>
  <section class="hud" aria-label="Game status">
-  <div class="health-panel"><div class="robot-badge">${svg("magnet")}</div><div class="health-copy"><div class="health-heading"><strong id="level">LV. 1</strong><span id="health-value">100 / 100</span></div><div class="health-track" role="progressbar" aria-label="Robot health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="health-fill"></i></div></div></div>
+  <div class="health-panel"><div class="robot-badge">${svg("magnet")}</div><div class="health-copy"><div class="health-heading"><strong id="level">LV. 1</strong><span id="health-value">100 / 100</span></div></div></div>
   <div class="timer-panel"><strong id="timer">00:00</strong><span id="wave">PRESSURE 1</span></div>
   <div class="salvage-panel">${svg("nut")}<div><strong id="kills">0</strong><span class="hud-label">JUNK RECYCLED</span></div></div>
  </section>
+ <div class="health-track" role="progressbar" aria-label="Robot health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="health-fill"></i></div>
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
  <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
@@ -71,7 +73,7 @@ app.innerHTML = `
  <div class="lower-hud hidden" id="lower-hud"><div class="orbit-panel"><div class="orbit-icon">${svg("magnet")}</div><div><div class="orbit-caption"><strong>SCRAP ORBIT</strong><span id="scrap-count">6 / 12</span></div><div class="scrap-pips" id="scrap-pips">${Array.from({ length: 12 }, () => "<i></i>").join("")}</div></div></div><div class="hint" id="hint" role="status">Your orbit attacks automatically. Get close to loose scrap.</div><button id="launch" class="launch-btn">${svg("magnet")}<span><strong>LAUNCH SCRAP</strong><small id="launch-note">SPACE / CLICK</small></span></button></div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
  <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="modal-symbol">${svg("magnet")}</div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Launch</dt><dd>Aim with the pointer, then click or press Space. Without a pointer, move toward your target first.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl></div><button class="primary-btn" id="resume">BACK TO THE YARD ${svg("arrow")}</button><button class="text-btn" id="restart">Start a fresh shift</button></div></div>
- <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Make room for more trouble.</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
+ <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button></div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><span class="mouse-icon"></span><strong>AIM</strong><i></i><kbd class="space-key">SPACE</kbd><strong>LAUNCH</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
@@ -126,6 +128,7 @@ function beep(
 function start() {
   if (!loaded) return;
   s.phase = "playing";
+  app.classList.add("in-run");
   el("yard").classList.add("is-playing");
   showedResult = false;
   el("intro").classList.add("hidden");
@@ -312,6 +315,7 @@ arena.addEventListener("pointerdown", (e) => {
     return;
   e.preventDefault();
   joystickId = e.pointerId;
+  joy.classList.add("is-dragging");
   arena.setPointerCapture(e.pointerId);
   if (joy.contains(e.target as Node)) {
     const r = joy.getBoundingClientRect();
@@ -339,6 +343,7 @@ arena.addEventListener("pointermove", moveStick);
 function stopStick() {
   const pointerId = joystickId;
   joystickId = null;
+  joy.classList.remove("is-dragging");
   stick = { x: 0, z: 0 };
   (joy.firstElementChild as HTMLElement).style.transform = "";
   joy.style.left = "";
@@ -426,10 +431,9 @@ function renderUpgrades() {
   stopStick();
   el("yard").classList.remove("is-playing");
   el("modal").classList.add("hidden");
-  el("upgrade-copy").textContent = t(
-    "Level {level} · Pick one upgrade. The yard is paused.",
-    { level: s.level },
-  );
+  el("upgrade-copy").textContent = t("Level {level} · Choose one upgrade.", {
+    level: s.level,
+  });
   el("upgrade-choices").innerHTML = s.choices
     .map((id, index) => {
       const rank = s.upgrades[id];
@@ -458,6 +462,7 @@ el("upgrade-choices").addEventListener("click", (e) => {
   if (button) pickUpgrade(button.dataset.upgrade as UpgradeId);
 });
 function hud() {
+  if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
   el("timer").textContent = format(s.time);
   el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
   el("level").textContent = t("LV. {level}", { level: s.level });
@@ -467,6 +472,7 @@ function hud() {
   });
   el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
   el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
+  el("yard").classList.toggle("low-health", s.hp <= 25);
   document
     .querySelector(".health-track")!
     .setAttribute("aria-valuenow", String(s.hp));
@@ -502,6 +508,11 @@ function hud() {
         : touch
           ? t("TAP TO RELEASE")
           : t("SPACE / CLICK");
+  launchButton.setAttribute(
+    "aria-label",
+    `${t("LAUNCH SCRAP")} · ${s.scrap} / ${MAX_SCRAP} · ${el("launch-note").textContent}`,
+  );
+  launchButton.title = launchButton.getAttribute("aria-label")!;
   el("hint").textContent =
     s.scrap === 0
       ? t(
