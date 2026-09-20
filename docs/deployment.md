@@ -1,0 +1,101 @@
+# Production deployment
+
+| Service | Address / project |
+| --- | --- |
+| Game website | https://playjunkmagnet.com |
+| Website hosting | Netlify project `playjunkmagnet` (`YOUR_NETLIFY_SITE_ID`) |
+| Multiplayer | Cloudflare Worker `junk-magnet-coop`, https://coop.playjunkmagnet.com |
+| Repository | `SafaElmali/junk-magnet`, branch `main` |
+| DNS / registrar | Cloudflare |
+
+## How it works
+
+Netlify builds and serves `dist/`. `netlify.toml` supplies `VITE_COOP_URL` at build
+time, so browsers connect directly to `wss://coop.playjunkmagnet.com/coop`.
+WebSockets do not pass through Netlify Functions or an HTTP proxy.
+
+The Cloudflare Worker validates the browser origin and routes connections to one
+Durable Object. `server/hub.ts` contains the shared room management and simulation
+used by both this Worker and the local Node server. Gameplay runs at 30 Hz and
+sends snapshots at 15 Hz. Both players keep playing while upgrades or menus are
+open, including when either browser goes into the background.
+
+The object stays in memory while sockets are connected and stops its timers when
+the last socket closes. State is ephemeral: Worker deployments, restarts, and
+connection loss end active rooms. Workshop progress stays in each browser.
+
+## DNS and HTTPS
+
+Cloudflare manages these records:
+
+| Type | Name | Target | Proxy |
+| --- | --- | --- | --- |
+| CNAME (flattened) | `@` | `apex-loadbalancer.netlify.com` | DNS only |
+| CNAME | `www` | `playjunkmagnet.netlify.app` | DNS only |
+| Worker custom domain | `coop` | `junk-magnet-coop` | Cloudflare managed |
+
+Netlify manages TLS for the apex and `www`, with the apex as the primary domain.
+Cloudflare manages TLS for `coop`. Keep Netlify records DNS-only so its domain
+verification and certificate renewal can reach Netlify directly. Nameservers
+remain with Cloudflare. No Mac, tunnel, or local process is needed for production.
+
+## Deploy and verify
+
+Netlify is connected to the GitHub repository and builds `main` using
+`netlify.toml`. Cloudflare deployment configuration lives in `wrangler.jsonc`.
+The GitHub `Verify` workflow checks the frontend, Node co-op, and Worker runtime.
+
+For a manual backend deployment, authenticate Wrangler to the domain's Cloudflare
+account, then run:
+
+```sh
+npm ci
+npm run build:worker
+npm run test:coop
+npm run test:worker
+npm run deploy:coop
+```
+
+For a manual website deployment, authenticate Netlify and link the project:
+
+```sh
+netlify link --id YOUR_NETLIFY_SITE_ID
+VITE_COOP_URL=wss://coop.playjunkmagnet.com/coop npm run build
+netlify deploy --prod --dir dist
+```
+
+Verify the public deployment with:
+
+```sh
+npm run verify:deployment
+```
+
+The check loads the page, a built asset, backend health, and two real WebSocket
+clients; they create and join a room, start a shared simulation, and leave.
+`GAME_URL` and `COOP_URL` can point this same check at a preview or local server.
+Production browser origins are explicitly listed in `wrangler.jsonc`; arbitrary
+Netlify deploy previews cannot connect to production co-op.
+
+## Local development
+
+The original `npm run dev` / `npm start` workflow still works without Cloudflare.
+Without `VITE_COOP_URL`, the browser uses the same-origin Node `/coop` endpoint.
+To test the Cloudflare backend locally:
+
+```sh
+npx wrangler dev --port 8797 --var ALLOWED_ORIGINS:http://127.0.0.1:5184
+VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
+```
+
+## Limits and costs
+
+The existing limits remain: 12 rooms, 32 sockets, and two players per room. Keep
+one shared Durable Object directory unless room routing is redesigned. Production
+uses the existing Netlify account and Cloudflare Workers; no Render service is
+required. Cloudflare's free Workers/Durable Objects quotas can stop service when
+exhausted. Monitor requests and duration before launching to a larger audience;
+upgrading to a paid plan is a separate decision.
+
+No API tokens or credentials belong in this repository. Roll back the website
+using a prior Netlify deploy and the backend using Cloudflare's Worker versions.
+A backend rollback also ends active rooms.

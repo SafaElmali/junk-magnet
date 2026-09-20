@@ -151,7 +151,8 @@ export class CoopClient {
     track("coop_connection_attempted", { action: type });
     this.message(ct("connecting"));
     const socket = new WebSocket(
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/coop`,
+      import.meta.env.VITE_COOP_URL ||
+        `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/coop`,
     );
     this.socket = socket;
     let joined = false;

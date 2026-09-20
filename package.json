@@ -14,7 +14,11 @@
     "assets:discoveries": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_discovery_assets.py",
     "serve": "tsx server/index.ts",
     "start": "tsx server/index.ts",
-    "test:coop": "tsx --test src/coop-session.test.ts server/coop.test.ts"
+    "test:coop": "tsx --test src/coop-session.test.ts server/coop.test.ts",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
+    "build:worker": "tsc --noEmit -p worker/tsconfig.json && wrangler deploy --dry-run",
+    "deploy:coop": "wrangler deploy",
+    "test:worker": "wrangler deploy --dry-run --outdir .wrangler/test-bundle && node --test worker/runtime.test.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.2.6",
@@ -25,11 +29,14 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260920.1",
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
     "@types/three": "^0.183.0",
     "@types/ws": "^8.18.1",
+    "miniflare": "^5.20260918.0-alpha",
     "typescript": "^5.9.3",
-    "vite": "^7.1.0"
+    "vite": "^7.1.0",
+    "wrangler": "^4.135.0"
   }
 }

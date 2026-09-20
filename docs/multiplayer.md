@@ -24,6 +24,11 @@ For development, keep the server running and launch `npm run dev` in another ter
 
 ## Hosting
 
+Production runs at [playjunkmagnet.com](https://playjunkmagnet.com): Netlify serves
+the website and a Cloudflare Durable Object runs the shared co-op simulation.
+See [deployment configuration](deployment.md) for DNS, updates, and verification.
+The local Node server below uses the same room and simulation code.
+
 The Node process serves `dist/` and accepts WebSockets at `/coop`. `PORT` overrides the default 5185. Deploy an always-running Node service with WebSocket support, or forward port 5185 through a tunnel. Static hosting supports solo only.
 
 A normal same-origin reverse proxy needs no origin override. If a proxy rewrites the Host header, set the public origin explicitly; multiple origins can be comma-separated:

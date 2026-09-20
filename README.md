@@ -6,6 +6,8 @@ A tiny robot. An endless scrapyard. Your enemies become your ammunition.
 
 Collect wreckage, build an orbit of scrap, and survive increasingly chaotic waves in this 3D browser game. Play solo or team up with a friend in two-player online co-op.
 
+**[Play Junk Magnet](https://playjunkmagnet.com)**
+
 - **Build your scrap storm:** automatic weapons, ten abilities, and three weapon evolutions.
 - **Explore the yard:** bosses, supply chests, repair stations, and salvage contracts.
 - **Upgrade between runs:** three robots, permanent workshop upgrades, and locally saved progress.
@@ -61,5 +63,7 @@ npm run build         # Type-check and production build
 [Gameplay guide](docs/gameplay.md) · [Development and artwork](docs/development.md) · [Verification notes](VERIFICATION.md)
 
 [Analytics setup and event catalog](docs/analytics.md) · [PostHog chart definitions](docs/posthog-charts.json)
+
+[Production domain and deployment](docs/deployment.md): `playjunkmagnet.com`.
 
 This is a playable prototype; balancing and physical-device testing are ongoing. No accounts, ads, or platform SDK integration. Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.
