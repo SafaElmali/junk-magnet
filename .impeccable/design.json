@@ -1,0 +1,519 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-20T11:56:56.194833+00:00",
+  "title": "Design System: Junk Magnet",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "displayName": "Ink",
+        "role": "primary",
+        "canonical": "#173342",
+        "tonalRamp": [
+          "oklch(15% 0.0434 234.04)",
+          "oklch(27% 0.0434 234.04)",
+          "oklch(38% 0.0434 234.04)",
+          "oklch(49% 0.0434 234.04)",
+          "oklch(61% 0.0434 234.04)",
+          "oklch(72% 0.0434 234.04)",
+          "oklch(84% 0.0434 234.04)",
+          "oklch(95% 0.0434 234.04)"
+        ]
+      },
+      "cream": {
+        "displayName": "Cream",
+        "role": "primary",
+        "canonical": "#fff6e3",
+        "tonalRamp": [
+          "oklch(15% 0.0268 85.66)",
+          "oklch(27% 0.0268 85.66)",
+          "oklch(38% 0.0268 85.66)",
+          "oklch(49% 0.0268 85.66)",
+          "oklch(61% 0.0268 85.66)",
+          "oklch(72% 0.0268 85.66)",
+          "oklch(84% 0.0268 85.66)",
+          "oklch(95% 0.0268 85.66)"
+        ]
+      },
+      "teal": {
+        "displayName": "Teal",
+        "role": "secondary",
+        "canonical": "#3c9298",
+        "tonalRamp": [
+          "oklch(15% 0.0820 201.59)",
+          "oklch(27% 0.0820 201.59)",
+          "oklch(38% 0.0820 201.59)",
+          "oklch(49% 0.0820 201.59)",
+          "oklch(61% 0.0820 201.59)",
+          "oklch(72% 0.0820 201.59)",
+          "oklch(84% 0.0820 201.59)",
+          "oklch(95% 0.0820 201.59)"
+        ]
+      },
+      "red": {
+        "displayName": "Red",
+        "role": "secondary",
+        "canonical": "#cd4e39",
+        "tonalRamp": [
+          "oklch(15% 0.1655 31.71)",
+          "oklch(27% 0.1655 31.71)",
+          "oklch(38% 0.1655 31.71)",
+          "oklch(49% 0.1655 31.71)",
+          "oklch(61% 0.1655 31.71)",
+          "oklch(72% 0.1655 31.71)",
+          "oklch(84% 0.1655 31.71)",
+          "oklch(95% 0.1655 31.71)"
+        ]
+      },
+      "muted": {
+        "displayName": "Muted",
+        "role": "neutral",
+        "canonical": "#596964",
+        "tonalRamp": [
+          "oklch(15% 0.0209 174.61)",
+          "oklch(27% 0.0209 174.61)",
+          "oklch(38% 0.0209 174.61)",
+          "oklch(49% 0.0209 174.61)",
+          "oklch(61% 0.0209 174.61)",
+          "oklch(72% 0.0209 174.61)",
+          "oklch(84% 0.0209 174.61)",
+          "oklch(95% 0.0209 174.61)"
+        ]
+      },
+      "line": {
+        "displayName": "Line",
+        "role": "neutral",
+        "canonical": "#d7cbb4",
+        "tonalRamp": [
+          "oklch(15% 0.0339 83.70)",
+          "oklch(27% 0.0339 83.70)",
+          "oklch(38% 0.0339 83.70)",
+          "oklch(49% 0.0339 83.70)",
+          "oklch(61% 0.0339 83.70)",
+          "oklch(72% 0.0339 83.70)",
+          "oklch(84% 0.0339 83.70)",
+          "oklch(95% 0.0339 83.70)"
+        ]
+      },
+      "robot-badge": {
+        "displayName": "Robot Badge",
+        "role": "secondary",
+        "canonical": "#f3c74c",
+        "tonalRamp": [
+          "oklch(15% 0.1455 88.87)",
+          "oklch(27% 0.1455 88.87)",
+          "oklch(38% 0.1455 88.87)",
+          "oklch(49% 0.1455 88.87)",
+          "oklch(61% 0.1455 88.87)",
+          "oklch(72% 0.1455 88.87)",
+          "oklch(84% 0.1455 88.87)",
+          "oklch(95% 0.1455 88.87)"
+        ]
+      },
+      "focus": {
+        "displayName": "Focus",
+        "role": "neutral",
+        "canonical": "#287da2",
+        "tonalRamp": [
+          "oklch(15% 0.0972 231.32)",
+          "oklch(27% 0.0972 231.32)",
+          "oklch(38% 0.0972 231.32)",
+          "oklch(49% 0.0972 231.32)",
+          "oklch(61% 0.0972 231.32)",
+          "oklch(72% 0.0972 231.32)",
+          "oklch(84% 0.0972 231.32)",
+          "oklch(95% 0.0972 231.32)"
+        ]
+      },
+      "progress": {
+        "displayName": "Progress",
+        "role": "neutral",
+        "canonical": "#71cbd0",
+        "tonalRamp": [
+          "oklch(15% 0.0867 200.23)",
+          "oklch(27% 0.0867 200.23)",
+          "oklch(38% 0.0867 200.23)",
+          "oklch(49% 0.0867 200.23)",
+          "oklch(61% 0.0867 200.23)",
+          "oklch(72% 0.0867 200.23)",
+          "oklch(84% 0.0867 200.23)",
+          "oklch(95% 0.0867 200.23)"
+        ]
+      },
+      "health": {
+        "displayName": "Health",
+        "role": "neutral",
+        "canonical": "#cc5944",
+        "tonalRamp": [
+          "oklch(15% 0.1509 32.18)",
+          "oklch(27% 0.1509 32.18)",
+          "oklch(38% 0.1509 32.18)",
+          "oklch(49% 0.1509 32.18)",
+          "oklch(61% 0.1509 32.18)",
+          "oklch(72% 0.1509 32.18)",
+          "oklch(84% 0.1509 32.18)",
+          "oklch(95% 0.1509 32.18)"
+        ]
+      },
+      "orbit-filled": {
+        "displayName": "Orbit Filled",
+        "role": "neutral",
+        "canonical": "#3b8991",
+        "tonalRamp": [
+          "oklch(15% 0.0767 204.47)",
+          "oklch(27% 0.0767 204.47)",
+          "oklch(38% 0.0767 204.47)",
+          "oklch(49% 0.0767 204.47)",
+          "oklch(61% 0.0767 204.47)",
+          "oklch(72% 0.0767 204.47)",
+          "oklch(84% 0.0767 204.47)",
+          "oklch(95% 0.0767 204.47)"
+        ]
+      },
+      "orbit-empty": {
+        "displayName": "Orbit Empty",
+        "role": "neutral",
+        "canonical": "#d8d2bc",
+        "tonalRamp": [
+          "oklch(15% 0.0304 94.38)",
+          "oklch(27% 0.0304 94.38)",
+          "oklch(38% 0.0304 94.38)",
+          "oklch(49% 0.0304 94.38)",
+          "oklch(61% 0.0304 94.38)",
+          "oklch(72% 0.0304 94.38)",
+          "oklch(84% 0.0304 94.38)",
+          "oklch(95% 0.0304 94.38)"
+        ]
+      },
+      "scene-cream": {
+        "displayName": "Scene Cream",
+        "role": "neutral",
+        "canonical": "#fff4d8",
+        "tonalRamp": [
+          "oklch(15% 0.0384 89.09)",
+          "oklch(27% 0.0384 89.09)",
+          "oklch(38% 0.0384 89.09)",
+          "oklch(49% 0.0384 89.09)",
+          "oklch(61% 0.0384 89.09)",
+          "oklch(72% 0.0384 89.09)",
+          "oklch(84% 0.0384 89.09)",
+          "oklch(95% 0.0384 89.09)"
+        ]
+      },
+      "scene-teal": {
+        "displayName": "Scene Teal",
+        "role": "neutral",
+        "canonical": "#459b9c",
+        "tonalRamp": [
+          "oklch(15% 0.0824 196.33)",
+          "oklch(27% 0.0824 196.33)",
+          "oklch(38% 0.0824 196.33)",
+          "oklch(49% 0.0824 196.33)",
+          "oklch(61% 0.0824 196.33)",
+          "oklch(72% 0.0824 196.33)",
+          "oklch(84% 0.0824 196.33)",
+          "oklch(95% 0.0824 196.33)"
+        ]
+      },
+      "scene-rust": {
+        "displayName": "Scene Rust",
+        "role": "neutral",
+        "canonical": "#8c4e36",
+        "tonalRamp": [
+          "oklch(15% 0.0913 41.60)",
+          "oklch(27% 0.0913 41.60)",
+          "oklch(38% 0.0913 41.60)",
+          "oklch(49% 0.0913 41.60)",
+          "oklch(61% 0.0913 41.60)",
+          "oklch(72% 0.0913 41.60)",
+          "oklch(84% 0.0913 41.60)",
+          "oklch(95% 0.0913 41.60)"
+        ]
+      },
+      "scene-steel": {
+        "displayName": "Scene Steel",
+        "role": "neutral",
+        "canonical": "#a2aca6",
+        "tonalRamp": [
+          "oklch(15% 0.0141 159.79)",
+          "oklch(27% 0.0141 159.79)",
+          "oklch(38% 0.0141 159.79)",
+          "oklch(49% 0.0141 159.79)",
+          "oklch(61% 0.0141 159.79)",
+          "oklch(72% 0.0141 159.79)",
+          "oklch(84% 0.0141 159.79)",
+          "oklch(95% 0.0141 159.79)"
+        ]
+      },
+      "scene-floor-tint": {
+        "displayName": "Scene Floor Tint",
+        "role": "neutral",
+        "canonical": "#e9c4a9",
+        "tonalRamp": [
+          "oklch(15% 0.0558 58.01)",
+          "oklch(27% 0.0558 58.01)",
+          "oklch(38% 0.0558 58.01)",
+          "oklch(49% 0.0558 58.01)",
+          "oklch(61% 0.0558 58.01)",
+          "oklch(72% 0.0558 58.01)",
+          "oklch(84% 0.0558 58.01)",
+          "oklch(95% 0.0558 58.01)"
+        ]
+      },
+      "scene-fog": {
+        "displayName": "Scene Fog",
+        "role": "neutral",
+        "canonical": "#dcb394",
+        "tonalRamp": [
+          "oklch(15% 0.0637 58.77)",
+          "oklch(27% 0.0637 58.77)",
+          "oklch(38% 0.0637 58.77)",
+          "oklch(49% 0.0637 58.77)",
+          "oklch(61% 0.0637 58.77)",
+          "oklch(72% 0.0637 58.77)",
+          "oklch(84% 0.0637 58.77)",
+          "oklch(95% 0.0637 58.77)"
+        ]
+      },
+      "upgrade-card": {
+        "displayName": "Upgrade Card",
+        "role": "secondary",
+        "canonical": "#f0e4ca",
+        "tonalRamp": [
+          "oklch(15% 0.0368 86.17)",
+          "oklch(27% 0.0368 86.17)",
+          "oklch(38% 0.0368 86.17)",
+          "oklch(49% 0.0368 86.17)",
+          "oklch(61% 0.0368 86.17)",
+          "oklch(72% 0.0368 86.17)",
+          "oklch(84% 0.0368 86.17)",
+          "oklch(95% 0.0368 86.17)"
+        ]
+      },
+      "upgrade-hover": {
+        "displayName": "Upgrade Hover",
+        "role": "secondary",
+        "canonical": "#e4d7b8",
+        "tonalRamp": [
+          "oklch(15% 0.0436 87.97)",
+          "oklch(27% 0.0436 87.97)",
+          "oklch(38% 0.0436 87.97)",
+          "oklch(49% 0.0436 87.97)",
+          "oklch(61% 0.0436 87.97)",
+          "oklch(72% 0.0436 87.97)",
+          "oklch(84% 0.0436 87.97)",
+          "oklch(95% 0.0436 87.97)"
+        ]
+      },
+      "upgrade-icon": {
+        "displayName": "Upgrade Icon",
+        "role": "secondary",
+        "canonical": "#f4c44b",
+        "tonalRamp": [
+          "oklch(15% 0.1450 86.75)",
+          "oklch(27% 0.1450 86.75)",
+          "oklch(38% 0.1450 86.75)",
+          "oklch(49% 0.1450 86.75)",
+          "oklch(61% 0.1450 86.75)",
+          "oklch(72% 0.1450 86.75)",
+          "oklch(84% 0.1450 86.75)",
+          "oklch(95% 0.1450 86.75)"
+        ]
+      },
+      "ability-icon": {
+        "displayName": "Ability Icon",
+        "role": "secondary",
+        "canonical": "#2d7177",
+        "tonalRamp": [
+          "oklch(15% 0.0682 203.25)",
+          "oklch(27% 0.0682 203.25)",
+          "oklch(38% 0.0682 203.25)",
+          "oklch(49% 0.0682 203.25)",
+          "oklch(61% 0.0682 203.25)",
+          "oklch(72% 0.0682 203.25)",
+          "oklch(84% 0.0682 203.25)",
+          "oklch(95% 0.0682 203.25)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Intro display",
+        "purpose": "Desktop introduction; responsive sizes are documented in DESIGN.md."
+      },
+      "body": {
+        "displayName": "Instructions",
+        "purpose": "Short readable explanations."
+      }
+    },
+    "shadows": [
+      {
+        "name": "yard",
+        "value": "0 9px 26px #6752301a",
+        "purpose": "Frame the game viewport."
+      },
+      {
+        "name": "hud",
+        "value": "0 4px 9px #4633261a",
+        "purpose": "Lift counters from the terrain."
+      },
+      {
+        "name": "action-orbit",
+        "value": "0 5px 12px #5e462b24",
+        "purpose": "Lift lower controls."
+      },
+      {
+        "name": "intro",
+        "value": "0 10px 32px #503f2929",
+        "purpose": "Introduction card."
+      },
+      {
+        "name": "dialog",
+        "value": "0 12px 36px #1d262938",
+        "purpose": "Modal layer."
+      }
+    ],
+    "motion": [
+      {
+        "name": "button-state",
+        "value": "background 0.15s, transform 0.15s",
+        "purpose": "Hover and press feedback; disabled by reduced-motion preference."
+      },
+      {
+        "name": "progress",
+        "value": "transform 0.25s",
+        "purpose": "Top progress fill."
+      },
+      {
+        "name": "health",
+        "value": "transform 0.15s",
+        "purpose": "Health fill."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "(min-width: 1500px)"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "(max-width: 1100px)"
+      },
+      {
+        "name": "narrow",
+        "value": "(max-width: 700px)"
+      },
+      {
+        "name": "short-landscape",
+        "value": "(max-height: 560px) and (min-width: 700px)"
+      },
+      {
+        "name": "touch",
+        "value": "(pointer: coarse)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Start and resume actions.",
+      "html": "<button class=\"ds-primary-btn\">BACK TO THE YARD <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M4 12h16m-6-6 6 6-6 6\"/></svg></button>",
+      "css": "button { font-family: \"DM Sans\", sans-serif; color: var(--ink, #173342); cursor: pointer; touch-action: manipulation; transition: background 0.15s, transform 0.15s; }\nbutton:disabled { cursor: default; }\nbutton:focus-visible { outline: 3px solid #287da2; outline-offset: 4px; }\nbutton:active:not(:disabled) { transform: translateY(2px); }\nbutton svg { width: 22px; height: 22px; }\n.ds-primary-btn {\n  border: 0;\n  border-radius: 9px;\n  background: var(--ink, #173342);\n  color: var(--cream, #fff6e3);\n  padding: 15px 18px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 20px;\n  font-family: \"Barlow Condensed\", sans-serif;\n  font-size: 20px;\n  font-weight: 700;\n  letter-spacing: 0.04em;\n  min-height: 48px;\n}\n.ds-primary-btn:hover {\n  background: #2e5662;\n}\n.ds-primary-btn svg {\n  width: 20px;\n  height: 20px;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }"
+    },
+    {
+      "name": "Utility icon button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Masthead help control.",
+      "html": "<button class=\"ds-icon-btn\" aria-label=\"How to play\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 3v1\"/></svg></button>",
+      "css": "button { font-family: \"DM Sans\", sans-serif; color: var(--ink, #173342); cursor: pointer; touch-action: manipulation; transition: background 0.15s, transform 0.15s; }\nbutton:disabled { cursor: default; }\nbutton:focus-visible { outline: 3px solid #287da2; outline-offset: 4px; }\nbutton:active:not(:disabled) { transform: translateY(2px); }\nbutton svg { width: 22px; height: 22px; }\n.ds-icon-btn {\n  border: 1px solid #d4c8b1;\n  background: transparent;\n  border-radius: 12px;\n  width: 42px;\n  height: 42px;\n  display: grid;\n  place-items: center;\n}\n.ds-icon-btn:hover {\n  background: #eadfc7;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }\n@media (pointer: coarse) { .ds-icon-btn { width: 48px; height: 48px; } }"
+    },
+    {
+      "name": "Pause button",
+      "kind": "button",
+      "refersTo": "button-pause",
+      "description": "Filled masthead pause action.",
+      "html": "<button class=\"ds-icon-btn ds-pause-button\" aria-label=\"Pause\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" aria-hidden=\"true\"><path d=\"M8 5v14M16 5v14\"/></svg></button>",
+      "css": "button { font-family: \"DM Sans\", sans-serif; color: var(--ink, #173342); cursor: pointer; touch-action: manipulation; transition: background 0.15s, transform 0.15s; }\nbutton:disabled { cursor: default; }\nbutton:focus-visible { outline: 3px solid #287da2; outline-offset: 4px; }\nbutton:active:not(:disabled) { transform: translateY(2px); }\nbutton svg { width: 22px; height: 22px; }\n.ds-icon-btn {\n  border: 1px solid #d4c8b1;\n  background: transparent;\n  border-radius: 12px;\n  width: 42px;\n  height: 42px;\n  display: grid;\n  place-items: center;\n}\n.ds-icon-btn:hover {\n  background: #eadfc7;\n}\n.ds-pause-button {\n  background: var(--ink, #173342);\n  color: var(--cream, #fff6e3);\n  border-color: var(--ink, #173342);\n}\n.ds-pause-button:hover {\n  background: #285466;\n}\n.ds-pause-button:disabled {\n  opacity: 0.35;\n}\n.ds-pause-button svg {\n  stroke-width: 4;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }\n@media (pointer: coarse) { .ds-icon-btn { width: 48px; height: 48px; } }"
+    },
+    {
+      "name": "Launch scrap",
+      "kind": "button",
+      "refersTo": "button-launch",
+      "description": "Release the available orbit.",
+      "html": "<button class=\"ds-launch-btn\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 3h5v9a2 2 0 0 0 4 0V3h5v9a7 7 0 0 1-14 0Z\"/><path d=\"M5 7h5m4 0h5\"/></svg><span><strong>LAUNCH SCRAP</strong><small>SPACE / CLICK</small></span></button>",
+      "css": "button { font-family: \"DM Sans\", sans-serif; color: var(--ink, #173342); cursor: pointer; touch-action: manipulation; transition: background 0.15s, transform 0.15s; }\nbutton:disabled { cursor: default; }\nbutton:focus-visible { outline: 3px solid #287da2; outline-offset: 4px; }\nbutton:active:not(:disabled) { transform: translateY(2px); }\nbutton svg { width: 22px; height: 22px; }\n.ds-launch-btn {\n  pointer-events: auto;\n  background: var(--ink, #173342);\n  color: var(--cream, #fff6e3);\n  border: 0;\n  border-radius: 12px;\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 13px 20px;\n  min-height: 62px;\n  box-shadow: 0 5px 12px #5e462b24;\n  text-align: left;\n}\n.ds-launch-btn > svg {\n  width: 29px;\n  height: 29px;\n  stroke: #f1b176;\n}\n.ds-launch-btn strong {\n  display: block;\n  font-size: 22px;\n  letter-spacing: 0.03em;\n  line-height: 1;\n}\n.ds-launch-btn small {\n  display: block;\n  font-size: 9px;\n  font-weight: 700;\n  letter-spacing: 0.1em;\n  margin-top: 6px;\n  color: #bed1cb;\n}\n.ds-launch-btn:hover:not(:disabled) {\n  background: #2b5360;\n}\n.ds-launch-btn:disabled {\n  background: #5f726d;\n  box-shadow: none;\n}\n.ds-launch-btn:disabled small {\n  color: #fff1d3;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }\n.ds-launch-btn strong { font-family: \"Barlow Condensed\", sans-serif; } @media (pointer: coarse) { .ds-launch-btn { min-height: 68px; } }"
+    },
+    {
+      "name": "Scrap orbit",
+      "kind": "custom",
+      "refersTo": "orbit-panel",
+      "description": "Visible capacity reinforced by a number and pips.",
+      "html": "<div class=\"ds-orbit-panel\"><div class=\"ds-orbit-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 3h5v9a2 2 0 0 0 4 0V3h5v9a7 7 0 0 1-14 0Z\"/><path d=\"M5 7h5m4 0h5\"/></svg></div><div><div class=\"ds-orbit-caption\"><strong>SCRAP ORBIT</strong><span>6 / 12</span></div><div class=\"ds-scrap-pips\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div>",
+      "css": ".ds-orbit-panel {\n  display: flex;\n  gap: 11px;\n  align-items: center;\n  background: var(--cream, #fff6e3);\n  border-radius: 12px;\n  padding: 12px 16px 12px 12px;\n  box-shadow: 0 5px 12px #5e462b24;\n}\n.ds-orbit-icon {\n  width: 38px;\n  height: 38px;\n  border-radius: 9px;\n  background: #d9e9dc;\n  display: grid;\n  place-items: center;\n}\n.ds-orbit-icon svg {\n  width: 24px;\n  height: 24px;\n  stroke: var(--teal, #3c9298);\n  stroke-width: 2.5;\n}\n.ds-orbit-caption {\n  display: flex;\n  justify-content: space-between;\n  gap: 18px;\n  align-items: baseline;\n  margin-bottom: 8px;\n}\n.ds-orbit-caption strong {\n  font-size: 16px;\n  letter-spacing: 0.04em;\n}\n.ds-orbit-caption span {\n  font-size: 11px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n}\n.ds-scrap-pips {\n  display: flex;\n  gap: 4px;\n}\n.ds-scrap-pips i {\n  width: 9px;\n  height: 9px;\n  border-radius: 3px;\n  background: #d8d2bc;\n}\n.ds-scrap-pips i.ds-filled {\n  background: #3b8991;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }\n.ds-orbit-panel { color: var(--ink, #173342); font-family: \"DM Sans\", sans-serif; } .ds-orbit-caption strong { font-family: \"Barlow Condensed\", sans-serif; }"
+    },
+    {
+      "name": "Modal card",
+      "kind": "card",
+      "refersTo": "modal-card",
+      "description": "Shared pause, help, and result surface.",
+      "html": "<section class=\"ds-modal-card\"><h2>Taking a breather.</h2><p>Your shift is paused. Return when you are ready.</p><button class=\"ds-primary-btn\">BACK TO THE YARD <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M4 12h16m-6-6 6 6-6 6\"/></svg></button></section>",
+      "css": "button { font-family: \"DM Sans\", sans-serif; color: var(--ink, #173342); cursor: pointer; touch-action: manipulation; transition: background 0.15s, transform 0.15s; }\nbutton:disabled { cursor: default; }\nbutton:focus-visible { outline: 3px solid #287da2; outline-offset: 4px; }\nbutton:active:not(:disabled) { transform: translateY(2px); }\nbutton svg { width: 22px; height: 22px; }\n.ds-primary-btn {\n  border: 0;\n  border-radius: 9px;\n  background: var(--ink, #173342);\n  color: var(--cream, #fff6e3);\n  padding: 15px 18px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 20px;\n  font-family: \"Barlow Condensed\", sans-serif;\n  font-size: 20px;\n  font-weight: 700;\n  letter-spacing: 0.04em;\n  min-height: 48px;\n}\n.ds-primary-btn:hover {\n  background: #2e5662;\n}\n.ds-primary-btn svg {\n  width: 20px;\n  height: 20px;\n}\n.ds-modal-card {\n  background: var(--cream, #fff6e3);\n  border-radius: 18px;\n  padding: 32px 38px;\n  max-width: 490px;\n  width: 100%;\n  box-shadow: 0 12px 36px #1d262938;\n  max-height: 100%;\n  overflow: auto;\n  text-align: center;\n  scrollbar-color: #9da88d #fff6e3;\n}\n.ds-modal-card h2 {\n  font-size: 45px;\n  font-weight: 800;\n  line-height: 1;\n  margin: 15px 0;\n}\n.ds-modal-card > p {\n  font-size: 13px;\n  line-height: 1.7;\n  color: #4c625c;\n  margin: 0 0 24px;\n}\n.ds-modal-card dl {\n  text-align: left;\n  font-size: 12px;\n  line-height: 1.6;\n  margin: 0 0 24px;\n}\n.ds-modal-card dl > div {\n  display: grid;\n  grid-template-columns: 60px 1fr;\n  gap: 12px;\n  padding: 10px 0;\n  border-top: 1px solid #dbd1bc;\n}\n.ds-modal-card dt {\n  font-weight: 700;\n}\n.ds-modal-card dd {\n  margin: 0;\n  color: #52665d;\n}\n@media (prefers-reduced-motion: reduce) { button { transition: none; } }\n.ds-modal-card { color: var(--ink, #173342); font-family: \"DM Sans\", sans-serif; } .ds-modal-card h2 { font-family: \"Barlow Condensed\", sans-serif; }"
+    },
+    {
+      "name": "Ability build chip",
+      "kind": "chip",
+      "refersTo": "ability-chip",
+      "description": "Owned permanent ability and rank; consumables are omitted.",
+      "html": "<span class=\"ds-ability-chip\" aria-label=\"Chain Lightning, rank 1\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m13 2-9 12h7l-1 8 10-13h-7z\"/></svg><b>1</b></span>",
+      "css": ".ds-ability-chip {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  background: #fff6e3ed;\n  color: var(--ink, #173342);\n  border-radius: 6px;\n  padding: 5px 6px;\n  font-size: 10px;\n  font-variant-numeric: tabular-nums;\n}\n.ds-ability-chip svg {\n  width: 18px;\n  height: 18px;\n  color: #2d7177;\n} .ds-ability-chip {font-family: \"DM Sans\", sans-serif;}"
+    },
+    {
+      "name": "Upgrade choice",
+      "kind": "button",
+      "refersTo": "upgrade-choice",
+      "description": "Paused level choice with an icon, rank, and quantitative effect.",
+      "html": "<button class=\"ds-upgrade-choice\"><span class=\"ds-upgrade-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m13 2-9 12h7l-1 8 10-13h-7z\"/></svg></span><span class=\"ds-upgrade-text\"><span class=\"ds-upgrade-rank\">NEW ABILITY</span><strong>Chain Lightning</strong><span class=\"ds-upgrade-description\">Zap 2 enemies every 2.8 seconds for 4 damage each.</span></span><kbd>1</kbd></button>",
+      "css": ".ds-upgrade-choice {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 20px;\n  min-height: 235px;\n  background: #f0e4ca;\n  border: 0;\n  border-radius: 12px;\n  padding: 20px;\n  text-align: left;\n}\n.ds-upgrade-choice:hover {\n  background: #e4d7b8;\n}\n.ds-upgrade-icon {\n  display: grid;\n  place-items: center;\n  width: 45px;\n  height: 45px;\n  border-radius: 9px;\n  background: #f4c44b;\n  color: #173342;\n  flex: 0 0 auto;\n}\n.ds-upgrade-icon svg {\n  width: 29px;\n  height: 29px;\n}\n.ds-upgrade-text {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.ds-upgrade-rank {\n  font-size: 9px;\n  font-weight: 700;\n  letter-spacing: 0.06em;\n  color: #35645e;\n}\n.ds-upgrade-text strong {\n  font-size: 27px;\n  line-height: 1;\n}\n.ds-upgrade-description {\n  font-size: 12px;\n  line-height: 1.55;\n}\n.ds-upgrade-choice kbd {\n  position: absolute;\n  top: 20px;\n  right: 20px;\n}button {font-family: \"DM Sans\", sans-serif; color: #173342; cursor: pointer; transition: background .15s, transform .15s;} button:focus-visible {outline: 3px solid #287da2; outline-offset: 4px;} button:active {transform: translateY(2px);} strong, h2 {font-family: \"Barlow Condensed\", sans-serif;} @media (prefers-reduced-motion: reduce) {button {transition: none;}} .ds-upgrade-choice kbd {font-family: \"Barlow Condensed\", sans-serif; border: 1px solid #bdbaa3; border-radius:4px; background:#fff9ea; padding:2px 5px;}@media (max-width:700px) {.ds-upgrade-choices {grid-template-columns:1fr;gap:9px;} .ds-upgrade-sheet {padding:22px 16px;} .ds-upgrade-sheet h2 {font-size:32px;} .ds-upgrade-choice {flex-direction:row;gap:12px;min-height:105px;padding:14px;} .ds-upgrade-text strong {font-size:24px;} .ds-upgrade-description {font-size:11px;}} @media (max-height:560px) and (min-width:700px) {.ds-upgrade-choice {min-height:155px;padding:12px;gap:10px;} .ds-upgrade-sheet {padding:16px 20px;} .ds-upgrade-sheet h2 {font-size:29px;}} @media (pointer:coarse) {.ds-upgrade-choice kbd,.ds-upgrade-note {display:none;}}"
+    },
+    {
+      "name": "Upgrade sheet",
+      "kind": "custom",
+      "refersTo": "upgrade-sheet",
+      "description": "Three paused choices; responsive rows on portrait and columns in landscape.",
+      "html": "<section class=\"ds-upgrade-sheet\"><h2>Make room for more trouble.</h2><p>Level 2 \u00b7 Pick one upgrade. The yard is paused.</p><div class=\"ds-upgrade-choices\"><button class=\"ds-upgrade-choice\"><span class=\"ds-upgrade-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m13 2-9 12h7l-1 8 10-13h-7z\"/></svg></span><span class=\"ds-upgrade-text\"><span class=\"ds-upgrade-rank\">NEW ABILITY</span><strong>Chain Lightning</strong><span class=\"ds-upgrade-description\">Zap 2 enemies every 2.8 seconds for 4 damage each.</span></span><kbd>1</kbd></button><button class=\"ds-upgrade-choice\"><span class=\"ds-upgrade-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m13 2-9 12h7l-1 8 10-13h-7z\"/></svg></span><span class=\"ds-upgrade-text\"><span class=\"ds-upgrade-rank\">NEW ABILITY</span><strong>Steel Plating</strong><span class=\"ds-upgrade-description\">Reduce every contact hit by 2 damage.</span></span><kbd>2</kbd></button><button class=\"ds-upgrade-choice\"><span class=\"ds-upgrade-icon\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"m13 2-9 12h7l-1 8 10-13h-7z\"/></svg></span><span class=\"ds-upgrade-text\"><span class=\"ds-upgrade-rank\">NEW ABILITY</span><strong>Scrap Turret</strong><span class=\"ds-upgrade-description\">Deploy a turret every 8 seconds. Fires for 3 damage.</span></span><kbd>3</kbd></button></div></section>",
+      "css": ".ds-upgrade-sheet {\n  width: 100%;\n  max-width: 800px;\n  max-height: 100%;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  background: var(--cream, #fff6e3);\n  border-radius: 16px;\n  padding: 30px;\n  box-shadow: 0 12px 36px #1d262938;\n  text-align: center;\n  scrollbar-color: #9da88d #fff6e3;\n}\n.ds-upgrade-sheet h2 {\n  font-size: 43px;\n  line-height: 1;\n  margin: 0 0 10px;\n  letter-spacing: -0.02em;\n  text-wrap: balance;\n}\n.ds-upgrade-sheet > p {\n  font-size: 12px;\n  line-height: 1.5;\n  margin: 0 0 24px;\n  color: #47615b;\n}\n.ds-upgrade-choices {\n  display: grid;\n  grid-template-columns: repeat(3, minmax(0, 1fr));\n  gap: 12px;\n  padding: 4px;\n}\n.ds-upgrade-sheet .ds-upgrade-note {\n  margin: 20px 0 0;\n  font-size: 10px;\n}.ds-upgrade-choice {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 20px;\n  min-height: 235px;\n  background: #f0e4ca;\n  border: 0;\n  border-radius: 12px;\n  padding: 20px;\n  text-align: left;\n}\n.ds-upgrade-choice:hover {\n  background: #e4d7b8;\n}\n.ds-upgrade-icon {\n  display: grid;\n  place-items: center;\n  width: 45px;\n  height: 45px;\n  border-radius: 9px;\n  background: #f4c44b;\n  color: #173342;\n  flex: 0 0 auto;\n}\n.ds-upgrade-icon svg {\n  width: 29px;\n  height: 29px;\n}\n.ds-upgrade-text {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.ds-upgrade-rank {\n  font-size: 9px;\n  font-weight: 700;\n  letter-spacing: 0.06em;\n  color: #35645e;\n}\n.ds-upgrade-text strong {\n  font-size: 27px;\n  line-height: 1;\n}\n.ds-upgrade-description {\n  font-size: 12px;\n  line-height: 1.55;\n}\n.ds-upgrade-choice kbd {\n  position: absolute;\n  top: 20px;\n  right: 20px;\n}button {font-family: \"DM Sans\", sans-serif; color: #173342; cursor: pointer; transition: background .15s, transform .15s;} button:focus-visible {outline: 3px solid #287da2; outline-offset: 4px;} button:active {transform: translateY(2px);} strong, h2 {font-family: \"Barlow Condensed\", sans-serif;} @media (prefers-reduced-motion: reduce) {button {transition: none;}} .ds-upgrade-choice kbd {font-family: \"Barlow Condensed\", sans-serif; border: 1px solid #bdbaa3; border-radius:4px; background:#fff9ea; padding:2px 5px;}@media (max-width:700px) {.ds-upgrade-choices {grid-template-columns:1fr;gap:9px;} .ds-upgrade-sheet {padding:22px 16px;} .ds-upgrade-sheet h2 {font-size:32px;} .ds-upgrade-choice {flex-direction:row;gap:12px;min-height:105px;padding:14px;} .ds-upgrade-text strong {font-size:24px;} .ds-upgrade-description {font-size:11px;}} @media (max-height:560px) and (min-width:700px) {.ds-upgrade-choice {min-height:155px;padding:12px;gap:10px;} .ds-upgrade-sheet {padding:16px 20px;} .ds-upgrade-sheet h2 {font-size:29px;}} @media (pointer:coarse) {.ds-upgrade-choice kbd,.ds-upgrade-note {display:none;}} .ds-upgrade-sheet {font-family: \"DM Sans\", sans-serif; color: #173342; box-sizing:border-box;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Sunlit miniature scrapyard",
+    "overview": "An endless warm concrete scrapyard frames a small yellow salvage robot, a red horseshoe magnet, and can enemies with runner and brute variants. The high-angle orthographic camera, bevelled models, and soft physical shadows make the world feel like a tabletop toy. Sparse tire stacks and salvage drums create navigable obstacles while keeping the robot and scrap orbit readable.\n\nCream interface panels sit above the scene, with dark condensed titles and compact plain-language instructions. This documents the implemented endless survival prototype: increasing enemy pressure, blue XP pickups, and three paused upgrade choices at each level. Weapon and support upgrades build a run around the original collect, orbit, and optional launch loop. Bosses, evolutions, and CrazyGames integration are future work. The approved visual direction remains unchanged from the concept stage.",
+    "keyCharacteristics": [
+      "Warm textured ground, cool salvage props, and a yellow/red player silhouette.",
+      "Separate visible scrap pieces, an orbit ring, and a directional launch marker.",
+      "Cream HUD panels at the edges, with the action kept in the center.",
+      "Condensed display type paired with restrained sans-serif instructions."
+    ],
+    "rules": [
+      {
+        "name": "The Solid Reading Surface Rule",
+        "body": "Keep instructions and changing counters on cream panels, with shapes and text reinforcing color-coded states.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do preserve the sunlit toy-like world and clear yellow/red player silhouette.",
+      "Do keep procedural obstacles sparse and visually aligned with their collision shapes.",
+      "Do pair resource color with readable counts, shapes, or labels.",
+      "Do maintain the coarse-pointer target sizes and visible keyboard focus.",
+      "Do check portrait and short landscape layouts when changing the HUD."
+    ],
+    "donts": [
+      "Don't replace the selected world with vampire or fantasy styling.",
+      "Don't let decorative trails hide individual scrap pieces or enemy silhouettes.",
+      "Don't use the concept board as evidence of working gameplay.",
+      "Don't imply bosses, evolutions, or platform integration already exist."
+    ]
+  }
+}
