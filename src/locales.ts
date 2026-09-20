@@ -1,6 +1,12 @@
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
+    "Your magnet collects nearby scrap.":
+      "Dein Magnet sammelt Schrott in der Nähe.",
+    "Scrap orbits you, then fires automatically.":
+      "Schrott kreist um dich und feuert dann automatisch.",
+    "Keep moving. Collect scrap to reload.":
+      "Bleib in Bewegung. Sammle Schrott zum Nachladen.",
     PAUSED: "PAUSIERT",
     "Your run is on hold.": "Dein Lauf wartet auf dich.",
     "SURVIVE. SALVAGE. REPEAT.": "ÜBERLEBEN. BERGEN. WIEDERHOLEN.",
@@ -235,6 +241,12 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Schrottnachschub",
   },
   fr: {
+    "Your magnet collects nearby scrap.":
+      "Ton aimant ramasse la ferraille à proximité.",
+    "Scrap orbits you, then fires automatically.":
+      "La ferraille tourne autour de toi, puis tire automatiquement.",
+    "Keep moving. Collect scrap to reload.":
+      "Reste en mouvement. Ramasse de la ferraille pour recharger.",
     PAUSED: "EN PAUSE",
     "Your run is on hold.": "Ta partie t’attend.",
     "SURVIVE. SALVAGE. REPEAT.": "SURVIS. RÉCUPÈRE. RECOMMENCE.",
@@ -471,6 +483,11 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recharge de ferraille",
   },
   es: {
+    "Your magnet collects nearby scrap.": "Tu imán recoge chatarra cercana.",
+    "Scrap orbits you, then fires automatically.":
+      "La chatarra gira a tu alrededor y luego dispara sola.",
+    "Keep moving. Collect scrap to reload.":
+      "Sigue moviéndote. Recoge chatarra para recargar.",
     PAUSED: "EN PAUSA",
     "Your run is on hold.": "Tu partida te espera.",
     "SURVIVE. SALVAGE. REPEAT.": "SOBREVIVE. RECUPERA. REPITE.",
@@ -705,6 +722,11 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de chatarra",
   },
   pt: {
+    "Your magnet collects nearby scrap.": "Seu ímã coleta sucata próxima.",
+    "Scrap orbits you, then fires automatically.":
+      "A sucata orbita você e depois dispara automaticamente.",
+    "Keep moving. Collect scrap to reload.":
+      "Continue se movendo. Colete sucata para recarregar.",
     PAUSED: "EM PAUSA",
     "Your run is on hold.": "A tua partida espera por ti.",
     "SURVIVE. SALVAGE. REPEAT.": "SOBREVIVA. RECUPERE. REPITA.",
@@ -940,6 +962,12 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de sucata",
   },
   tr: {
+    "Your magnet collects nearby scrap.":
+      "Mıknatısın yakındaki hurdaları toplar.",
+    "Scrap orbits you, then fires automatically.":
+      "Hurdalar etrafında döner, sonra otomatik ateşlenir.",
+    "Keep moving. Collect scrap to reload.":
+      "Hareket et. Yeniden ateşlemek için hurda topla.",
     PAUSED: "DURAKLATILDI",
     "Your run is on hold.": "Turun seni bekliyor.",
     "Graphics quality": "Grafik kalitesi",

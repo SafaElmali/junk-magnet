@@ -108,3 +108,9 @@ Settings → Graphics quality applies immediately and remembers the selected pre
 English, Turkish, German, French, Spanish and Portuguese are available through a named language picker with original SVG flags. The choice persists across reloads. Menu/category icons and five How to Play diagrams are original SVG drawings; ability art remains the original Blender renders. The automatic targeting arrow has been removed because attacks require no manual aiming.
 
 Contact damage now changes the robot's own materials with a brief impact highlight, fading red tint and slight visual recoil. This does not move its collision position. Reduced motion removes the recoil; pausing freezes the feedback and restarting resets it.
+
+### Readable first combat
+
+New runs start with six real scrap pieces on the ground and an empty orbit. During a three-second opening, movement and collection work while enemies and attacks wait. The magnet starts pulling after 0.7 seconds, so players can see where their first ammunition comes from. A small translated, illustrated hint follows collecting, orbiting and reloading, then disappears after seven simulation seconds. Pause freezes the opening; restarting replays it.
+
+Scrap projectiles have larger silhouettes and colored trails; the fallback magnetic pulse uses a thick cyan mesh beam with a gold tip and bounded impact effects. Ground scrap is enlarged and tilted for clarity. Barrel teal/rust/steel colors are decorative, with no damage or threat meaning. Their palette is derived from fixed world coordinates, so loading adjacent chunks no longer recolors existing barrels.

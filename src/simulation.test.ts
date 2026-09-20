@@ -1,14 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createState, update, launch, MAX_SCRAP, ENTITY_LIMITS, orbitPosition, chooseUpgrade, UPGRADES, type Enemy, type UpgradeId, type State } from "./simulation";
+import { createState, update, launch, OPENING_DURATION, MAX_SCRAP, ENTITY_LIMITS, orbitPosition, chooseUpgrade, UPGRADES, type Enemy, type UpgradeId, type State } from "./simulation";
 import { getObstacles } from "./world";
 const still = { x: 0, z: 0 };
-function playing() { const s = createState(); s.phase = "playing"; s.enemies = []; s.spawnTimer = 100; return s; }
+function playing() { const s = createState(); s.phase = "playing"; s.openingRemaining = 0; s.scrap = 6; s.pickups = []; s.enemies = []; s.spawnTimer = 100; return s; }
 function enemy(id: number, x: number, z: number, hp = 10, type: Enemy["type"] = "can"): Enemy { return { id, x, z, hp, hit: 0, seed: 0, type }; }
 function collectXP(s: State, amount: number) { s.pickups.push({ id: 999, ...s.player, kind: "xp", born: -1, value: amount }); update(s, 0.01, still); }
 
 test("launch spends the orbit and obeys cooldown and all paused phases", () => {
-  const s = createState(); assert.equal(launch(s), false); s.phase = "playing";
+  const s = playing(); s.phase = "ready"; assert.equal(launch(s), false); s.phase = "playing";
   assert.equal(launch(s), true); assert.equal(s.scrap, 0); assert.equal(s.shots.length, 6);
   s.scrap = 4; assert.equal(launch(s), false); s.cooldown = 0;
   for (const phase of ["paused", "upgrade", "lost"] as const) { s.phase = phase; assert.equal(launch(s), false); }
@@ -179,4 +179,73 @@ test("automatic fire saves ammunition without an in-range target and respects pa
   s.shots = [];
   update(s, 0.01, still);
   assert.equal(s.launched, 1);
+});
+
+
+test("fresh runs gather real visible ground scrap before any combat starts", () => {
+  const s = createState();
+  assert.equal(s.scrap, 0);
+  assert.equal(s.openingRemaining, OPENING_DURATION);
+  assert.equal(s.pickups.length, 6);
+  assert.ok(s.pickups.every(p => p.kind === "scrap" && Math.abs(Math.hypot(p.x, p.z) - 2.4) < 1e-8));
+  const ground = structuredClone(s.pickups);
+  const enemies = structuredClone(s.enemies);
+  const spawned = s.spawned;
+  s.phase = "playing";
+  for (let i = 0; i < 12; i++) update(s, 0.05, still);
+  assert.deepEqual(s.pickups, ground, "Scrap is visible on the ground before attraction");
+  assert.equal(s.scrap, 0);
+  for (let i = 0; i < 6; i++) update(s, 0.05, still);
+  assert.equal(s.scrap, 0, "Attraction takes visible time instead of instantly granting ammunition");
+  assert.ok(s.pickups.every(p => Math.hypot(p.x, p.z) < 2.4), "Real pieces travel toward the player");
+  for (let i = 0; i < 12; i++) update(s, 0.05, still);
+  assert.equal(s.scrap, 6);
+  assert.equal(s.pickups.length, 0);
+  assert.equal(s.events.filter(e => e.kind === "collect").length, 6);
+  assert.deepEqual(s.enemies, enemies);
+  assert.equal(s.spawned, spawned);
+  assert.equal(s.launched, 0);
+  assert.equal(s.shots.length, 0);
+  assert.equal(launch(s), false, "Manual helper also respects the opening");
+  for (let i = 0; i < 30; i++) update(s, 0.05, still);
+  assert.equal(s.openingRemaining, 0);
+  assert.equal(s.launched, 0);
+  s.enemies = [enemy(999, 5, 0)];
+  update(s, 0.05, still);
+  assert.equal(s.launched, 1, "Automatic fire starts after the gathering introduction");
+});
+
+test("opening permits movement but blocks all weapons, contact damage and new spawns", () => {
+  const s = createState(); s.phase = "playing";
+  s.enemies = [enemy(999, 0, 0)];
+  s.scrap = 6; s.pulseTimer = 0; s.spawnTimer = 0;
+  s.upgrades.lightning = 1; s.upgrades.turret = 1; s.upgrades.burst = 1;
+  const opponent = structuredClone(s.enemies[0]);
+  update(s, 0.05, { x: 1, z: 0 });
+  assert.ok(Math.abs(s.player.x - 0.31) < 1e-9);
+  assert.equal(s.hp, 100);
+  assert.deepEqual(s.enemies, [opponent]);
+  assert.equal(s.launched, 0);
+  assert.equal(s.turrets.length, 0);
+  assert.equal(s.shots.length, 0);
+  assert.equal(s.events.length, 0);
+  assert.equal(s.spawnTimer, 0);
+});
+
+test("pause freezes opening and a fresh restart restores uncollected ground scrap", () => {
+  const s = createState(); s.phase = "playing";
+  for (let i = 0; i < 20; i++) update(s, 0.05, still);
+  s.phase = "paused";
+  const paused = structuredClone(s);
+  for (let i = 0; i < 40; i++) update(s, 0.05, { x: 1, z: 1 });
+  assert.deepEqual(s, paused);
+  s.phase = "playing";
+  update(s, 0.05, still);
+  assert.ok(s.openingRemaining < paused.openingRemaining);
+  const restarted = createState();
+  assert.equal(restarted.openingRemaining, OPENING_DURATION);
+  assert.equal(restarted.scrap, 0);
+  assert.equal(restarted.time, 0);
+  assert.equal(restarted.pickups.length, 6);
+  assert.ok(restarted.pickups.every(p => Math.abs(Math.hypot(p.x, p.z) - 2.4) < 1e-8));
 });

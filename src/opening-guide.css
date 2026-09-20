@@ -1,0 +1,90 @@
+/* A short, non-interactive explanation follows the real first scrap collection. */
+.opening-guide {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: min(370px, calc(100% - 32px));
+  padding: 7px 12px;
+  border: 1px solid #a6c1aa40;
+  border-radius: 6px;
+  background: #142f37eb;
+  color: #f4ead0;
+  pointer-events: none;
+  user-select: none;
+  animation: opening-appear 180ms ease-out;
+}
+.opening-art {
+  width: 60px;
+  height: 40px;
+  flex: 0 0 60px;
+}
+#opening-copy {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  max-width: 255px;
+}
+.opening-guide[data-step="collect"] .opening-orbit-art,
+.opening-guide:not([data-step="collect"]) .opening-collect-art {
+  display: none;
+}
+.in-menu .opening-guide,
+#yard:not(.is-playing) .opening-guide,
+#app:not([data-phase="playing"]) .opening-guide {
+  display: none;
+}
+@keyframes opening-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 380px) {
+  .opening-guide {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .opening-art {
+    width: 52px;
+    flex-basis: 52px;
+  }
+  #opening-copy {
+    font-size: 11px;
+  }
+}
+@media (max-height: 420px) {
+  .opening-guide {
+    bottom: max(12px, env(safe-area-inset-bottom));
+    padding: 5px 10px;
+  }
+  .opening-art {
+    height: 34px;
+  }
+  #opening-copy {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-guide {
+    animation: none;
+  }
+}
+@media (pointer: coarse) and (min-height: 421px) {
+  .opening-guide {
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 100px));
+  }
+}
+@media (pointer: coarse) and (max-height: 420px) {
+  .opening-guide {
+    max-width: min(370px, calc(100% - 224px));
+  }
+}

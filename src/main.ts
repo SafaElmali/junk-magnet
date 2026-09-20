@@ -13,6 +13,7 @@ import "./play-hud.css";
 import "./menu.css";
 import "./help-art.css";
 import "./pause-menu.css";
+import "./opening-guide.css";
 import { helpIllustration } from "./help-art";
 import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
@@ -31,6 +32,7 @@ import {
 import { YardScene } from "./scene";
 import {
   createState,
+  OPENING_DURATION,
   update,
   UPGRADES,
   chooseUpgrade,
@@ -76,6 +78,7 @@ app.innerHTML = `
  </section>
  <div class="health-track" role="progressbar" aria-label="Robot health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="health-fill"></i></div>
  <div class="yard-caption"><span id="xp-label">0 / 5 XP</span><i></i><span>COLLECT BLUE ENERGY. BUILD SOMETHING BIGGER.</span></div>
+ <aside id="opening-guide" class="opening-guide hidden" role="status" aria-live="polite" aria-atomic="true"><svg class="opening-art" viewBox="0 0 72 48" aria-hidden="true"><g class="opening-collect-art"><path d="m8 10 7 3-3 7-7-3Zm-2 23 7-3 3 7-7 3Z" fill="#d7e0d9" stroke="#789a9c"/><path d="M21 16h10m-4-4 4 4-4 4M21 33h10m-4-4 4 4-4 4" fill="none" stroke="#8abfc2" stroke-width="2"/><path d="M40 8v17a12 12 0 0 0 24 0V8h-8v17a4 4 0 0 1-8 0V8Z" fill="#cf5945" stroke="#f28a68" stroke-width="1.5"/><path d="M40 8h8v7h-8Zm16 0h8v7h-8Z" fill="#fff0c8"/></g><g class="opening-orbit-art"><ellipse cx="23" cy="24" rx="17" ry="16" fill="none" stroke="#7ba9a6" stroke-dasharray="3 3"/><rect x="16" y="17" width="14" height="14" rx="4" fill="#edba53"/><path d="M19 22h8" stroke="#173441" stroke-width="3"/><path d="m7 8 6 2-2 6-6-2ZM32 33l6 2-2 6-6-2Z" fill="#d7e0d9"/><path d="M43 24h13m-5-5 5 5-5 5" fill="none" stroke="#edba53" stroke-width="2"/><rect x="62" y="19" width="7" height="10" rx="2" fill="#cf5945"/></g></svg><p id="opening-copy"></p></aside>
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
  <div class="load-state" id="loading" role="status"><div class="loading-magnet">${svg("magnet")}</div><h2>Opening the yard…</h2><p id="load-detail">Unpacking the good junk.</p><div class="load-track"><i id="load-progress"></i></div></div>
  <div class="intro hidden" id="intro">${menuMarkup}</div>
@@ -523,7 +526,33 @@ el("upgrade-choices").addEventListener("click", (e) => {
   );
   if (button) pickUpgrade(button.dataset.upgrade as UpgradeId);
 });
+let shownOpening = "";
+function renderOpeningGuide() {
+  const visible =
+    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 7;
+  el("opening-guide").classList.toggle("hidden", !visible);
+  if (!visible) return;
+  const phase =
+    s.openingRemaining > 0 &&
+    (s.openingRemaining > OPENING_DURATION / 2 || s.scrap === 0)
+      ? "collect"
+      : s.openingRemaining > 0
+        ? "orbit"
+        : "reload";
+  const signature = `${phase}:${getLanguage()}`;
+  if (signature === shownOpening) return;
+  shownOpening = signature;
+  el("opening-guide").dataset.step = phase;
+  el("opening-copy").textContent = t(
+    phase === "collect"
+      ? "Your magnet collects nearby scrap."
+      : phase === "orbit"
+        ? "Scrap orbits you, then fires automatically."
+        : "Keep moving. Collect scrap to reload.",
+  );
+}
 function hud() {
+  renderOpeningGuide();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
   el("timer").textContent = format(s.time);
   el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
@@ -641,6 +670,7 @@ async function boot() {
         snapshot: () => ({
           phase: s.phase,
           time: s.time,
+          openingRemaining: s.openingRemaining,
           player: { ...s.player },
           aim: { ...s.aim },
           facing: { ...s.facing },
@@ -651,6 +681,10 @@ async function boot() {
           upgrades: { ...s.upgrades },
           enemyCount: s.enemies.length,
           enemies: s.enemies.map(({ x, z, type, hp }) => ({ x, z, type, hp })),
+          scrapDrops: s.pickups
+            .filter((p) => p.kind === "scrap")
+            .slice(0, 120)
+            .map(({ x, z }) => ({ x, z })),
           xpDrops: s.pickups
             .filter((p) => p.kind === "xp")
             .slice(0, 120)

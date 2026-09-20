@@ -36,3 +36,19 @@ test("collision queries include visual prop footprints on both sides of chunk se
     }
   }
 });
+
+
+test("barrel palette is a permanent property independent of neighboring streamed chunks", () => {
+  const anchor = structuredClone(getChunkProps(3, -2));
+  const palettes = new Set<number>();
+  for (let cx = -10; cx <= 10; cx++) for (let cz = -10; cz <= 10; cz++) {
+    for (const prop of getChunkProps(cx, cz)) {
+      assert.ok(Number.isInteger(prop.colorIndex) && prop.colorIndex >= 0 && prop.colorIndex <= 2);
+      if (prop.kind === "salvage") palettes.add(prop.colorIndex);
+    }
+  }
+  assert.equal(palettes.size, 3, "All three decorative finishes remain available");
+  getObstacles(60, -40);
+  getObstacles(80, -40);
+  assert.deepEqual(getChunkProps(3, -2), anchor, "Streaming and eviction cannot recolor the same barrel");
+});

@@ -11,7 +11,7 @@ export type GameEvent = Vec & {
   fromX?: number; fromZ?: number; radius?: number;
 };
 export type State = {
-  time: number; player: Vec; aim: Vec; facing: Vec; hp: number; scrap: number;
+  time: number; openingRemaining: number; player: Vec; aim: Vec; facing: Vec; hp: number; scrap: number;
   xp: number; level: number; xpNeeded: number; choices: UpgradeId[]; upgrades: Record<UpgradeId, number>;
   kills: number; spawned: number; wave: number; cooldown: number; immunity: number;
   phase: "ready" | "playing" | "paused" | "upgrade" | "lost";
@@ -19,6 +19,7 @@ export type State = {
   spawnTimer: number; pulseTimer: number; abilityTimers: { lightning: number; turret: number; burst: number };
   nextId: number; rng: number; launched: number; overclockTimer: number;
 };
+export const OPENING_DURATION = 3;
 export const MAX_SCRAP = 12;
 export const ORBIT_RADIUS = 1.85;
 export const ENTITY_LIMITS = { enemies: 140, pickups: 320, shots: 192, turrets: 6, events: 160 };
@@ -62,11 +63,16 @@ function resolveObstacles(p: Vec, radius: number) {
 }
 export function createState(): State {
   const s: State = {
-    time: 0, player: { x: 0, z: 0 }, aim: { x: 0, z: 1 }, facing: { x: 0, z: 1 }, hp: 100, scrap: 6,
+    time: 0, openingRemaining: OPENING_DURATION, player: { x: 0, z: 0 }, aim: { x: 0, z: 1 }, facing: { x: 0, z: 1 }, hp: 100, scrap: 0,
     xp: 0, level: 1, xpNeeded: 5, choices: [], upgrades: { saw: 1, lightning: 0, turret: 0, burst: 0, boots: 0, magnet: 0, armor: 0, repair: 0, refill: 0, overclock: 0 },
     kills: 0, spawned: 0, wave: 1, cooldown: 0, immunity: 0, phase: "ready", enemies: [], pickups: [], shots: [], turrets: [], events: [],
     spawnTimer: 1.3, pulseTimer: 1, abilityTimers: { lightning: 0, turret: 0, burst: 0 }, nextId: 1, rng: 41, launched: 0, overclockTimer: 0,
   };
+  // Real ground scrap is gathered before combat, so the first ammunition has a visible source.
+  for (let i = 0; i < 6; i++) {
+    const angle = i * Math.PI * 2 / 6;
+    s.pickups.push({ id: s.nextId++, x: Math.cos(angle) * 2.4, z: Math.sin(angle) * 2.4, kind: "scrap", born: 0 });
+  }
   for (let i = 0; i < 7; i++) spawn(s, i * Math.PI * 2 / 7, 8 + random(s) * 2);
   return s;
 }
@@ -104,7 +110,7 @@ export function orbitPosition(s: State, index: number): Vec {
   return { x: s.player.x + Math.cos(a) * radius, z: s.player.z + Math.sin(a) * radius };
 }
 export function launch(s: State, target?: Vec): boolean {
-  if (s.phase !== "playing" || s.cooldown > 0 || !s.scrap || s.shots.length >= ENTITY_LIMITS.shots) return false;
+  if (s.phase !== "playing" || s.openingRemaining > 0 || s.cooldown > 0 || !s.scrap || s.shots.length >= ENTITY_LIMITS.shots) return false;
   const base = Math.atan2(s.aim.z, s.aim.x), count = s.scrap;
   for (let i = 0; i < count && s.shots.length < ENTITY_LIMITS.shots; i++) {
     const origin = orbitPosition(s, i);
@@ -191,6 +197,23 @@ function abilities(s: State, dt: number) {
   }
   s.turrets = s.turrets.filter(t => t.life > 0);
 }
+function collectPickups(s: State, dt: number) {
+  // Keep the first scraps still briefly; then pull them slowly enough to read the magnet effect.
+  if (s.openingRemaining > OPENING_DURATION - 0.7) return;
+  s.pickups = s.pickups.filter(p => {
+    const d = distance(p, s.player), canCollect = p.kind === "xp" || s.scrap < MAX_SCRAP;
+    if (canCollect && d < 3.2 + s.upgrades.magnet * 0.9 && s.time - p.born > 0.15) {
+      const step = Math.min(d, dt * (s.openingRemaining > 0 ? 2.8 + 2 / (d + 0.4) : 7 + 8 / (d + 0.4))); p.x += (s.player.x - p.x) / (d || 1) * step; p.z += (s.player.z - p.z) / (d || 1) * step;
+    }
+    if (canCollect && distance(p, s.player) < 0.5) {
+      const value = p.value ?? 1;
+      if (p.kind === "scrap") { const take = Math.min(value, MAX_SCRAP - s.scrap); s.scrap += take; p.value = value - take; }
+      else { s.xp += value; p.value = 0; }
+      emit(s, { kind: "collect", x: p.x, z: p.z }); return !!p.value;
+    }
+    return true;
+  });
+}
 export function update(s: State, dt: number, movement: Vec) {
   if (s.phase !== "playing") return;
   dt = Math.min(0.05, Math.max(0, dt)); if (!dt) return;
@@ -202,6 +225,12 @@ export function update(s: State, dt: number, movement: Vec) {
     const speed = 6.2 * (1 + s.upgrades.boots * 0.12) * (s.overclockTimer > 0 ? 1.15 : 1);
     s.player.x += movement.x / Math.max(1, len) * speed * dt; s.player.z += movement.z / Math.max(1, len) * speed * dt;
     resolveObstacles(s.player, 0.4);
+  }
+  if (s.openingRemaining > 0) {
+    s.openingRemaining = Math.max(0, s.openingRemaining - dt);
+    if (s.openingRemaining < 1e-8) s.openingRemaining = 0;
+    collectPickups(s, dt);
+    return;
   }
   s.spawnTimer -= dt;
   if (s.spawnTimer <= 0) {
@@ -254,18 +283,6 @@ export function update(s: State, dt: number, movement: Vec) {
     }
   }
   s.enemies = s.enemies.filter(e => e.hp > 0); s.shots = s.shots.filter(p => p.life > 0);
-  s.pickups = s.pickups.filter(p => {
-    const d = distance(p, s.player), canCollect = p.kind === "xp" || s.scrap < MAX_SCRAP;
-    if (canCollect && d < 3.2 + s.upgrades.magnet * 0.9 && s.time - p.born > 0.15) {
-      const step = Math.min(d, dt * (7 + 8 / (d + 0.4))); p.x += (s.player.x - p.x) / (d || 1) * step; p.z += (s.player.z - p.z) / (d || 1) * step;
-    }
-    if (canCollect && distance(p, s.player) < 0.5) {
-      const value = p.value ?? 1;
-      if (p.kind === "scrap") { const take = Math.min(value, MAX_SCRAP - s.scrap); s.scrap += take; p.value = value - take; }
-      else { s.xp += value; p.value = 0; }
-      emit(s, { kind: "collect", x: p.x, z: p.z }); return !!p.value;
-    }
-    return true;
-  });
+  collectPickups(s, dt);
   offerUpgrade(s);
 }

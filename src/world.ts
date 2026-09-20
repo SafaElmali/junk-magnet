@@ -1,7 +1,7 @@
 /** Stateless coordinates make the scrapyard repeatable without storing an infinite map. */
 export const CHUNK_SIZE = 20;
 export type Obstacle = { x: number; z: number; radius: number };
-export type YardProp = Obstacle & { kind: "tires" | "salvage"; height: number; rotation: number };
+export type YardProp = Obstacle & { kind: "tires" | "salvage"; height: number; rotation: number; colorIndex: 0 | 1 | 2 };
 const cache = new Map<string, YardProp[]>();
 function hash(x: number, z: number, salt: number) {
   let n = Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263) ^ salt;
@@ -22,7 +22,8 @@ export function getChunkProps(cx: number, cz: number): readonly YardProp[] {
     props.push({ x, z, radius: 0.72 + hash(cx, cz, i * 51 + 19) * 0.3,
       kind: hash(cx, cz, i * 29 + 23) < 0.55 ? "tires" : "salvage",
       height: 2 + Math.floor(hash(cx, cz, i * 41 + 29) * 2),
-      rotation: hash(cx, cz, i * 43 + 31) * Math.PI * 2 });
+      rotation: hash(cx, cz, i * 43 + 31) * Math.PI * 2,
+      colorIndex: Math.floor(hash(cx, cz, i * 47 + 53) * 3) as 0 | 1 | 2 });
   }
   cache.set(key, props);
   if (cache.size > 96) cache.delete(cache.keys().next().value!);

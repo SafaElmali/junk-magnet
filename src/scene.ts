@@ -122,7 +122,19 @@ export class YardScene {
   }[] = [];
   private hurtRed = new THREE.Color(0xff3b24);
   private hurtWhite = new THREE.Color(0xfff4d8);
-  pulse!: THREE.Line;
+  pulse!: THREE.Group;
+  private pulseBeam!: THREE.Mesh;
+  private pulseCore!: THREE.Mesh;
+  private pulseHead!: THREE.Mesh;
+  private pulseStart = new THREE.Vector3();
+  private pulseEnd = new THREE.Vector3();
+  private beamDirection = new THREE.Vector3();
+  private beamUp = new THREE.Vector3(0, 1, 0);
+  private shotTrails!: THREE.InstancedMesh;
+  private shotHeads!: THREE.InstancedMesh;
+  private impactBatch!: THREE.InstancedMesh;
+  private impacts: { x: number; z: number; life: number }[] = [];
+  private barrelAppearances: { x: number; z: number; color: number }[] = [];
   pulseLife = 0;
   clock = 0;
   chunkKey = "";
@@ -359,19 +371,51 @@ export class YardScene {
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.position.y = 0.045;
     this.scene.add(this.ring);
-    this.pulse = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(),
-        new THREE.Vector3(),
-      ]),
-      new THREE.LineBasicMaterial({
-        color: 0xa5ffff,
-        transparent: true,
-        opacity: 0.8,
-      }),
+    // Actual mesh widths stay readable on Retina and mobile WebGL alike.
+    const beamGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
+    const magnetic = new THREE.MeshBasicMaterial({
+      color: 0x10ded0,
+      toneMapped: false,
+    });
+    const outline = new THREE.MeshBasicMaterial({
+      color: 0x126675,
+      toneMapped: false,
+    });
+    const hot = new THREE.MeshBasicMaterial({
+      color: 0xffde72,
+      toneMapped: false,
+    });
+    this.pulse = new THREE.Group();
+    this.pulseBeam = new THREE.Mesh(beamGeometry, outline);
+    this.pulseCore = new THREE.Mesh(beamGeometry, magnetic);
+    this.pulseHead = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(0.26, 1),
+      hot,
     );
+    this.pulse.add(this.pulseBeam, this.pulseCore, this.pulseHead);
     this.pulse.visible = false;
     this.scene.add(this.pulse);
+    this.shotTrails = new THREE.InstancedMesh(
+      beamGeometry,
+      magnetic,
+      ENTITY_LIMITS.shots,
+    );
+    this.shotHeads = new THREE.InstancedMesh(
+      new THREE.IcosahedronGeometry(0.13, 0),
+      hot,
+      ENTITY_LIMITS.shots,
+    );
+    this.impactBatch = new THREE.InstancedMesh(
+      new THREE.RingGeometry(0.7, 1, 16),
+      hot,
+      24,
+    );
+    for (const batch of [this.shotTrails, this.shotHeads, this.impactBatch]) {
+      batch.count = 0;
+      batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      batch.frustumCulled = false;
+      this.scene.add(batch);
+    }
   }
   private mobileModels() {
     // Small screens keep the same silhouettes with inexpensive geometry.
@@ -594,6 +638,7 @@ export class YardScene {
     const texture = (this.floor.material as THREE.MeshStandardMaterial).map!;
     texture.offset.set(cx, -cz);
     const transform = new THREE.Object3D();
+    this.barrelAppearances = [];
     let tires = 0,
       piles = 0,
       markings = 0;
@@ -621,8 +666,13 @@ export class YardScene {
             this.salvageRims.setMatrixAt(piles, transform.matrix);
             this.salvageBatch.setColorAt(
               piles,
-              new THREE.Color([C.teal, C.rust, C.steel][piles % 3]),
+              new THREE.Color([C.teal, C.rust, C.steel][prop.colorIndex]),
             );
+            this.barrelAppearances.push({
+              x: prop.x,
+              z: prop.z,
+              color: [C.teal, C.rust, C.steel][prop.colorIndex],
+            });
             piles++;
           }
         }
@@ -660,7 +710,16 @@ export class YardScene {
       camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
       chunks: 9,
       renderedEnemies: this.renderedEnemies,
-      fx: this.fx.length + this.abilityFx.length,
+      fx: this.fx.length + this.abilityFx.length + this.impacts.length,
+      attackFx: {
+        pulseVisible: this.pulse?.visible ?? false,
+        pulseLife: this.pulseLife,
+        pulseWidth: 0.28,
+        shotTrails: this.shotTrails?.count ?? 0,
+        impacts: this.impacts.length,
+        impactLimit: 24,
+      },
+      barrels: this.barrelAppearances.map((prop) => ({ ...prop })),
       geometries: this.renderer.info.memory.geometries,
       textures: this.renderer.info.memory.textures,
       graphics: {
@@ -774,15 +833,20 @@ export class YardScene {
         continue;
       }
       if (ev.kind === "pulse") {
-        const attr = this.pulse.geometry.getAttribute(
-          "position",
-        ) as THREE.BufferAttribute;
-        attr.setXYZ(0, ev.fromX ?? s.player.x, 0.65, ev.fromZ ?? s.player.z);
-        attr.setXYZ(1, ev.x, 0.5, ev.z);
-        attr.needsUpdate = true;
-        this.pulseLife = 0.11;
+        this.pulseStart.set(
+          ev.fromX ?? s.player.x,
+          0.75,
+          ev.fromZ ?? s.player.z,
+        );
+        this.pulseEnd.set(ev.x, 1.15, ev.z);
+        this.pulseLife = 0.26;
         this.pulse.visible = true;
       }
+      if (
+        (ev.kind === "hit" || ev.kind === "pulse") &&
+        this.impacts.length < 24
+      )
+        this.impacts.push({ x: ev.x, z: ev.z, life: 0.26 });
       if (ev.kind === "collect") continue;
       const count = ev.kind === "kill" ? 12 : ev.kind === "launch" ? 10 : 4;
       for (let i = 0; i < count && this.fx.length < 160; i++) {
@@ -898,9 +962,10 @@ export class YardScene {
         0.16 + Math.sin(s.time * 3 + p.id) * 0.04,
         p.z,
       );
-      transform.rotation.set(0, s.time + p.id, 0);
+      // Tilt metal pickups so the bolt silhouette reads as salvage, not a pin.
+      transform.rotation.set(p.kind === "scrap" ? 0.7 : 0, s.time + p.id, 0);
       transform.scale.setScalar(
-        p.kind === "xp" && (p.value ?? 1) > 3 ? 0.95 : 0.7,
+        p.kind === "scrap" ? 1.1 : (p.value ?? 1) > 3 ? 0.95 : 0.7,
       );
       transform.updateMatrix();
       for (const batch of this.pickupBatches[kind])
@@ -911,17 +976,35 @@ export class YardScene {
       this.finishBatch(batches, pickupCounts[index]),
     );
     const shotCounts = [0, 0, 0];
+    let trailCount = 0;
     for (const p of s.shots) {
       if (!this.visible(p.x, p.z, 0.8)) continue;
       const kind = p.kind % 3;
       transform.position.set(p.x, 0.65, p.z);
       transform.rotation.set(s.time * 8, s.time * 12, 0);
-      transform.scale.setScalar(1);
+      transform.scale.setScalar(1.4);
       transform.updateMatrix();
       for (const batch of this.shotBatches[kind])
         batch.setMatrixAt(shotCounts[kind], transform.matrix);
       shotCounts[kind]++;
+      const speed = Math.hypot(p.vx, p.vz) || 1;
+      const trailLength = this.reduced ? 0.45 : 0.95;
+      this.beamDirection.set(p.vx / speed, 0, p.vz / speed);
+      transform.position.set(
+        p.x - (this.beamDirection.x * trailLength) / 2,
+        0.6,
+        p.z - (this.beamDirection.z * trailLength) / 2,
+      );
+      transform.quaternion.setFromUnitVectors(this.beamUp, this.beamDirection);
+      transform.scale.set(0.07, trailLength, 0.07);
+      transform.updateMatrix();
+      this.shotTrails.setMatrixAt(trailCount, transform.matrix);
+      transform.position.set(p.x, 0.65, p.z);
+      transform.scale.setScalar(1);
+      transform.updateMatrix();
+      this.shotHeads.setMatrixAt(trailCount++, transform.matrix);
     }
+    this.finishBatch([this.shotTrails, this.shotHeads], trailCount);
     this.shotBatches.forEach((batches, index) =>
       this.finishBatch(batches, shotCounts[index]),
     );
@@ -970,8 +1053,36 @@ export class YardScene {
       if (f.life <= 0) f.o.removeFromParent();
     }
     this.fx = this.fx.filter((f) => f.life > 0);
-    this.pulseLife -= dt;
+    this.pulseLife = Math.max(0, this.pulseLife - dt);
     this.pulse.visible = this.pulseLife > 0;
+    if (this.pulse.visible) {
+      this.beamDirection.subVectors(this.pulseEnd, this.pulseStart);
+      const length = this.beamDirection.length();
+      this.beamDirection.normalize();
+      for (const [mesh, radius] of [
+        [this.pulseBeam, 0.14],
+        [this.pulseCore, 0.075],
+      ] as const) {
+        mesh.position.copy(this.pulseStart).lerp(this.pulseEnd, 0.5);
+        // Raise the luminous inner core above its dark silhouette.
+        if (mesh === this.pulseCore) mesh.position.y += 0.11;
+        mesh.quaternion.setFromUnitVectors(this.beamUp, this.beamDirection);
+        mesh.scale.set(radius, length, radius);
+      }
+      this.pulseHead.position.copy(this.pulseEnd);
+      this.pulseHead.scale.setScalar(this.reduced ? 1 : 0.85 + this.pulseLife);
+    }
+    for (const impact of this.impacts) impact.life -= dt;
+    this.impacts = this.impacts.filter((impact) => impact.life > 0);
+    this.impacts.forEach((impact, index) => {
+      const progress = 1 - impact.life / 0.26;
+      transform.position.set(impact.x, 1.35, impact.z);
+      transform.rotation.copy(this.camera.rotation);
+      transform.scale.setScalar(this.reduced ? 0.38 : 0.2 + progress * 0.45);
+      transform.updateMatrix();
+      this.impactBatch.setMatrixAt(index, transform.matrix);
+    });
+    this.finishBatch([this.impactBatch], this.impacts.length);
     this.renderer.info.reset();
     if (this.composer && graphicsProfile(this.quality).ambientOcclusion)
       this.composer.render();
@@ -1027,5 +1138,9 @@ export class YardScene {
     }
     this.abilityFx = [];
     this.pulseLife = 0;
+    if (this.pulse) this.pulse.visible = false;
+    this.impacts = [];
+    for (const batch of [this.shotTrails, this.shotHeads, this.impactBatch])
+      if (batch) batch.count = 0;
   }
 }
