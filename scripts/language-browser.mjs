@@ -22,6 +22,8 @@ try {
     assert.equal(await page.locator("html").getAttribute("lang"), "tr");
     assert.match(await page.locator("#start").innerText(), /OYNA/);
     await page.locator("#menu-help").click();
+    for (let step = 0; step < 3; step++)
+      await page.locator("#help-next").click();
     assert.match(
       await page.locator("#help-content").innerText(),
       /Mavi enerji topla/,

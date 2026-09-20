@@ -20,9 +20,23 @@ try {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185");
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
+    const compact = width <= 700 || height <= 550;
+    const capacity = !compact ? 10 : height <= 420 ? 4 : width <= 360 ? 4 : 6;
+    async function selectAbility(id) {
+      if (
+        compact &&
+        (await page.locator("#menu-library").getAttribute("data-view")) ===
+          "detail"
+      )
+        await page.locator("#menu-back").click();
+      await page.locator('[data-filter="All"]').click();
+      while (!(await page.locator(`[data-ability="${id}"]`).count()))
+        await page.locator('[data-page="next"]').click();
+      await page.locator(`[data-ability="${id}"]`).click();
+    }
     const before = await page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
     await page.locator("#menu-abilities").click();
-    assert.equal(await page.locator(".ability-tile").count(), 10);
+    assert.equal(await page.locator(".ability-tile").count(), capacity);
     await page.waitForFunction(() =>
       [...document.querySelectorAll("#menu-library img")].every(
         (img) => img.complete && img.naturalWidth === 384,
@@ -44,7 +58,10 @@ try {
       ["All", 10],
     ]) {
       await page.locator(`[data-filter="${category}"]`).click();
-      assert.equal(await page.locator(".ability-tile").count(), count);
+      assert.equal(
+        await page.locator(".ability-tile").count(),
+        Math.min(count, capacity),
+      );
     }
     for (const id of [
       "lightning",
@@ -58,7 +75,7 @@ try {
       "overclock",
       "saw",
     ]) {
-      await page.locator(`[data-ability="${id}"]`).click();
+      await selectAbility(id);
       assert.equal(
         await page
           .locator(`[data-ability="${id}"]`)
@@ -73,8 +90,8 @@ try {
         (await page.locator("#ability-detail p").innerText()).length > 30,
       );
     }
-    await page.locator('[data-ability="overclock"]').click();
-    assert.equal(await page.locator(".detail-meta strong").innerText(), "∞");
+    await selectAbility("overclock");
+    assert.equal(await page.locator(".detail-meta strong svg").count(), 1);
     assert.match(await page.locator(".detail-meta span").innerText(), /TEKRAR/);
     assert.deepEqual(
       await page.evaluate(() => window.__JUNK_MAGNET__.snapshot().upgrades),
@@ -84,11 +101,13 @@ try {
       await page.evaluate(() => window.__JUNK_MAGNET__.snapshot().time),
       0,
     );
+    if (compact) await page.locator("#menu-back").click();
     await page.locator("#menu-back").click();
     await page.locator("#menu-settings").click();
     await page.locator("#menu-language").click();
     await page.locator("#menu-back").click();
     await page.locator("#menu-abilities").click();
+    await selectAbility("overclock");
     assert.equal(
       await page.locator("#ability-detail-name").innerText(),
       "Overclock",
@@ -97,6 +116,7 @@ try {
       await page.locator("#ability-detail p").innerText(),
       /20 seconds/,
     );
+    if (compact) await page.locator("#menu-back").click();
     await page.locator("#menu-back").click();
     await page.locator("#start").click();
     if (!mobile) {

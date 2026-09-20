@@ -96,6 +96,13 @@ export const turkish: Record<string, string> = {
     "Yörüngendeki 12 hurdayı doldurur ve otomatik atışın bekleme süresini sıfırlar. Tekrar seçilebilir.",
   "Gain 25% damage and 15% movement speed for 20 seconds. Choosing it again refreshes the duration.":
     "20 saniye boyunca %25 hasar ve %15 hareket hızı kazan. Tekrar seçmek süreyi yeniler.",
+  "ALL ABILITIES": "YETENEKLERE DÖN",
+  "Ability pages": "Yetenek sayfaları",
+  "Previous page": "Önceki sayfa",
+  "Next page": "Sonraki sayfa",
+  "Help pages": "Yardım adımları",
+  "Previous step": "Önceki adım",
+  "Next step": "Sonraki adım",
   "Level up": "Seviye atladın",
   "Level {level} · Choose one upgrade.": "Seviye {level} · Bir yetenek seç.",
   "THE SWARM IS YOUR AMMO.": "SÜRÜ SENİN CEPHANEN.",

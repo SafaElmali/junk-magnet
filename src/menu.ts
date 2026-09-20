@@ -6,12 +6,23 @@ import {
   type AbilityCategory,
 } from "./ability-art";
 
+const icon = (path: string) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+const playIcon = icon(
+  '<path d="m9 5 10 7-10 7Z" fill="currentColor" stroke="none"/>',
+);
+const endlessIcon = icon(
+  '<path d="M12 12c-3-5-9-5-9 0s6 5 9 0 9-5 9 0-6 5-9 0Z"/>',
+);
+const previousIcon = icon('<path d="m14 6-6 6 6 6"/>');
+const nextIcon = icon('<path d="m10 6 6 6-6 6"/>');
+
 export const menuMarkup = `
 <div class="menu-shell">
   <div class="menu-brand"><span class="menu-eyebrow">SURVIVE. SALVAGE. REPEAT.</span><h2>JUNK<span>MAGNET</span></h2><p>THE SWARM IS YOUR AMMO.</p></div>
   <div class="menu-home" id="menu-home">
     <nav class="menu-actions" aria-label="Main menu">
-      <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span><span aria-hidden="true">▶</span></button>
+      <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span>${playIcon}</button>
       <button id="new-run" class="menu-button hidden">NEW RUN</button>
       <button id="menu-abilities" class="menu-button">ABILITIES</button>
       <button id="menu-settings" class="menu-button">SETTINGS</button>
@@ -33,7 +44,7 @@ export const menuMarkup = `
       <p>Move. Collect. Choose your upgrades. Attacks are automatic.</p>
     </div>
   </section>
-  <div class="menu-stage"><span class="stage-mark" aria-hidden="true">∞</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
+  <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
   <span class="intro-note">Move with WASD or arrows · Attacks are automatic</span>
 </div>`;
 
@@ -50,26 +61,58 @@ export function setupMenu(actions: {
   let resumable = false;
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
+  let sheet = 0;
+  let detailOpen = false;
+  const compact = () =>
+    matchMedia("(max-width: 700px), (max-height: 550px)").matches;
+  const pageSize = () =>
+    !compact()
+      ? 10
+      : innerHeight <= 420
+        ? innerWidth < 640
+          ? 3
+          : 4
+        : innerWidth <= 360
+          ? 4
+          : 6;
+  function closeDetail() {
+    detailOpen = false;
+    renderLibrary();
+    el("menu-library")
+      .querySelector<HTMLElement>(`[data-ability="${selected}"]`)
+      ?.focus({ preventScroll: true });
+  }
   function renderLibrary() {
     const ids = (Object.keys(UPGRADES) as UpgradeId[]).filter(
       (id) => category === "All" || abilityGuide[id].category === category,
     );
     if (!ids.includes(selected)) selected = ids[0];
     const maxRank = UPGRADES[selected].maxRank;
+    const size = pageSize();
+    const pages = Math.ceil(ids.length / size);
+    sheet = Math.min(sheet, pages - 1);
+    const visible = ids.slice(sheet * size, (sheet + 1) * size);
+    const single = compact() && detailOpen;
+    el("menu-back").textContent = t(single ? "ALL ABILITIES" : "BACK");
+    el("menu-library").dataset.view = single ? "detail" : "gallery";
+    el("menu-library").style.setProperty(
+      "--ability-columns",
+      String(!compact() ? 5 : innerHeight <= 420 ? size : size === 4 ? 2 : 3),
+    );
     el("menu-library").innerHTML = `
-      <p class="library-intro">${t("Know your tools. Build your survival.")}</p>
-      <div class="ability-filters" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${t(filter)}<span>${Object.values(abilityGuide).filter((entry) => filter === "All" || entry.category === filter).length}</span></button>`).join("")}</div>
-      <div class="ability-browser"><div class="ability-grid">${ids.map((id) => `<button class="ability-tile" data-ability="${id}" aria-pressed="${selected === id}" aria-controls="ability-detail">${abilityImage(id)}<strong>${upgradeName(id)}</strong><span class="tile-category">${t(abilityGuide[id].category)}</span></button>`).join("")}</div>
-      <section class="ability-detail" id="ability-detail" aria-live="polite" aria-labelledby="ability-detail-name">
+      <div class="ability-filters ${single ? "hidden" : ""}" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${t(filter)}</button>`).join("")}</div>
+      <div class="ability-browser ${single ? "detail-only" : ""}"><div class="ability-grid ${single ? "hidden" : ""}">${visible.map((id) => `<button class="ability-tile" data-ability="${id}" aria-pressed="${selected === id}" aria-controls="ability-detail">${abilityImage(id)}<strong>${upgradeName(id)}</strong></button>`).join("")}</div>
+      <section class="ability-detail ${compact() && !single ? "hidden" : ""}" id="ability-detail" tabindex="-1" aria-live="polite" aria-labelledby="ability-detail-name">
         <div class="detail-art">${abilityImage(selected)}</div>
-        <span class="detail-category">${t(abilityGuide[selected].category)}</span>
+        <div class="detail-copy"><span class="detail-category">${t(abilityGuide[selected].category)}</span>
         <h4 id="ability-detail-name">${upgradeName(selected)}</h4>
         <p>${t(abilityGuide[selected].description)}</p>
-        <div class="detail-meta"><span>${t(Number.isFinite(maxRank) ? "MAX RANK" : "REPEATABLE")}</span><strong>${Number.isFinite(maxRank) ? maxRank : "∞"}</strong></div>
-        <span class="detail-acquisition">${t(selected === "saw" ? "Your starting weapon" : "Available through level-up choices")}</span>
+        <div class="detail-meta"><span>${t(Number.isFinite(maxRank) ? "MAX RANK" : "REPEATABLE")}</span><strong>${Number.isFinite(maxRank) ? maxRank : endlessIcon}</strong></div>
+        <span class="detail-acquisition">${t(selected === "saw" ? "Your starting weapon" : "Available through level-up choices")}</span></div>
       </section></div>
-      <p class="library-note">${t("A field guide, not a loadout. Choose your upgrades when you level up.")}</p>`;
+      <nav class="ability-pagination ${single ? "hidden" : ""}" aria-label="${t("Ability pages")}"><button data-page="previous" aria-label="${t("Previous page")}" ${sheet === 0 ? "disabled" : ""}>${previousIcon}</button><span aria-live="polite">${sheet + 1} / ${pages}</span><button data-page="next" aria-label="${t("Next page")}" ${sheet === pages - 1 ? "disabled" : ""}>${nextIcon}</button></nav>`;
   }
+
   function refresh() {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
@@ -90,6 +133,10 @@ export function setupMenu(actions: {
   function show(next: typeof page, focus = true) {
     const previous = page;
     page = next;
+    detailOpen = false;
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-submenu", page !== "home");
     document
       .querySelector(".menu-shell")!
       .classList.toggle("is-library", page === "abilities");
@@ -112,24 +159,40 @@ export function setupMenu(actions: {
       "button",
     );
     if (!button) return;
-    if (button.dataset.filter)
+    if (button.dataset.filter) {
       category = button.dataset.filter as typeof category;
-    if (button.dataset.ability) selected = button.dataset.ability as UpgradeId;
+      sheet = 0;
+      detailOpen = false;
+    }
+    if (button.dataset.page) sheet += button.dataset.page === "next" ? 1 : -1;
+    if (button.dataset.ability) {
+      selected = button.dataset.ability as UpgradeId;
+      detailOpen = true;
+    }
+    renderLibrary();
+    if (button.dataset.ability && compact()) {
+      el("ability-detail").focus({ preventScroll: true });
+      return;
+    }
     const focusSelector = button.dataset.filter
       ? `[data-filter="${category}"]`
-      : `[data-ability="${selected}"]`;
-    renderLibrary();
+      : button.dataset.page
+        ? `.ability-pagination button:not(:disabled)`
+        : `[data-ability="${selected}"]`;
     el("menu-library")
       .querySelector<HTMLElement>(focusSelector)
       ?.focus({ preventScroll: true });
-    if (
-      button.dataset.ability &&
-      window.matchMedia("(max-width: 700px)").matches
-    ) {
-      el("ability-detail").scrollIntoView({
-        block: "nearest",
-        behavior: "instant",
-      });
+  });
+  let layoutKey = `${compact()}:${pageSize()}`;
+  window.addEventListener("resize", () => {
+    const next = `${compact()}:${pageSize()}`;
+    if (next === layoutKey) return;
+    layoutKey = next;
+    sheet = 0;
+    detailOpen = false;
+    if (page === "abilities") {
+      renderLibrary();
+      el("menu-back").focus({ preventScroll: true });
     }
   });
   el("start").addEventListener("click", actions.start);
@@ -137,7 +200,9 @@ export function setupMenu(actions: {
   el("menu-help").addEventListener("click", actions.help);
   el("menu-abilities").addEventListener("click", () => show("abilities"));
   el("menu-settings").addEventListener("click", () => show("settings"));
-  el("menu-back").addEventListener("click", () => show("home"));
+  el("menu-back").addEventListener("click", () =>
+    detailOpen && compact() ? closeDetail() : show("home"),
+  );
   el("menu-language").addEventListener("click", actions.language);
   el("menu-sound").addEventListener("click", actions.sound);
   return {
@@ -149,6 +214,10 @@ export function setupMenu(actions: {
     },
     back() {
       if (page === "home") return false;
+      if (detailOpen && compact()) {
+        closeDetail();
+        return true;
+      }
       show("home");
       return true;
     },

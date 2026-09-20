@@ -22,7 +22,7 @@ try {
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
     const state = () => page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
     assert.equal((await state()).phase, "ready");
-    assert.equal(await page.locator("#start").innerText(), "OYNA\n▶");
+    assert.equal(await page.locator("#start-label").innerText(), "OYNA");
     await page.screenshot({ path: `.impeccable/review/menu-${width}.png` });
     assert.equal(
       await page
@@ -31,7 +31,16 @@ try {
       true,
     );
     await page.locator("#menu-abilities").click();
-    assert.equal(await page.locator("#menu-library .ability-tile").count(), 10);
+    assert.equal(
+      await page.locator("#menu-library .ability-tile").count(),
+      width > 700 && height > 550
+        ? 10
+        : height <= 420
+          ? 4
+          : width <= 360
+            ? 4
+            : 6,
+    );
     await page.keyboard.press("Space");
     assert.equal(
       (await state()).phase,
@@ -60,6 +69,8 @@ try {
     await page.locator("#menu-language").click();
     await page.locator("#menu-back").click();
     await page.locator("#menu-help").click();
+    await page.locator("#help-next").click();
+    await page.locator("#help-next").click();
     assert.match(await page.locator("#help-content").innerText(), /otomatik/);
     await page.locator("#resume").click();
     assert.equal((await state()).phase, "ready");

@@ -255,6 +255,11 @@ The title screen now fills the viewport with a dimmed scrapyard behind a cream/g
 
 ## Illustrated ability field guide
 
-The ability submenu replaces the large title with a focused collection view: category controls, ten selectable object cards and a detail panel. Desktop uses five columns beside the selected ability; narrow screens use three columns and bring the detail into view on selection. Warm gold marks selection against the established navy/teal surfaces. Descriptions explain existing mechanics, with maximum ranks or repeatable status rather than invented unlocks or prices. The collection is informational; in-run level-up choices still control the build.
+The ability submenu replaces the large title with a focused collection view: category controls, ten selectable object cards and a detail panel. Desktop uses five columns beside the selected ability. Compact screens use a paginated grid and replace it with a dedicated detail view when selected. Warm gold marks selection against the established navy/teal surfaces. Descriptions explain existing mechanics, with maximum ranks or repeatable status rather than invented unlocks or prices. The collection is informational; in-run level-up choices still control the build.
 
 Each icon is an original Blender object rendered with shared materials, an orthographic camera and studio lights. Transparent 384px PNGs let the illustrated parts sit naturally on the menu background. Full-size detail artwork and level-up thumbnails reuse the same files. Sources are `scripts/build_ability_assets.py`, `art/ability-kit.blend`, `src/ability-art.ts`, `src/menu.ts` and `src/menu.css`.
+
+
+## Fixed-screen menu navigation
+
+Menus must not depend on scrolling or emoji glyphs. Use original Blender artwork for abilities and SVG paths for controls and symbols. The full-screen menu adapts its composition to viewport height: compact home screens prioritize navigation over the decorative character card, while settings use a separate centered panel. Compact ability grids show 3–6 cards per page with previous/next controls, and every detail screen has a persistent Back button. Desktop shows all ten abilities and an adjacent detail panel. Help is split into five pages instead of a long description. Narrow upgrade cards reserve more width for copy; short landscape screens place the three choices side by side. Results retain stats and build information while omitting secondary flavor copy on short screens.

@@ -94,3 +94,9 @@ The full-screen title menu includes Play/Continue, New Run, the ten-ability refe
 Blender renders now illustrate all ten abilities. The guide filters Weapons, Support and Supplies, and selecting a card shows its effect, maximum rank or repeatable status, and how to acquire it. Browsing does not equip upgrades or modify the run. The same artwork appears in level-up choices. Both languages and mobile layouts are supported.
 
 `npm run assets:abilities` rebuilds the transparent icons and editable `art/ability-kit.blend`. See `art/ABILITY-ASSETS.md` for provenance and build details. `node scripts/ability-browser.mjs` verifies image delivery, categories, all detail selections, translation, read-only browsing and level-up images.
+
+### Menus without scrolling
+
+Main menu, settings, ability browsing and Help fit the current viewport. Compact ability screens use explicit previous/next pages and a separate detail screen; Back and Escape return to the same page. Help has five short steps. Orientation changes recalculate the visible cards. Menu symbols are drawn SVGs, and ability images remain the original Blender renders; no emoji icons are used.
+
+`node scripts/fixed-menu-browser.mjs` verifies eight desktop/phone viewport sizes, all ten abilities across pages, both help languages, settings, resume, rotation, visible controls and absence of overflow. `node scripts/menu-dialog-layout.mjs` verifies long-copy upgrade/result layouts using explicitly labeled UI fixtures.
