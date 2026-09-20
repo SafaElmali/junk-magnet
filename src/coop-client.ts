@@ -23,6 +23,8 @@ export class CoopClient {
   private latest?: CoopSnapshot;
   private displayed?: State;
   private statusMarkup = "";
+  private rescueState = "";
+  private rescueStarted = 0;
   private panel: HTMLElement;
   private status: HTMLElement;
   private upgrades: HTMLElement;
@@ -43,7 +45,7 @@ export class CoopClient {
       "beforeend",
       `
       <section id="coop-lobby" class="coop-lobby hidden" role="dialog" aria-modal="true" aria-labelledby="coop-title"></section>
-      <aside id="coop-status" class="coop-status hidden" aria-live="polite"></aside>
+      <aside id="coop-status" class="coop-status hidden"></aside>
       <section id="coop-upgrades" class="coop-upgrades hidden" aria-label="Co-op upgrades"></section>`,
     );
     this.panel = document.getElementById("coop-lobby")!;
@@ -192,6 +194,7 @@ export class CoopClient {
         this.down = packet.down;
         if (first) {
           this.displayed = undefined;
+          this.rescueState = "";
           this.menuOpen = false;
           this.lastChoice = "";
           this.expanded = false;
@@ -307,9 +310,18 @@ export class CoopClient {
     const distance = Math.round(
       Math.hypot(p.player.x - s.player.x, p.player.z - s.player.z),
     );
-    const status = this.down ? ct("down") : p.hp <= 0 ? ct("revive") : "";
+    const rescue = this.down ? "down" : p.hp <= 0 ? "revive" : "";
+    if (rescue !== this.rescueState) {
+      this.rescueState = rescue;
+      this.rescueStarted = performance.now();
+    }
+    const status =
+      rescue && performance.now() - this.rescueStarted < 2000 ? ct(rescue) : "";
+    const progress = Math.round(
+      (Math.max(p.revive, this.latest?.revive ?? 0) / 3) * 100,
+    );
     // Text is intentionally short: the battle remains the focus.
-    const markup = `<svg class="coop-direction" viewBox="0 0 20 20" aria-hidden="true" style="transform:rotate(${(Math.atan2(p.player.z - s.player.z, p.player.x - s.player.x) * 180) / Math.PI + 90}deg)"><path d="m10 2 6 15-6-3-6 3Z" fill="currentColor"/></svg><strong>2P</strong><span>${Math.ceil(p.hp)} HP · ${distance} m</span>${status ? `<span class="coop-revive">${status} ${Math.round((Math.max(p.revive, this.latest?.revive ?? 0) / 3) * 100)}%</span>` : ""}`;
+    const markup = `<svg class="coop-direction" viewBox="0 0 20 20" aria-hidden="true" style="transform:rotate(${(Math.atan2(p.player.z - s.player.z, p.player.x - s.player.x) * 180) / Math.PI + 90}deg)"><path d="m10 2 6 15-6-3-6 3Z" fill="currentColor"/></svg><strong>2P</strong><span>${Math.ceil(p.hp)} HP · ${distance} m</span>${status || progress > 0 ? `<span class="coop-revive">${status}${progress > 0 ? ` ${progress}%` : ""}</span>` : ""}`;
     if (markup !== this.statusMarkup) {
       this.statusMarkup = markup;
       this.status.innerHTML = markup;

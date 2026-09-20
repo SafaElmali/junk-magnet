@@ -47,3 +47,12 @@ export function discoveryFeedback(
     ${progress === undefined ? "" : `<div class="discovery-progress" role="progressbar" aria-label="${status}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><i style="transform:scaleX(${progress})"></i></div>`}
     ${reward?.parts ? `<small class="discovery-bank-note">${t("Saved to the workshop when this run ends.")}</small>` : ""}`;
 }
+
+/** Active interaction feedback stays small; no reward table covers the arena. */
+export function discoveryProgress(
+  kind: DiscoveryKind,
+  status: string,
+  progress: number,
+) {
+  return `<div class="discovery-heading"><img src="${import.meta.env.BASE_URL}discoveries/${kind}.png" width="24" height="24" alt=""/><span>${status}</span></div><div class="discovery-progress" role="progressbar" aria-label="${status}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(progress * 100)}"><i style="transform:scaleX(${progress})"></i></div>`;
+}

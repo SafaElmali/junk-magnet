@@ -29,7 +29,11 @@ import {
 } from "./progression";
 import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
 import { getDiscoveryHint } from "./discovery";
-import { discoveryFeedback, discoveryNames } from "./discovery-feedback";
+import {
+  discoveryFeedback,
+  discoveryProgress,
+  discoveryNames,
+} from "./discovery-feedback";
 import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
@@ -606,16 +610,11 @@ el("upgrade-choices").addEventListener("click", (e) => {
 let shownOpening = "";
 function renderOpeningGuide() {
   const visible =
-    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 7;
+    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < 3;
   el("opening-guide").classList.toggle("hidden", !visible);
   if (!visible) return;
   // Keep the explanation readable even when the first volley follows collection immediately.
-  const phase =
-    s.launched > 0 && s.time >= 3
-      ? "reload"
-      : s.scrap > 0 || s.launched > 0
-        ? "orbit"
-        : "collect";
+  const phase = s.scrap > 0 || s.launched > 0 ? "orbit" : "collect";
   const signature = `${phase}:${getLanguage()}`;
   if (signature === shownOpening) return;
   shownOpening = signature;
@@ -623,12 +622,23 @@ function renderOpeningGuide() {
   el("opening-copy").textContent = t(
     phase === "collect"
       ? "Your magnet collects nearby scrap."
-      : phase === "orbit"
-        ? "Scrap orbits you, then fires automatically."
-        : "Keep moving. Collect scrap to reload.",
+      : "Scrap orbits you, then fires automatically.",
   );
 }
 let worldHintMarkup = "";
+let hintRun = "";
+const hintStarted = new Map<string, number>();
+// Presentation time prevents pausing/revisiting from reviving a dismissed hint.
+// Keys are ability/discovery kinds, so this stays bounded in endless runs.
+function briefHint(key: string, duration = 1800) {
+  if (hintRun !== runId) {
+    hintRun = runId;
+    hintStarted.clear();
+  }
+  const now = performance.now();
+  if (!hintStarted.has(key)) hintStarted.set(key, now);
+  return now - hintStarted.get(key)! < duration;
+}
 function renderExpansionHUD() {
   const playing = s.phase === "playing" && !app.classList.contains("in-menu");
   const boss =
@@ -653,24 +663,24 @@ function renderExpansionHUD() {
   }
   let text = "";
   let markup = "";
-  let reward = false;
+  let compact = false;
   let hintProgress: number | undefined;
-  if (playing && s.evolutionNotice && s.evolutionNotice.until > s.time) {
+  if (
+    playing &&
+    s.evolutionNotice &&
+    s.evolutionNotice.until > s.time &&
+    briefHint(`evolution:${s.evolutionNotice.id}`)
+  ) {
     text = t("EVOLVED: {name}", {
       name: t(EVOLUTIONS[s.evolutionNotice.id].name),
     });
-  } else if (
-    playing &&
-    s.discovery.lastReward &&
-    s.discovery.lastReward.kind !== "chest" &&
-    s.discovery.lastReward.until > s.time
-  ) {
-    const receipt = s.discovery.lastReward;
-    markup = discoveryFeedback(receipt.kind, t("Claimed"), receipt);
-    reward = true;
   } else if (playing) {
     const hint = getDiscoveryHint(s);
-    if (hint && (s.time >= 7 || hint.mode === "hold" || hint.distance <= 3)) {
+    if (
+      hint &&
+      (s.time >= 3 || hint.mode === "hold" || hint.distance <= 3) &&
+      (hint.mode === "hold" || briefHint(`discovery:${hint.kind}`))
+    ) {
       const status =
         hint.mode === "hold"
           ? t("{name} · {seconds}s", {
@@ -688,18 +698,17 @@ function renderExpansionHUD() {
                 distance: Math.ceil(hint.distance),
               });
       hintProgress = hint.mode === "hold" ? hint.progress : undefined;
-      markup = discoveryFeedback(
-        hint.kind,
-        status,
-        undefined,
-        hint.mode === "hold" ? 0 : undefined,
-      );
+      compact = hint.mode === "hold";
+      markup = compact
+        ? discoveryProgress(hint.kind, status, 0)
+        : discoveryFeedback(hint.kind, status);
     }
   }
   const worldHint = el("world-hint");
   worldHint.classList.toggle("hidden", !text && !markup);
   worldHint.classList.toggle("is-discovery", Boolean(markup));
-  worldHint.classList.toggle("is-reward", reward);
+  worldHint.classList.remove("is-reward");
+  worldHint.classList.toggle("is-compact", compact);
   if (markup) {
     if (worldHintMarkup !== markup) {
       worldHint.innerHTML = markup;

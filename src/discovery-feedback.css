@@ -127,3 +127,25 @@
     font-size: 9px;
   }
 }
+
+.world-hint.is-discovery.is-compact {
+  width: max-content;
+  max-width: calc(100% - 40px);
+  padding: 6px 10px;
+  box-shadow: none;
+}
+.is-compact .discovery-heading {
+  gap: 6px;
+}
+.is-compact .discovery-heading img {
+  width: 24px;
+  height: 24px;
+}
+.is-compact .discovery-heading span {
+  font-size: 11px;
+  margin: 0;
+}
+.is-compact .discovery-progress {
+  margin-top: 3px;
+  height: 2px;
+}

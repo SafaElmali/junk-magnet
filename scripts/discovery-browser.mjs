@@ -162,6 +162,8 @@ try {
     assert.equal(completed.questsCompleted, 1);
     assert.equal(completed.earnedParts, 11);
     await choose();
+    assert.equal(await page.locator("#world-hint.is-reward").count(), 0);
+    assert.equal(await page.locator("#world-hint").isVisible(), false);
     await page.screenshot({
       path: `.impeccable/review/discovery-claimed-live-${width}.png`,
     });
