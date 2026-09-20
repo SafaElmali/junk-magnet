@@ -45,6 +45,8 @@ The browser benchmark measures CPU, process RSS, JavaScript heap, and frame timi
 
 Game models are authored with Blender Python and exported as GLB files into [public/models](../public/models/). Editable scenes and generated reference artwork live in [art](../art/).
 
+See [How the characters are built](character-builds.md) for the tools, enemy modeling techniques, export pipeline, mobile implementation, and rebuild workflow.
+
 | Asset set | Rebuild on macOS | Source / notes |
 | --- | --- | --- |
 | Base robot, enemies, props, scrap | `npm run assets` | [Builder](../scripts/build_assets.py), [Blender scene](../art/junk-magnet-assets.blend) |

@@ -64,6 +64,8 @@ npm run build         # Type-check and production build
 
 [Gameplay guide](docs/gameplay.md) · [Development and artwork](docs/development.md) · [Verification notes](VERIFICATION.md)
 
+[How the characters are built](docs/character-builds.md)
+
 [Analytics setup and event catalog](docs/analytics.md) · [PostHog chart definitions](docs/posthog-charts.json)
 
 [Production domain and deployment](docs/deployment.md): `playjunkmagnet.com`.
