@@ -1,3 +1,4 @@
+import { chooseMenuLanguage } from "./language-controls.mjs";
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -60,13 +61,13 @@ try {
       await page.locator("#menu-sound").getAttribute("aria-pressed"),
       "true",
     );
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "en");
     assert.equal(await page.locator("html").getAttribute("lang"), "en");
     assert.equal(
       await page.locator("#menu-panel-title").innerText(),
       "SETTINGS",
     );
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "tr");
     await page.locator("#menu-back").click();
     await page.locator("#menu-help").click();
     await page.locator("#help-next").click();

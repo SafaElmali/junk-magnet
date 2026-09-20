@@ -1,0 +1,22 @@
+// Original vector tutorial scenes. No words are baked into the artwork, so the
+// adjacent translated step title and description are the accessible explanation.
+const robot = (x: number, y: number, scale = 1) =>
+  `<g transform="translate(${x} ${y}) scale(${scale})"><ellipse cy="31" rx="28" ry="7" fill="#183e3920"/><rect x="-27" y="9" width="14" height="25" rx="5" fill="#28443f"/><rect x="13" y="9" width="14" height="25" rx="5" fill="#28443f"/><rect x="-23" y="-20" width="46" height="45" rx="10" fill="#e6b832" stroke="#755e2c" stroke-width="2"/><path d="M-11-20v-8h19" fill="none" stroke="#28443f" stroke-width="3"/><circle cx="10" cy="-28" r="4" fill="#d65745"/><rect x="-18" y="-11" width="36" height="15" rx="5" fill="#28443f"/><path d="M-10-5v3M9-5v3" stroke="#bfe6d0" stroke-width="4" stroke-linecap="round"/><path d="M-9 14H9" stroke="#a8802b" stroke-width="3"/></g>`;
+const enemy = (x: number, y: number) =>
+  `<g transform="translate(${x} ${y})"><ellipse cy="24" rx="19" ry="5" fill="#183e3920"/><path d="m-16-15 32 2-3 33h-26z" fill="#c35b47" stroke="#853e31" stroke-width="2"/><path d="m-20-16 39 2M-15-20h29" stroke="#854435" stroke-width="4" stroke-linecap="round"/><path d="m-9-5 5 3m13-3-5 3" stroke="#f9e6c1" stroke-width="3"/><path d="M-7 10H7" stroke="#813e30" stroke-width="3"/></g>`;
+const scrap = (x: number, y: number, angle = 0) =>
+  `<g transform="translate(${x} ${y}) rotate(${angle})"><path d="m-7-7 14 2-2 13-13-3z" fill="#bac5bc" stroke="#58726a" stroke-width="2"/><path d="M-3-3 5 0M-3 1l5 2" stroke="#f5f3d9" stroke-width="2"/></g>`;
+const energy = (x: number, y: number) =>
+  `<path d="m${x} ${y - 10} 7 10-7 10-7-10z" fill="#65cee0" stroke="#2b889a" stroke-width="2"/>`;
+const arrow = (x: number, y: number, angle = 0) =>
+  `<path transform="translate(${x} ${y}) rotate(${angle})" d="M-12 0h24M4-8l8 8-8 8" fill="none" stroke="#36816f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+const scenes = [
+  `${robot(145, 78)}${arrow(145, 27, -90)}${arrow(145, 140, 90)}${arrow(85, 82, 180)}${arrow(205, 82)}<circle cx="270" cy="90" r="27" fill="none" stroke="#70958a" stroke-width="2" stroke-dasharray="4 4"/><circle cx="283" cy="79" r="12" fill="#4e9483" stroke="#2f6d5e" stroke-width="2"/><path d="m269 92 10-10" stroke="#fff3d5" stroke-width="3" stroke-linecap="round"/>`,
+  `<ellipse cx="140" cy="84" rx="75" ry="47" fill="none" stroke="#6b9888" stroke-width="2" stroke-dasharray="6 5"/>${robot(140, 78)}${scrap(80, 56, 30)}${scrap(119, 129, 45)}${scrap(210, 81, -30)}${scrap(274, 55, 15)}${scrap(303, 97, 35)}${arrow(254, 92, 180)}`,
+  `${robot(70, 78)}<path d="M110 77h100" stroke="#759385" stroke-width="2" stroke-dasharray="4 6"/>${scrap(139, 77, 25)}${scrap(181, 77, 40)}${enemy(246, 76)}<path d="m216 49 6 12m-18 5 11 4m-2 21-11 5" stroke="#e6a030" stroke-width="4" stroke-linecap="round"/>${enemy(300, 122)}<path d="m303 18 8 12-8 12-8-12z" fill="#36816f"/><path d="m299 30 3 3 6-7" fill="none" stroke="#fff3d5" stroke-width="2"/>`,
+  `${energy(32, 50)}${energy(49, 90)}${arrow(77, 70)}<rect x="108" y="17" width="214" height="9" rx="4" fill="#d5d9bd"/><rect x="108" y="17" width="180" height="9" rx="4" fill="#61bac7"/>${[114, 184, 254].map((x, i) => `<g><rect x="${x}" y="44" width="58" height="96" rx="7" fill="${i === 1 ? "#e6bc43" : "#e9e8cd"}" stroke="${i === 1 ? "#398575" : "#acb5a0"}" stroke-width="${i === 1 ? 3 : 1.5}"/><path d="M${x + 12} 119h33M${x + 17} 126h23" stroke="#859383" stroke-width="3" stroke-linecap="round"/></g>`).join("")}<path d="m129 81 12-13 13 13-13 13z" fill="#6d9891"/><path d="m214 60-13 23h12l-3 20 18-28h-14z" fill="#397b71"/><path d="m268 70 15-7 15 7v16q-1 11-15 16-14-5-15-16z" fill="#8da9a1"/>`,
+  `${robot(94, 78)}<ellipse cx="94" cy="83" rx="52" ry="43" fill="none" stroke="#5eb4a6" stroke-width="3"/><path d="M149 45a70 70 0 0 1 0 74" fill="none" stroke="#78b7a6" stroke-width="2"/><path d="M163 34a91 91 0 0 1 0 97" fill="none" stroke="#a5c7ad" stroke-width="2"/>${enemy(207, 72)}<path d="m229 51 9-10m-7 24 14-2m-16 16 10 8" stroke="#dda43c" stroke-width="3" stroke-linecap="round"/>${scrap(286, 69, 28)}${scrap(273, 111, -20)}${arrow(233, 124, 180)}`,
+];
+export function helpIllustration(step: number): string {
+  return `<div class="help-illustration"><svg viewBox="0 0 350 165" aria-hidden="true" focusable="false"><rect x="1" y="1" width="348" height="163" rx="14" fill="#f2ecd3"/><path d="M25 144h298" stroke="#d7dcc1" stroke-width="2"/>${scenes[Math.max(0, Math.min(scenes.length - 1, step))]}</svg></div>`;
+}

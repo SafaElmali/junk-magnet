@@ -1,0 +1,90 @@
+/* Illustrated instructions retain the existing one-step-at-a-time navigation. */
+.help-illustration {
+  width: 100%;
+  margin: 0 0 12px;
+}
+.help-illustration svg {
+  display: block;
+  width: 100%;
+  height: clamp(104px, 19vh, 165px);
+}
+#modal.is-help .modal-card {
+  max-width: 520px;
+  padding: 22px;
+}
+#modal.is-help #help-content dl > div {
+  min-height: 0;
+}
+#modal.is-help #help-content dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#modal.is-help #help-content dt {
+  margin-bottom: 6px;
+}
+@media (max-width: 520px) and (max-height: 700px) {
+  #modal.is-help .modal-card {
+    padding: 16px;
+  }
+  #modal.is-help .modal-card h2 {
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+  .help-illustration {
+    margin-bottom: 8px;
+  }
+  .help-illustration svg {
+    height: 108px;
+  }
+  #modal.is-help #help-content dt {
+    font-size: 22px;
+  }
+  #modal.is-help #help-content dd {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  #modal.is-help #help-content dl,
+  #modal.is-help .help-pages {
+    margin-bottom: 10px;
+  }
+}
+@media (min-width: 521px) and (max-height: 500px) {
+  #modal.is-help .modal-card {
+    max-width: 660px;
+    padding: 14px 20px;
+  }
+  #modal.is-help #help-content dl > div:not([hidden]) {
+    display: grid;
+    grid-template-columns: 42% minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 16px;
+    text-align: left;
+  }
+  #modal.is-help .help-illustration {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: center;
+    margin: 0;
+  }
+  #modal.is-help .help-illustration svg {
+    height: 100px;
+  }
+  #modal.is-help #help-content dt {
+    grid-column: 2;
+    font-size: 22px;
+  }
+  #modal.is-help #help-content dd {
+    grid-column: 2;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  #modal.is-help .modal-card h2 {
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+  #modal.is-help #help-content dl,
+  #modal.is-help .help-pages {
+    margin-bottom: 8px;
+  }
+}

@@ -1,3 +1,4 @@
+import { chooseMenuLanguage } from "./language-controls.mjs";
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -104,7 +105,7 @@ try {
     if (compact) await page.locator("#menu-back").click();
     await page.locator("#menu-back").click();
     await page.locator("#menu-settings").click();
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "en");
     await page.locator("#menu-back").click();
     await page.locator("#menu-abilities").click();
     await selectAbility("overclock");

@@ -1,3 +1,4 @@
+import { chooseMenuLanguage } from "./language-controls.mjs";
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -131,7 +132,7 @@ try {
     await page.locator("#resume").click();
     await page.locator("#menu-settings").click();
     await check("settings Turkish");
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "en");
     await check("settings English");
     await page.locator("#menu-back").click();
     await check("home English");

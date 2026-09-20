@@ -1,3 +1,4 @@
+import { cycleToolbarLanguage } from "./language-controls.mjs";
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -69,9 +70,9 @@ try {
     );
     assert.equal(afterPause.time, frozen.time);
     assert.equal(afterPause.launched, frozen.launched);
-    await page.locator("#language").click();
+    await cycleToolbarLanguage(page, "en");
     assert.equal(await page.locator("html").getAttribute("lang"), "en");
-    await page.locator("#language").click();
+    await cycleToolbarLanguage(page, "tr");
     await page.locator("#help").click();
     for (let step = 0; step < 3; step++)
       await page.locator("#help-next").click();

@@ -11,10 +11,16 @@ import "@fontsource/dm-sans/latin-ext-700.css";
 import "./style.css";
 import "./play-hud.css";
 import "./menu.css";
+import "./help-art.css";
+import { helpIllustration } from "./help-art";
+import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
 import { abilityImage } from "./ability-art";
 import {
   t,
+  LANGUAGES,
+  languageFlag,
+  type Language,
   getLanguage,
   setLanguage,
   bindStaticTranslations,
@@ -77,6 +83,9 @@ app.innerHTML = `
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button><button id="result-menu" class="text-btn">MAIN MENU</button></div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
+document.querySelectorAll("#help-content dl > div").forEach((step, index) => {
+  step.insertAdjacentHTML("afterbegin", helpIllustration(index));
+});
 app.classList.add("in-menu");
 const translateStatic = bindStaticTranslations(app);
 const el = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -670,12 +679,16 @@ function applyLanguage() {
   menu.refresh();
   document.documentElement.lang = getLanguage();
   translateStatic();
-  el("language").textContent = getLanguage() === "en" ? "TR" : "EN";
+  const currentLanguage = LANGUAGES.find(
+    (entry) => entry.code === getLanguage(),
+  )!;
+  el("language").innerHTML =
+    `${languageFlag(currentLanguage.code)}<span>${currentLanguage.code.toUpperCase()}</span>`;
   el("language").setAttribute(
     "aria-label",
-    getLanguage() === "en" ? "Türkçeye geç" : "Switch to English",
+    `${t("Language")}: ${currentLanguage.name}`,
   );
-  el("language").title = getLanguage() === "en" ? "Türkçe" : "English";
+  el("language").title = currentLanguage.name;
   el("sound").setAttribute(
     "aria-label",
     t(sound ? "Mute sound" : "Enable sound"),
@@ -708,16 +721,26 @@ function applyLanguage() {
   if (s.phase === "lost") showedResult = false;
   hud();
 }
-function toggleLanguage() {
-  setLanguage(getLanguage() === "en" ? "tr" : "en");
+function chooseLanguage(next: Language) {
+  setLanguage(next);
   applyLanguage();
+}
+function toggleLanguage() {
+  const index = LANGUAGES.findIndex((entry) => entry.code === getLanguage());
+  chooseLanguage(LANGUAGES[(index + 1) % LANGUAGES.length].code);
+}
+function chooseQuality(next: GraphicsQuality) {
+  setGraphicsQuality(next);
+  scene?.setQuality(next);
+  menu.refresh();
 }
 el("language").addEventListener("click", toggleLanguage);
 const menu = setupMenu({
   start,
   restart,
   help: () => openModal(true),
-  language: toggleLanguage,
+  language: chooseLanguage,
+  quality: chooseQuality,
   sound: toggleSound,
   soundEnabled: () => sound,
 });

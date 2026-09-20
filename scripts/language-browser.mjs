@@ -1,3 +1,7 @@
+import {
+  chooseMenuLanguage,
+  cycleToolbarLanguage,
+} from "./language-controls.mjs";
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -30,7 +34,7 @@ try {
     );
     await page.locator("#resume").click();
     await page.locator("#menu-settings").click();
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "en");
     assert.equal(await page.locator("html").getAttribute("lang"), "en");
     await page.reload();
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
@@ -40,7 +44,7 @@ try {
       "Saved choice persists over Turkish browser locale",
     );
     await page.locator("#menu-settings").click();
-    await page.locator("#menu-language").click();
+    await chooseMenuLanguage(page, "tr");
     await page.locator("#menu-back").click();
     await page.locator("#start").click();
     await page.waitForFunction(
@@ -55,13 +59,13 @@ try {
       .first()
       .innerText();
     assert.equal(await page.locator("#upgrade-choices button").count(), 3);
-    await page.locator("#language").click();
+    await cycleToolbarLanguage(page, "en");
     assert.notEqual(await page.locator("#upgrade-choices").innerText(), tr);
     const en = await read();
     assert.equal(en.time, paused.time);
     assert.deepEqual(en.choices, paused.choices);
     assert.deepEqual(en.upgrades, paused.upgrades);
-    await page.locator("#language").click();
+    await cycleToolbarLanguage(page, "tr");
     await page.waitForTimeout(300);
     if (mobile) {
       for (const viewport of [

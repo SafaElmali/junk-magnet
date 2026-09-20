@@ -1,3 +1,4 @@
+import { locales } from "./locales";
 import {
   upgradeDescription,
   UPGRADES,
@@ -5,16 +6,38 @@ import {
   type UpgradeId,
 } from "./simulation";
 
-export type Language = "en" | "tr";
+export const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "tr", name: "Türkçe" },
+  { code: "de", name: "Deutsch" },
+  { code: "fr", name: "Français" },
+  { code: "es", name: "Español" },
+  { code: "pt", name: "Português" },
+] as const;
+export type Language = (typeof LANGUAGES)[number]["code"];
 export function resolveLanguage(
   saved: string | null,
   browser = "en",
 ): Language {
-  return saved === "tr" || saved === "en"
-    ? saved
-    : browser.toLowerCase().startsWith("tr")
-      ? "tr"
-      : "en";
+  const match = (value: string | null) =>
+    LANGUAGES.find(
+      ({ code }) =>
+        code === value?.toLowerCase().replace("_", "-").split("-")[0],
+    )?.code;
+  return match(saved) ?? match(browser) ?? "en";
+}
+// Country flags are original SVG artwork, never emoji glyphs. Native names remain
+// the accessible language labels; these flags are decorative visual shortcuts.
+export function languageFlag(code: Language): string {
+  const art: Record<Language, string> = {
+    en: '<path fill="#24466c" d="M0 0h30v20H0z"/><path stroke="#fff" stroke-width="5" d="m0 0 30 20M30 0 0 20"/><path stroke="#c5433a" stroke-width="2" d="m0 0 30 20M30 0 0 20"/><path stroke="#fff" stroke-width="7" d="M15 0v20M0 10h30"/><path stroke="#c5433a" stroke-width="4" d="M15 0v20M0 10h30"/>',
+    tr: '<path fill="#d6423d" d="M0 0h30v20H0z"/><circle cx="12" cy="10" r="6" fill="#fff"/><circle cx="14" cy="9" r="5" fill="#d6423d"/><path fill="#fff" d="m21 6 1 3 3 .1-2.5 1.9.9 3-2.4-1.9-2.5 1.9.9-3-2.4-1.9L20 9z"/>',
+    de: '<path fill="#262b2f" d="M0 0h30v7H0z"/><path fill="#c74237" d="M0 7h30v6H0z"/><path fill="#edc049" d="M0 13h30v7H0z"/>',
+    fr: '<path fill="#265694" d="M0 0h10v20H0z"/><path fill="#fff" d="M10 0h10v20H10z"/><path fill="#d44943" d="M20 0h10v20H20z"/>',
+    es: '<path fill="#bb3933" d="M0 0h30v20H0z"/><path fill="#efc449" d="M0 5h30v10H0z"/><path fill="#bd4339" stroke="#fff2ce" stroke-width=".6" d="M8 7h5v5q-2.5 3-5 0z"/><path stroke="#efc449" d="M10.5 7v6M8 10h5"/>',
+    pt: '<path fill="#257552" d="M0 0h12v20H0z"/><path fill="#c7433d" d="M12 0h18v20H12z"/><circle cx="12" cy="10" r="4.5" fill="none" stroke="#efc449" stroke-width="1.3"/><path fill="#fff" stroke="#c7433d" stroke-width="1" d="M9.5 7h5v5q-2.5 3-5 0z"/><path stroke="#31587d" stroke-width="1.5" d="M12 8v4M10.5 10h3"/>',
+  };
+  return `<svg class="language-flag" viewBox="0 0 30 20" aria-hidden="true" focusable="false">${art[code]}</svg>`;
 }
 let saved: string | null = null;
 try {
@@ -219,11 +242,22 @@ export const turkish: Record<string, string> = {
   "Drag anywhere in the yard · Attacks are automatic":
     "Alanda parmağını sürükle · Saldırılar otomatik",
 };
+Object.assign(turkish, locales.tr);
+export const translationCatalogs = {
+  tr: turkish,
+  de: locales.de,
+  fr: locales.fr,
+  es: locales.es,
+  pt: locales.pt,
+};
 export function t(
   source: string,
   values: Record<string, string | number> = {},
 ): string {
-  const copy = language === "tr" ? (turkish[source] ?? source) : source;
+  const copy =
+    language === "en"
+      ? source
+      : (translationCatalogs[language][source] ?? source);
   return copy.replace(/\{(\w+)\}/g, (match, key) =>
     String(values[key] ?? match),
   );
@@ -249,51 +283,65 @@ export function bindStaticTranslations(root: HTMLElement) {
       node.setAttribute(name, t(source));
   };
 }
-const names: Record<UpgradeId, string> = {
-  saw: "Yörünge Testereleri",
-  lightning: "Zincir Şimşek",
-  turret: "Hurda Tareti",
-  burst: "Manyetik Patlama",
-  boots: "Turbo Paletler",
-  magnet: "Toplayıcı Mıknatıs",
-  armor: "Çelik Zırh",
-  repair: "Saha Onarımı",
-  refill: "Hurda İkmali",
-  overclock: "Aşırı Güç",
-};
 export function upgradeName(id: UpgradeId) {
-  return language === "tr" ? names[id] : UPGRADES[id].name;
+  return t(UPGRADES[id].name);
 }
 export function localizedUpgradeDescription(s: State, id: UpgradeId): string {
   if (language === "en") return upgradeDescription(s, id);
   const rank = s.upgrades[id],
     next = rank + 1;
+  const number = (value: number) =>
+    value.toLocaleString(language, { maximumFractionDigits: 1 });
   switch (id) {
     case "saw":
-      return `Testere hasarı ${rank + 1} → ${next + 1}. Daha geniş ve hızlı yörünge.`;
+      return t("Blade damage {before} → {after}. Wider, faster orbit.", {
+        before: rank + 1,
+        after: next + 1,
+      });
     case "lightning":
       return rank
-        ? `Zincirin vurduğu hedef sayısı ${rank + 1} → ${next + 1}. Daha yüksek hasar.`
-        : "Her 2,8 saniyede 2 düşmana 4’er hasar veren şimşek çakar.";
+        ? t("Chained targets {before} → {after}. More damage.", {
+            before: rank + 1,
+            after: next + 1,
+          })
+        : t("Zap 2 enemies every 2.8 seconds for 4 damage each.");
     case "turret":
       return rank
-        ? `Taret hasarı ${2 + rank} → ${2 + next}. Daha hızlı ateş eder, daha uzun dayanır.`
-        : "Her 8 saniyede bir taret kurar. Her atış 3 hasar verir.";
+        ? t("Turret damage {before} → {after}. Faster fire, longer life.", {
+            before: 2 + rank,
+            after: 2 + next,
+          })
+        : t("Deploy a turret every 8 seconds. Each shot deals 3 damage.");
     case "burst":
       return rank
-        ? `Patlama hasarı ${2 + rank * 2} → ${2 + next * 2}. Daha geniş alan, daha kısa bekleme.`
-        : "Her 5 saniyede yakındaki düşmanlara hasar verir ve onları geri iter.";
+        ? t(
+            "Blast damage {before} → {after}. Larger radius, shorter cooldown.",
+            { before: 2 + rank * 2, after: 2 + next * 2 },
+          )
+        : t("Blast and push back nearby enemies every 5 seconds.");
     case "boots":
-      return `Hareket hızı +%12 (toplam +%${next * 12}).`;
+      return t("Movement speed +12% (total +{total}%).", { total: next * 12 });
     case "magnet":
-      return `Toplama yarıçapı ${(3.2 + rank * 0.9).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} → ${(3.2 + next * 0.9).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} m.`;
+      return t("Pickup radius {before} → {after} m.", {
+        before: number(3.2 + rank * 0.9),
+        after: number(3.2 + next * 0.9),
+      });
     case "armor":
-      return `Her temasın verdiği hasarı ${next * 2} azaltır.`;
+      return t("Reduce every contact hit by {amount} damage.", {
+        amount: next * 2,
+      });
     case "refill":
-      return "Yörüngendeki 12 hurdayı doldurur ve fırlatma beklemesini sıfırlar.";
+      return t(
+        "Restore all 12 orbiting scrap pieces and reset attack cooldown.",
+      );
     case "overclock":
-      return "20 saniye boyunca +%25 hasar ve +%15 hareket hızı. Tekrar seçmek süreyi yeniler.";
+      return t(
+        "+25% damage and +15% movement speed for 20 seconds. Refreshes duration.",
+      );
     case "repair":
-      return `Hemen 35 can yeniler (${Math.ceil(s.hp)} → ${Math.min(100, Math.ceil(s.hp) + 35)}).`;
+      return t("Restore 35 health now ({before} → {after}).", {
+        before: Math.ceil(s.hp),
+        after: Math.min(100, Math.ceil(s.hp) + 35),
+      });
   }
 }

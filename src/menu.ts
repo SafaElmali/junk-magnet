@@ -1,4 +1,16 @@
-import { getLanguage, t, upgradeName } from "./i18n";
+import {
+  getLanguage,
+  t,
+  upgradeName,
+  LANGUAGES,
+  languageFlag,
+  type Language,
+} from "./i18n";
+import {
+  GRAPHICS_QUALITIES,
+  getGraphicsQuality,
+  type GraphicsQuality,
+} from "./graphics";
 import { UPGRADES, type UpgradeId } from "./simulation";
 import {
   abilityGuide,
@@ -14,6 +26,41 @@ const playIcon = icon(
 const endlessIcon = icon(
   '<path d="M12 12c-3-5-9-5-9 0s6 5 9 0 9-5 9 0-6 5-9 0Z"/>',
 );
+const menuIcons = {
+  restart: icon('<path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/>'),
+  abilities: icon('<path d="m13 2-9 12h7l-1 8 10-13h-8Z"/>'),
+  settings: icon(
+    '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="#2c484e"/><circle cx="16" cy="17" r="3" fill="#2c484e"/>',
+  ),
+  help: icon(
+    '<path d="M4 4h6l2 2 2-2h6v15h-6l-2 2-2-2H4ZM12 6v15M7 8h2M7 12h2m6-4h2m-2 4h2"/>',
+  ),
+  All: icon(
+    '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  ),
+  Weapons: icon(
+    '<path d="m5 19 3-8 8-8 5 5-8 8-8 3ZM14 5l5 5M8 11l5 5M3 21l4-4"/>',
+  ),
+  Support: icon(
+    '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6ZM12 8v8m-4-4h8"/>',
+  ),
+  Supplies: icon('<path d="M3 7h18v14H3ZM3 7l4-4h10l4 4M9 7v6l3-2 3 2V7"/>'),
+  quality: icon(
+    '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 13l4-4 3 3 2-2 3 3"/>',
+  ),
+};
+const qualityLabels: Record<GraphicsQuality, string> = {
+  performance: "Performance",
+  balanced: "Balanced",
+  high: "High",
+  ultra: "Ultra",
+};
+const qualityDescriptions: Record<GraphicsQuality, string> = {
+  performance: "Lower resolution, lighter effects",
+  balanced: "Balanced resolution and effects",
+  high: "Sharp resolution, richer shadows",
+  ultra: "Maximum resolution and effects",
+};
 const previousIcon = icon('<path d="m14 6-6 6 6 6"/>');
 const nextIcon = icon('<path d="m10 6 6 6-6 6"/>');
 
@@ -23,10 +70,10 @@ export const menuMarkup = `
   <div class="menu-home" id="menu-home">
     <nav class="menu-actions" aria-label="Main menu">
       <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span>${playIcon}</button>
-      <button id="new-run" class="menu-button hidden">NEW RUN</button>
-      <button id="menu-abilities" class="menu-button">ABILITIES</button>
-      <button id="menu-settings" class="menu-button">SETTINGS</button>
-      <button id="menu-help" class="menu-button">HOW TO PLAY</button>
+      <button id="new-run" class="menu-button hidden">${menuIcons.restart}<span>NEW RUN</span></button>
+      <button id="menu-abilities" class="menu-button">${menuIcons.abilities}<span>ABILITIES</span></button>
+      <button id="menu-settings" class="menu-button">${menuIcons.settings}<span>SETTINGS</span></button>
+      <button id="menu-help" class="menu-button">${menuIcons.help}<span>HOW TO PLAY</span></button>
     </nav>
     <aside class="pilot-card" aria-label="Your character">
       <span class="pilot-tag">YOUR SURVIVOR</span>
@@ -40,9 +87,11 @@ export const menuMarkup = `
     <div id="menu-library" class="menu-library hidden"></div>
     <div id="menu-options" class="menu-options hidden">
       <div><span>Language</span><button id="menu-language" class="menu-button"></button></div>
+      <div><span>Graphics quality</span><button id="menu-quality" class="menu-button"></button></div>
       <div><span>Sound</span><button id="menu-sound" class="menu-button" aria-pressed="false"></button></div>
-      <p>Move. Collect. Choose your upgrades. Attacks are automatic.</p>
     </div>
+    <div id="menu-language-picker" class="menu-picker hidden"></div>
+    <div id="menu-quality-picker" class="menu-picker quality-picker hidden"></div>
   </section>
   <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
   <span class="intro-note">Move with WASD or arrows · Attacks are automatic</span>
@@ -52,12 +101,13 @@ export function setupMenu(actions: {
   start: () => void;
   restart: () => void;
   help: () => void;
-  language: () => void;
+  language: (next: Language) => void;
+  quality: (next: GraphicsQuality) => void;
   sound: () => void;
   soundEnabled: () => boolean;
 }) {
   const el = (id: string) => document.getElementById(id)!;
-  let page: "home" | "abilities" | "settings" = "home";
+  let page: "home" | "abilities" | "settings" | "language" | "quality" = "home";
   let resumable = false;
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
@@ -100,7 +150,7 @@ export function setupMenu(actions: {
       String(!compact() ? 5 : innerHeight <= 420 ? size : size === 4 ? 2 : 3),
     );
     el("menu-library").innerHTML = `
-      <div class="ability-filters ${single ? "hidden" : ""}" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${t(filter)}</button>`).join("")}</div>
+      <div class="ability-filters ${single ? "hidden" : ""}" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${menuIcons[filter]}<span>${t(filter)}</span></button>`).join("")}</div>
       <div class="ability-browser ${single ? "detail-only" : ""}"><div class="ability-grid ${single ? "hidden" : ""}">${visible.map((id) => `<button class="ability-tile" data-ability="${id}" aria-pressed="${selected === id}" aria-controls="ability-detail">${abilityImage(id)}<strong>${upgradeName(id)}</strong></button>`).join("")}</div>
       <section class="ability-detail ${compact() && !single ? "hidden" : ""}" id="ability-detail" tabindex="-1" aria-live="polite" aria-labelledby="ability-detail-name">
         <div class="detail-art">${abilityImage(selected)}</div>
@@ -117,15 +167,36 @@ export function setupMenu(actions: {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
     el("menu-weapon").textContent = upgradeName("saw");
-    el("menu-language").textContent =
-      getLanguage() === "tr" ? "Türkçe" : "English";
+    const currentLanguage = LANGUAGES.find(
+      ({ code }) => code === getLanguage(),
+    )!;
+    el("menu-language").innerHTML =
+      `${languageFlag(currentLanguage.code)}<span>${currentLanguage.name}</span>`;
+    el("menu-quality").innerHTML =
+      `${menuIcons.quality}<span>${t(qualityLabels[getGraphicsQuality()])}</span>`;
+    el("menu-language-picker").innerHTML = LANGUAGES.map(
+      ({ code, name }) =>
+        `<button class="menu-choice" data-language="${code}" lang="${code}" aria-pressed="${code === getLanguage()}">${languageFlag(code)}<span>${name}</span></button>`,
+    ).join("");
+    el("menu-quality-picker").innerHTML =
+      GRAPHICS_QUALITIES.map(
+        (quality) =>
+          `<button class="menu-choice" data-quality="${quality}" aria-pressed="${quality === getGraphicsQuality()}">${menuIcons.quality}<span><strong>${t(qualityLabels[quality])}</strong><small>${t(qualityDescriptions[quality])}</small></span></button>`,
+      ).join("") + `<p>${t("Graphics apply immediately.")}</p>`;
+    el("menu-back").textContent = t("BACK");
     el("menu-sound").textContent = t(actions.soundEnabled() ? "ON" : "OFF");
     el("menu-sound").setAttribute(
       "aria-pressed",
       String(actions.soundEnabled()),
     );
     el("menu-panel-title").textContent = t(
-      page === "abilities" ? "ABILITIES" : "SETTINGS",
+      page === "abilities"
+        ? "ABILITIES"
+        : page === "language"
+          ? "Language"
+          : page === "quality"
+            ? "Graphics quality"
+            : "SETTINGS",
     );
     if (page === "abilities") renderLibrary();
   }
@@ -144,6 +215,8 @@ export function setupMenu(actions: {
     el("menu-panel").classList.toggle("hidden", page === "home");
     el("menu-library").classList.toggle("hidden", page !== "abilities");
     el("menu-options").classList.toggle("hidden", page !== "settings");
+    el("menu-language-picker").classList.toggle("hidden", page !== "language");
+    el("menu-quality-picker").classList.toggle("hidden", page !== "quality");
     refresh();
     if (focus)
       el(
@@ -200,10 +273,41 @@ export function setupMenu(actions: {
   el("menu-help").addEventListener("click", actions.help);
   el("menu-abilities").addEventListener("click", () => show("abilities"));
   el("menu-settings").addEventListener("click", () => show("settings"));
-  el("menu-back").addEventListener("click", () =>
-    detailOpen && compact() ? closeDetail() : show("home"),
-  );
-  el("menu-language").addEventListener("click", actions.language);
+  const goBack = () => {
+    if (detailOpen && compact()) closeDetail();
+    else if (page === "language" || page === "quality") {
+      const opener = page === "language" ? "menu-language" : "menu-quality";
+      show("settings", false);
+      el(opener).focus();
+    } else show("home");
+  };
+  el("menu-back").addEventListener("click", goBack);
+  el("menu-language").addEventListener("click", () => show("language"));
+  el("menu-quality").addEventListener("click", () => show("quality"));
+  el("menu-language-picker").addEventListener("click", (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "[data-language]",
+    );
+    if (!button) return;
+    actions.language(button.dataset.language as Language);
+    refresh();
+    el("menu-language-picker")
+      .querySelector<HTMLButtonElement>(`[data-language="${getLanguage()}"]`)
+      ?.focus({ preventScroll: true });
+  });
+  el("menu-quality-picker").addEventListener("click", (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "[data-quality]",
+    );
+    if (!button) return;
+    actions.quality(button.dataset.quality as GraphicsQuality);
+    refresh();
+    el("menu-quality-picker")
+      .querySelector<HTMLButtonElement>(
+        `[data-quality="${getGraphicsQuality()}"]`,
+      )
+      ?.focus({ preventScroll: true });
+  });
   el("menu-sound").addEventListener("click", actions.sound);
   return {
     refresh,
@@ -214,11 +318,7 @@ export function setupMenu(actions: {
     },
     back() {
       if (page === "home") return false;
-      if (detailOpen && compact()) {
-        closeDetail();
-        return true;
-      }
-      show("home");
+      goBack();
       return true;
     },
     isHome: () => page === "home",

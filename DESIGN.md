@@ -131,6 +131,7 @@ An endless warm concrete scrapyard frames a small yellow salvage robot, a red ho
 Cream interface panels sit above the scene, with dark condensed titles and compact plain-language instructions. This documents the implemented endless survival prototype: increasing enemy pressure, blue XP pickups, and three paused upgrade choices at each level. Weapon and support upgrades build a run around the original collect, orbit, and automatic attack loop. Bosses, evolutions, and CrazyGames integration are future work. The approved visual direction remains unchanged from the concept stage.
 
 **Key Characteristics:**
+
 - Warm textured ground, cool salvage props, and a yellow/red player silhouette.
 - Separate visible scrap pieces, an orbit ring, and a directional launch marker.
 - Cream HUD panels at the edges, with the action kept in the center.
@@ -143,16 +144,19 @@ Source of truth: `src/style.css` for the interface, `src/scene.ts` for runtime s
 Warm cream and concrete carry the scene; dark blue-green provides contrast, while steel, teal, yellow, and red identify materials and actions.
 
 ### Primary
+
 - **Deep yard ink** (`ink`): wordmark, important text, and primary actions.
 - **Warm workshop cream** (`cream`): page background, HUD panels, and action text.
 
 ### Secondary
+
 - **Salvage teal** (`teal`): orbit icon and loading progress; the scene uses its separate material teal.
 - **Magnet red** (`red`): magnetic imagery. The health fill has its own related coral token.
 - **Butter yellow** (`robot-badge`): the HUD player badge; the actual robot uses Blender material values under scene lighting.
 - **Upgrade paper** (`upgrade-card`, `upgrade-hover`): choice cards and their hover state. Golden icon tiles (`upgrade-icon`) and dark teal ability icons (`ability-icon`) extend the existing workshop palette.
 
 ### Neutral
+
 - **Quiet green-gray** (`muted`) and **paper seam** (`line`): declared interface support tokens. Individual labels and borders also retain their observed local shades.
 - **Brushed steel**, **rust**, **warm scene ivory**, and **apricot floor tint**: runtime material colors. The floor tint multiplies the concrete texture; lighting and tone mapping change its final appearance.
 
@@ -166,6 +170,7 @@ Warm cream and concrete carry the scene; dark blue-green provides contrast, whil
 Both families are bundled through Fontsource imports in `src/main.ts`. Compact condensed headings suit workshop lettering without using generated image lettering as UI text. DM Sans carries instructions and supporting labels.
 
 ### Hierarchy
+
 - **Display:** intro title, using the frontmatter display role; reduces to 43px in the narrow layout and 36px in short landscape.
 - **Wordmark:** frontmatter wordmark role; 49px on wide screens, 31px on narrow screens, and 30px in short landscape.
 - **Headline:** modal titles; 36px narrow and 30px short landscape.
@@ -186,6 +191,7 @@ During play, only Pause remains in the utility menu. Pausing reveals language, s
 Depth combines warm ambient interface shadows with actual 3D shadows. The scene uses an orthographic camera, warm directional sunlight, hemisphere fill, and soft shadow maps. Desktop adds small-radius ambient occlusion; coarse-pointer devices omit that postprocessing pass. The concrete texture repeats across the ground and receives shadows. The camera follows the robot on every platform. Nine 20-unit chunks form a streamed 3 × 3 neighborhood, with deterministic tire stacks, colored salvage drums, and ground markings. Props are visible collision obstacles inside the endless world, and the initial spawn area stays clear. The floor and lighting follow the player; chunk changes preserve the texture alignment.
 
 ### Shadow Vocabulary
+
 - **Yard:** `0 9px 26px #6752301a`, separating the viewport from the cream page.
 - **HUD:** `0 4px 9px #4633261a`, lifting small counters.
 - **Action/orbit:** `0 5px 12px #5e462b24`, distinguishing lower controls from terrain.
@@ -231,6 +237,7 @@ Permanent upgrades cover Orbiting Saws, Chain Lightning, Scrap Turret, Magnetic 
 ## Do's and Don'ts
 
 ### Do:
+
 - **Do** preserve the sunlit toy-like world and clear yellow/red player silhouette.
 - **Do** keep procedural obstacles sparse and visually aligned with their collision shapes.
 - **Do** pair resource color with readable counts, shapes, or labels.
@@ -238,6 +245,7 @@ Permanent upgrades cover Orbiting Saws, Chain Lightning, Scrap Turret, Magnetic 
 - **Do** check portrait and short landscape layouts when changing the HUD.
 
 ### Don't:
+
 - **Don't** replace the selected world with vampire or fantasy styling.
 - **Don't** let decorative trails hide individual scrap pieces or enemy silhouettes.
 - **Don't** use the concept board as evidence of working gameplay.
@@ -247,7 +255,7 @@ Visual reference checks: `.impeccable/review/survival-desktop.png`, `survival-mo
 
 ## Language
 
-The utility menu includes a 48px touch target for TR/EN, revealed by pausing during a run. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.
+The utility menu includes a 48px touch target displaying the current language flag/code, revealed by pausing during a run. The settings language picker shows six native language names and drawn flags. Language changes preserve the active run and remember the preference. Turkish text uses the existing Barlow Condensed and DM Sans families with their extended Latin subsets. At narrow widths the wordmark shrinks to keep all four header controls usable. Menus, live HUD text, ability choices and accessible labels share the same locale.
 
 ## Main menu
 
@@ -259,7 +267,10 @@ The ability submenu replaces the large title with a focused collection view: cat
 
 Each icon is an original Blender object rendered with shared materials, an orthographic camera and studio lights. Transparent 384px PNGs let the illustrated parts sit naturally on the menu background. Full-size detail artwork and level-up thumbnails reuse the same files. Sources are `scripts/build_ability_assets.py`, `art/ability-kit.blend`, `src/ability-art.ts`, `src/menu.ts` and `src/menu.css`.
 
-
 ## Fixed-screen menu navigation
 
 Menus must not depend on scrolling or emoji glyphs. Use original Blender artwork for abilities and SVG paths for controls and symbols. The full-screen menu adapts its composition to viewport height: compact home screens prioritize navigation over the decorative character card, while settings use a separate centered panel. Compact ability grids show 3–6 cards per page with previous/next controls, and every detail screen has a persistent Back button. Desktop shows all ten abilities and an adjacent detail panel. Help is split into five pages instead of a long description. Narrow upgrade cards reserve more width for copy; short landscape screens place the three choices side by side. Results retain stats and build information while omitting secondary flavor copy on short screens.
+
+### Illustrated controls and display quality
+
+Navigation and category tabs have original SVG symbols paired with text. Settings use dedicated language and graphics subviews instead of adding scroll. Five illustrated Help cards teach a single interaction per page. High desktop rendering uses consistent native pixel density for canvas and effects; Ultra offers supersampling. The auto-target arrow is removed. Damage feedback belongs on the robot: brief highlight, red tint and subtle recoil, respecting reduced motion and paused simulation time.

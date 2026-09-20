@@ -17,6 +17,11 @@ import {
 } from "./simulation";
 
 import { CHUNK_SIZE, getChunkProps } from "./world";
+import {
+  getGraphicsQuality,
+  graphicsProfile,
+  type GraphicsQuality,
+} from "./graphics";
 
 const base = import.meta.env.BASE_URL;
 const C = {
@@ -104,7 +109,19 @@ export class YardScene {
     max: number;
   }[] = [];
   ring!: THREE.Mesh;
-  aim!: THREE.Mesh;
+  quality: GraphicsQuality = getGraphicsQuality();
+  private hurtAt = -Infinity;
+  private hurtDirection = new THREE.Vector2(0, -1);
+  private hurtStrength = 0;
+  private hurtRecoil = 0;
+  private robotMaterials: {
+    material: THREE.MeshStandardMaterial;
+    color: THREE.Color;
+    emissive: THREE.Color;
+    intensity: number;
+  }[] = [];
+  private hurtRed = new THREE.Color(0xff3b24);
+  private hurtWhite = new THREE.Color(0xfff4d8);
   pulse!: THREE.Line;
   pulseLife = 0;
   clock = 0;
@@ -115,10 +132,22 @@ export class YardScene {
   markingBatch!: THREE.InstancedMesh;
   turretTemplate!: THREE.Group;
   turretModels = new Map<number, THREE.Group>();
-  abilityFx: {o: THREE.Object3D; life: number; max: number; radius: number; dispose: boolean}[] = [];
+  abilityFx: {
+    o: THREE.Object3D;
+    life: number;
+    max: number;
+    radius: number;
+    dispose: boolean;
+  }[] = [];
   burstGeometry = new THREE.RingGeometry(0.94, 1, 48);
-  burstMaterial = new THREE.MeshBasicMaterial({color: 0x71efe0, transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false});
-  lightningMaterial = new THREE.LineBasicMaterial({color: 0xa5ffff});
+  burstMaterial = new THREE.MeshBasicMaterial({
+    color: 0x71efe0,
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  lightningMaterial = new THREE.LineBasicMaterial({ color: 0xa5ffff });
   particles = new THREE.IcosahedronGeometry(0.065, 0);
   sparkMat = mat(0xffd56d, 0.35);
   xpMat = new THREE.MeshStandardMaterial({
@@ -147,7 +176,9 @@ export class YardScene {
     motionQuery.addEventListener("change", (e) => {
       this.reduced = e.matches;
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.7));
+    this.renderer.setPixelRatio(
+      graphicsProfile(this.quality, window.devicePixelRatio).pixelRatio,
+    );
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -176,7 +207,8 @@ export class YardScene {
       near: 1,
       far: 65,
     });
-    this.sun.shadow.mapSize.set(window.matchMedia("(pointer: coarse)").matches ? 1024 : 2048, window.matchMedia("(pointer: coarse)").matches ? 1024 : 2048);
+    const shadowSize = graphicsProfile(this.quality).shadowMapSize;
+    this.sun.shadow.mapSize.set(shadowSize, shadowSize);
     this.sun.shadow.bias = -0.0003;
     this.sun.shadow.normalBias = 0.03;
     this.sun.shadow.radius = 3;
@@ -187,26 +219,36 @@ export class YardScene {
     this.scene.environmentIntensity = 0.32;
     env.dispose();
     pmrem.dispose();
-    this.resize();
-    // Small-radius ambient occlusion grounds the toy-like bevelled models.
-    if (!window.matchMedia("(pointer: coarse)").matches) {
-      this.composer = new EffectComposer(this.renderer);
-      this.composer.setPixelRatio(1);
+    this.setQuality(this.quality);
+  }
+  setQuality(quality: GraphicsQuality) {
+    this.quality = quality;
+    const profile = graphicsProfile(quality, window.devicePixelRatio);
+    this.renderer.setPixelRatio(profile.pixelRatio);
+    if (this.sun.shadow.mapSize.x !== profile.shadowMapSize) {
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+      this.sun.shadow.mapSize.set(profile.shadowMapSize, profile.shadowMapSize);
+      this.sun.shadow.needsUpdate = true;
+    }
+    if (profile.ambientOcclusion && !this.composer) {
+      const target = new THREE.WebGLRenderTarget(1, 1, {
+        type: THREE.HalfFloatType,
+        samples: profile.samples,
+      });
+      this.composer = new EffectComposer(this.renderer, target);
       this.composer.addPass(new RenderPass(this.scene, this.camera));
-      this.ao = new SSAOPass(
-        this.scene,
-        this.camera,
-        this.host.clientWidth,
-        this.host.clientHeight,
-        16,
-      );
+      this.ao = new SSAOPass(this.scene, this.camera, 1, 1, 16);
       this.ao.kernelRadius = 0.85;
       this.ao.minDistance = 0.001;
       this.ao.maxDistance = 0.035;
       this.composer.addPass(this.ao);
       this.composer.addPass(new OutputPass());
     }
+    this.composer?.setPixelRatio(profile.pixelRatio);
+    this.resize();
   }
+
   async load(onProgress: (n: number) => void) {
     const names = [
       "robot",
@@ -249,10 +291,49 @@ export class YardScene {
     onProgress(1);
     if (this.mobile) this.mobileModels();
     this.environment();
-    this.enemyBatches = this.modelBatches(this.mobile ? "enemy-mobile" : "enemy-can", ENTITY_LIMITS.enemies);
-    this.pickupBatches = [this.modelBatches(this.mobile ? "bolt-mobile" : "scrap-bolt", ENTITY_LIMITS.pickups), this.modelBatches(this.mobile ? "gem-mobile" : "scrap-nut", ENTITY_LIMITS.pickups, this.xpMat)];
-    this.shotBatches = ["scrap-saw", "scrap-bolt", "scrap-nut"].map((name) => this.modelBatches(name, ENTITY_LIMITS.shots));
+    this.enemyBatches = this.modelBatches(
+      this.mobile ? "enemy-mobile" : "enemy-can",
+      ENTITY_LIMITS.enemies,
+    );
+    this.pickupBatches = [
+      this.modelBatches(
+        this.mobile ? "bolt-mobile" : "scrap-bolt",
+        ENTITY_LIMITS.pickups,
+      ),
+      this.modelBatches(
+        this.mobile ? "gem-mobile" : "scrap-nut",
+        ENTITY_LIMITS.pickups,
+        this.xpMat,
+      ),
+    ];
+    this.shotBatches = ["scrap-saw", "scrap-bolt", "scrap-nut"].map((name) =>
+      this.modelBatches(name, ENTITY_LIMITS.shots),
+    );
     this.robot = instance("robot", 0, 0, 0, 1.0);
+    // GLTF clones normally share materials: isolate the robot before tinting hits.
+    const isolated = new Map<THREE.Material, THREE.Material>();
+    this.robot.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      const clone = (source: THREE.Material) => {
+        let material = isolated.get(source);
+        if (!material) {
+          material = source.clone();
+          isolated.set(source, material);
+          if (material instanceof THREE.MeshStandardMaterial) {
+            this.robotMaterials.push({
+              material,
+              color: material.color.clone(),
+              emissive: material.emissive.clone(),
+              intensity: material.emissiveIntensity,
+            });
+          }
+        }
+        return material;
+      };
+      object.material = Array.isArray(object.material)
+        ? object.material.map(clone)
+        : clone(object.material);
+    });
     this.scene.add(this.robot);
     for (let i = 0; i < MAX_SCRAP; i++) {
       const o = instance(
@@ -278,27 +359,6 @@ export class YardScene {
     this.ring.rotation.x = -Math.PI / 2;
     this.ring.position.y = 0.045;
     this.scene.add(this.ring);
-    const shape = new THREE.Shape();
-    shape.moveTo(-0.16, 0);
-    shape.lineTo(0.16, 0);
-    shape.lineTo(0.16, 0.23);
-    shape.lineTo(0.4, 0.23);
-    shape.lineTo(0, 0.65);
-    shape.lineTo(-0.4, 0.23);
-    shape.lineTo(-0.16, 0.23);
-    shape.closePath();
-    this.aim = new THREE.Mesh(
-      new THREE.ShapeGeometry(shape),
-      new THREE.MeshBasicMaterial({
-        color: 0xfff6d7,
-        transparent: true,
-        opacity: 0.8,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    this.aim.rotation.x = -Math.PI / 2;
-    this.scene.add(this.aim);
     this.pulse = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(),
@@ -315,64 +375,129 @@ export class YardScene {
   }
   private mobileModels() {
     // Small screens keep the same silhouettes with inexpensive geometry.
-    const steel = mat(C.steel, 0.5, 0.45); steel.name = "Brushed steel";
-    const dark = mat(0x414746), ink = mat(C.ink), rubber = mat(0x303b36), red = mat(0xed5940);
-    const add = (group: THREE.Group, geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number) => {
-      const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); group.add(mesh); return mesh;
+    const steel = mat(C.steel, 0.5, 0.45);
+    steel.name = "Brushed steel";
+    const dark = mat(0x414746),
+      ink = mat(C.ink),
+      rubber = mat(0x303b36),
+      red = mat(0xed5940);
+    const add = (
+      group: THREE.Group,
+      geometry: THREE.BufferGeometry,
+      material: THREE.Material,
+      x: number,
+      y: number,
+      z: number,
+    ) => {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      group.add(mesh);
+      return mesh;
     };
     const can = new THREE.Group();
-    add(can, new THREE.CylinderGeometry(0.31, 0.31, 0.62, 12), steel, 0, 0.59, 0);
+    add(
+      can,
+      new THREE.CylinderGeometry(0.31, 0.31, 0.62, 12),
+      steel,
+      0,
+      0.59,
+      0,
+    );
     for (const y of [0.31, 0.38, 0.81, 0.9]) {
-      const rim = new THREE.TorusGeometry(0.313, 0.021, 3, 12); rim.rotateX(Math.PI / 2); add(can, rim, dark, 0, y, 0);
+      const rim = new THREE.TorusGeometry(0.313, 0.021, 3, 12);
+      rim.rotateX(Math.PI / 2);
+      add(can, rim, dark, 0, y, 0);
     }
     add(can, new THREE.BoxGeometry(0.37, 0.24, 0.07), ink, 0, 0.64, 0.298);
-    for (const x of [-0.1, 0.1]) add(can, new THREE.OctahedronGeometry(0.054), red, x, 0.66, 0.35);
+    for (const x of [-0.1, 0.1])
+      add(can, new THREE.OctahedronGeometry(0.054), red, x, 0.66, 0.35);
     for (const x of [-0.25, 0.25]) {
-      add(can, new THREE.CylinderGeometry(0.037, 0.037, 0.28, 6), dark, x, 0.16, 0);
+      add(
+        can,
+        new THREE.CylinderGeometry(0.037, 0.037, 0.28, 6),
+        dark,
+        x,
+        0.16,
+        0,
+      );
       add(can, new THREE.BoxGeometry(0.17, 0.11, 0.23), rubber, x, 0.06, 0.06);
-      add(can, new THREE.BoxGeometry(0.06, 0.18, 0.09), steel, x * 1.52, 0.37, 0.01);
+      add(
+        can,
+        new THREE.BoxGeometry(0.06, 0.18, 0.09),
+        steel,
+        x * 1.52,
+        0.37,
+        0.01,
+      );
     }
-    const tab = new THREE.TorusGeometry(0.082, 0.017, 3, 8); tab.rotateX(Math.PI / 2); add(can, tab, dark, 0, 0.922, 0.01);
+    const tab = new THREE.TorusGeometry(0.082, 0.017, 3, 8);
+    tab.rotateX(Math.PI / 2);
+    add(can, tab, dark, 0, 0.922, 0.01);
     models.set("enemy-mobile", can);
-    const gem = new THREE.Group(); add(gem, new THREE.IcosahedronGeometry(0.23, 0), this.xpMat, 0, 0, 0); models.set("gem-mobile", gem);
+    const gem = new THREE.Group();
+    add(gem, new THREE.IcosahedronGeometry(0.23, 0), this.xpMat, 0, 0, 0);
+    models.set("gem-mobile", gem);
     const bolt = new THREE.Group();
     add(bolt, new THREE.CylinderGeometry(0.072, 0.072, 0.6, 6), steel, 0, 0, 0);
-    add(bolt, new THREE.CylinderGeometry(0.15, 0.15, 0.13, 6), dark, 0, 0.3, 0); models.set("bolt-mobile", bolt);
+    add(bolt, new THREE.CylinderGeometry(0.15, 0.15, 0.13, 6), dark, 0, 0.3, 0);
+    models.set("bolt-mobile", bolt);
     const tire = new THREE.Group();
     for (const y of [0.13, 0.23, 0.33]) {
-      const ring = new THREE.TorusGeometry(0.4, 0.135, 5, 16); ring.rotateX(Math.PI / 2); add(tire, ring, rubber, 0, y, 0);
+      const ring = new THREE.TorusGeometry(0.4, 0.135, 5, 16);
+      ring.rotateX(Math.PI / 2);
+      add(tire, ring, rubber, 0, y, 0);
     }
     for (let i = 0; i < 16; i++) {
-      const angle = i * Math.PI * 2 / 16;
-      const tread = add(tire, new THREE.BoxGeometry(0.065, 0.25, 0.105), dark, Math.cos(angle) * 0.519, 0.23, Math.sin(angle) * 0.519);
+      const angle = (i * Math.PI * 2) / 16;
+      const tread = add(
+        tire,
+        new THREE.BoxGeometry(0.065, 0.25, 0.105),
+        dark,
+        Math.cos(angle) * 0.519,
+        0.23,
+        Math.sin(angle) * 0.519,
+      );
       tread.rotation.y = -angle;
     }
     models.set("tire-mobile", tire);
   }
-  private modelBatches(name: string, capacity: number, override?: THREE.Material) {
+  private modelBatches(
+    name: string,
+    capacity: number,
+    override?: THREE.Material,
+  ) {
     const source = models.get(name)!;
     source.updateMatrixWorld(true);
     const parts = new Map<THREE.Material, THREE.BufferGeometry[]>();
     source.traverse((o) => {
       if (!(o instanceof THREE.Mesh) || Array.isArray(o.material)) return;
-      const geometry = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-      geometry.deleteAttribute("uv1"); geometry.deleteAttribute("tangent");
+      const geometry = o.geometry.index
+        ? o.geometry.toNonIndexed()
+        : o.geometry.clone();
+      geometry.deleteAttribute("uv1");
+      geometry.deleteAttribute("tangent");
       geometry.applyMatrix4(o.matrixWorld);
       const material = override ?? o.material;
-      const group = parts.get(material) ?? []; group.push(geometry); parts.set(material, group);
+      const group = parts.get(material) ?? [];
+      group.push(geometry);
+      parts.set(material, group);
     });
     return [...parts].map(([material, geometries]) => {
       const merged = mergeGeometries(geometries, false)!;
       geometries.forEach((geometry) => geometry.dispose());
       const batch = new THREE.InstancedMesh(merged, material, capacity);
-      batch.count = 0; batch.castShadow = !override; batch.receiveShadow = true;
+      batch.count = 0;
+      batch.castShadow = !override;
+      batch.receiveShadow = true;
       batch.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      this.scene.add(batch); return batch;
+      this.scene.add(batch);
+      return batch;
     });
   }
   private finishBatch(batches: THREE.InstancedMesh[], count: number) {
     for (const batch of batches) {
-      batch.count = count; batch.instanceMatrix.needsUpdate = true;
+      batch.count = count;
+      batch.instanceMatrix.needsUpdate = true;
       if (batch.instanceColor) batch.instanceColor.needsUpdate = true;
       batch.computeBoundingSphere();
     }
@@ -384,11 +509,15 @@ export class YardScene {
     const byMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
     tire.traverse((o) => {
       if (!(o instanceof THREE.Mesh) || Array.isArray(o.material)) return;
-      const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-      geo.deleteAttribute("uv1"); geo.deleteAttribute("tangent");
+      const geo = o.geometry.index
+        ? o.geometry.toNonIndexed()
+        : o.geometry.clone();
+      geo.deleteAttribute("uv1");
+      geo.deleteAttribute("tangent");
       geo.applyMatrix4(o.matrixWorld);
       const parts = byMaterial.get(o.material) || [];
-      parts.push(geo); byMaterial.set(o.material, parts);
+      parts.push(geo);
+      byMaterial.set(o.material, parts);
     });
     for (const [material, parts] of byMaterial) {
       const geo = mergeGeometries(parts, false)!;
@@ -396,29 +525,59 @@ export class YardScene {
       const mesh = new THREE.InstancedMesh(geo, material, 225);
       mesh.castShadow = mesh.receiveShadow = true;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      this.tireBatches.push(mesh); this.scene.add(mesh);
+      this.tireBatches.push(mesh);
+      this.scene.add(mesh);
     }
     this.salvageBatch = new THREE.InstancedMesh(
-      new THREE.CylinderGeometry(0.95, 1, 1, 12), mat(0xffffff, 0.7, 0.3), 75);
+      new THREE.CylinderGeometry(0.95, 1, 1, 12),
+      mat(0xffffff, 0.7, 0.3),
+      75,
+    );
     this.salvageBatch.castShadow = this.salvageBatch.receiveShadow = true;
     this.scene.add(this.salvageBatch);
     const rimParts = [0.07, 0.5, 0.93].map((y) => {
       const geometry = new THREE.TorusGeometry(0.97, 0.035, 4, 12);
-      geometry.rotateX(Math.PI / 2); geometry.translate(0, y - 0.5, 0); return geometry;
+      geometry.rotateX(Math.PI / 2);
+      geometry.translate(0, y - 0.5, 0);
+      return geometry;
     });
-    const rimGeometry = mergeGeometries(rimParts); rimParts.forEach((g) => g.dispose());
-    this.salvageRims = new THREE.InstancedMesh(rimGeometry!, mat(C.steel, 0.5, 0.45), 75);
-    this.salvageRims.castShadow = true; this.scene.add(this.salvageRims);
+    const rimGeometry = mergeGeometries(rimParts);
+    rimParts.forEach((g) => g.dispose());
+    this.salvageRims = new THREE.InstancedMesh(
+      rimGeometry!,
+      mat(C.steel, 0.5, 0.45),
+      75,
+    );
+    this.salvageRims.castShadow = true;
+    this.scene.add(this.salvageRims);
     this.markingBatch = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(0.18, 2.3),
-      new THREE.MeshBasicMaterial({color: 0xffe3a5, transparent: true, opacity: 0.28, depthWrite: false}), 100);
+      new THREE.MeshBasicMaterial({
+        color: 0xffe3a5,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+      }),
+      100,
+    );
     this.scene.add(this.markingBatch);
-    const label = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.4),
-      new THREE.MeshBasicMaterial({map: labelTexture("SORT / RECYCLE\nYARD 07"), transparent: true, opacity: 0.25, depthWrite: false}));
-    label.rotation.x = -Math.PI / 2; label.position.set(-3, 0.012, 2);
+    const label = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.8, 2.4),
+      new THREE.MeshBasicMaterial({
+        map: labelTexture("SORT / RECYCLE\nYARD 07"),
+        transparent: true,
+        opacity: 0.25,
+        depthWrite: false,
+      }),
+    );
+    label.rotation.x = -Math.PI / 2;
+    label.position.set(-3, 0.012, 2);
     this.scene.add(label);
     this.turretTemplate = new THREE.Group();
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.54, 0.3, 8), mat(C.ink));
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.4, 0.54, 0.3, 8),
+      mat(C.ink),
+    );
     base.position.y = 0.15;
     const head = box(0.62, 0.52, 0.62, mat(C.teal), 0, 0.57, 0, 0.1);
     const barrel = box(0.2, 0.2, 0.72, mat(0xffcf54), 0, 0.67, 0.36);
@@ -435,46 +594,85 @@ export class YardScene {
     const texture = (this.floor.material as THREE.MeshStandardMaterial).map!;
     texture.offset.set(cx, -cz);
     const transform = new THREE.Object3D();
-    let tires = 0, piles = 0, markings = 0;
-    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
-      for (const prop of getChunkProps(cx + dx, cz + dz)) {
-        if (prop.kind === "tires") {
-          const scale = prop.radius / 0.55;
-          for (let i = 0; i < prop.height; i++) {
-            transform.position.set(prop.x, i * 0.4 * scale, prop.z);
-            transform.rotation.set(0, prop.rotation + i * 0.6, 0);
-            transform.scale.setScalar(scale); transform.updateMatrix();
-            for (const batch of this.tireBatches) batch.setMatrixAt(tires, transform.matrix);
-            tires++;
+    let tires = 0,
+      piles = 0,
+      markings = 0;
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dz = -1; dz <= 1; dz++) {
+        for (const prop of getChunkProps(cx + dx, cz + dz)) {
+          if (prop.kind === "tires") {
+            const scale = prop.radius / 0.55;
+            for (let i = 0; i < prop.height; i++) {
+              transform.position.set(prop.x, i * 0.4 * scale, prop.z);
+              transform.rotation.set(0, prop.rotation + i * 0.6, 0);
+              transform.scale.setScalar(scale);
+              transform.updateMatrix();
+              for (const batch of this.tireBatches)
+                batch.setMatrixAt(tires, transform.matrix);
+              tires++;
+            }
+          } else {
+            const height = 0.55 + prop.height * 0.25;
+            transform.position.set(prop.x, height / 2, prop.z);
+            transform.rotation.set(0, prop.rotation, 0);
+            transform.scale.set(prop.radius, height, prop.radius);
+            transform.updateMatrix();
+            this.salvageBatch.setMatrixAt(piles, transform.matrix);
+            this.salvageRims.setMatrixAt(piles, transform.matrix);
+            this.salvageBatch.setColorAt(
+              piles,
+              new THREE.Color([C.teal, C.rust, C.steel][piles % 3]),
+            );
+            piles++;
           }
-        } else {
-          const height = 0.55 + prop.height * 0.25;
-          transform.position.set(prop.x, height / 2, prop.z);
-          transform.rotation.set(0, prop.rotation, 0);
-          transform.scale.set(prop.radius, height, prop.radius); transform.updateMatrix();
-          this.salvageBatch.setMatrixAt(piles, transform.matrix);
-          this.salvageRims.setMatrixAt(piles, transform.matrix);
-          this.salvageBatch.setColorAt(piles, new THREE.Color([C.teal, C.rust, C.steel][piles % 3]));
-          piles++;
+        }
+        for (let stripe = 0; stripe < 4; stripe++) {
+          transform.position.set(
+            (cx + dx) * CHUNK_SIZE - 3,
+            0.018,
+            (cz + dz) * CHUNK_SIZE - 6 + stripe * 4,
+          );
+          transform.rotation.set(-Math.PI / 2, 0, 0);
+          transform.scale.setScalar(1);
+          transform.updateMatrix();
+          this.markingBatch.setMatrixAt(markings++, transform.matrix);
         }
       }
-      for (let stripe = 0; stripe < 4; stripe++) {
-        transform.position.set((cx + dx) * CHUNK_SIZE - 3, 0.018, (cz + dz) * CHUNK_SIZE - 6 + stripe * 4);
-        transform.rotation.set(-Math.PI / 2, 0, 0); transform.scale.setScalar(1); transform.updateMatrix();
-        this.markingBatch.setMatrixAt(markings++, transform.matrix);
-      }
+    for (const batch of this.tireBatches) {
+      batch.count = tires;
+      batch.instanceMatrix.needsUpdate = true;
+      batch.computeBoundingSphere();
     }
-    for (const batch of this.tireBatches) { batch.count = tires; batch.instanceMatrix.needsUpdate = true; batch.computeBoundingSphere(); }
-    this.salvageBatch.count = piles; this.salvageBatch.instanceMatrix.needsUpdate = true;
-    if (this.salvageBatch.instanceColor) this.salvageBatch.instanceColor.needsUpdate = true;
+    this.salvageBatch.count = piles;
+    this.salvageBatch.instanceMatrix.needsUpdate = true;
+    if (this.salvageBatch.instanceColor)
+      this.salvageBatch.instanceColor.needsUpdate = true;
     this.salvageBatch.computeBoundingSphere();
-    this.salvageRims.count = piles; this.salvageRims.instanceMatrix.needsUpdate = true; this.salvageRims.computeBoundingSphere();
-    this.markingBatch.count = markings; this.markingBatch.instanceMatrix.needsUpdate = true; this.markingBatch.computeBoundingSphere();
+    this.salvageRims.count = piles;
+    this.salvageRims.instanceMatrix.needsUpdate = true;
+    this.salvageRims.computeBoundingSphere();
+    this.markingBatch.count = markings;
+    this.markingBatch.instanceMatrix.needsUpdate = true;
+    this.markingBatch.computeBoundingSphere();
   }
   diagnostics() {
-    return {camera: {x: this.camera.position.x, z: this.camera.position.z - 25}, chunks: 9,
-      renderedEnemies: this.renderedEnemies, fx: this.fx.length + this.abilityFx.length,
-      geometries: this.renderer.info.memory.geometries, textures: this.renderer.info.memory.textures};
+    return {
+      camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
+      chunks: 9,
+      renderedEnemies: this.renderedEnemies,
+      fx: this.fx.length + this.abilityFx.length,
+      geometries: this.renderer.info.memory.geometries,
+      textures: this.renderer.info.memory.textures,
+      graphics: {
+        quality: this.quality,
+        pixelRatio: this.renderer.getPixelRatio(),
+        width: this.renderer.domElement.width,
+        height: this.renderer.domElement.height,
+        postProcessing: graphicsProfile(this.quality).ambientOcclusion,
+        shadowMapSize: this.sun.shadow.mapSize.x,
+      },
+      robotHurt: { strength: this.hurtStrength, recoil: this.hurtRecoil },
+    };
   }
   resize() {
     const w = this.host.clientWidth,
@@ -483,7 +681,11 @@ export class YardScene {
     this.renderer.setSize(w, h);
     const aspect = w / h;
     const small = window.matchMedia("(pointer: coarse)").matches;
-    const halfH = small ? (aspect < 1 ? 11.4 : 12 / aspect) : Math.min(12, 16.9 / aspect);
+    const halfH = small
+      ? aspect < 1
+        ? 11.4
+        : 12 / aspect
+      : Math.min(12, 16.9 / aspect);
     this.camera.left = -halfH * aspect;
     this.camera.right = halfH * aspect;
     this.camera.top = halfH;
@@ -505,20 +707,70 @@ export class YardScene {
   }
   events(events: GameEvent[], s: State) {
     for (const ev of events) {
+      if (ev.kind === "hurt") {
+        this.hurtAt = s.time;
+        const nearest = s.enemies.reduce<
+          (typeof s.enemies)[number] | undefined
+        >(
+          (best, enemy) =>
+            !best ||
+            Math.hypot(enemy.x - s.player.x, enemy.z - s.player.z) <
+              Math.hypot(best.x - s.player.x, best.z - s.player.z)
+              ? enemy
+              : best,
+          undefined,
+        );
+        this.hurtDirection
+          .set(
+            nearest ? s.player.x - nearest.x : -s.facing.x,
+            nearest ? s.player.z - nearest.z : -s.facing.z,
+          )
+          .normalize();
+      }
       if (ev.kind === "lightning" && this.abilityFx.length < 40) {
-        const x = ev.fromX ?? s.player.x, z = ev.fromZ ?? s.player.z;
-        const dx = ev.x - x, dz = ev.z - z;
-        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(x, 0.8, z), new THREE.Vector3(x + dx * 0.3 - dz * 0.09, 0.9, z + dz * 0.3 + dx * 0.09),
-          new THREE.Vector3(x + dx * 0.65 + dz * 0.07, 0.65, z + dz * 0.65 - dx * 0.07), new THREE.Vector3(ev.x, 0.55, ev.z),
-        ]), this.lightningMaterial);
-        this.scene.add(line); this.abilityFx.push({o: line, life: 0.19, max: 0.19, radius: 0, dispose: true});
+        const x = ev.fromX ?? s.player.x,
+          z = ev.fromZ ?? s.player.z;
+        const dx = ev.x - x,
+          dz = ev.z - z;
+        const line = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(x, 0.8, z),
+            new THREE.Vector3(
+              x + dx * 0.3 - dz * 0.09,
+              0.9,
+              z + dz * 0.3 + dx * 0.09,
+            ),
+            new THREE.Vector3(
+              x + dx * 0.65 + dz * 0.07,
+              0.65,
+              z + dz * 0.65 - dx * 0.07,
+            ),
+            new THREE.Vector3(ev.x, 0.55, ev.z),
+          ]),
+          this.lightningMaterial,
+        );
+        this.scene.add(line);
+        this.abilityFx.push({
+          o: line,
+          life: 0.19,
+          max: 0.19,
+          radius: 0,
+          dispose: true,
+        });
         continue;
       }
       if (ev.kind === "burst" && this.abilityFx.length < 40) {
         const ring = new THREE.Mesh(this.burstGeometry, this.burstMaterial);
-        ring.rotation.x = -Math.PI / 2; ring.position.set(ev.x, 0.08, ev.z);
-        this.scene.add(ring); this.abilityFx.push({o: ring, life: 0.38, max: 0.38, radius: ev.radius ?? 3, dispose: false});
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(ev.x, 0.08, ev.z);
+        this.scene.add(ring);
+        this.abilityFx.push({
+          o: ring,
+          life: 0.38,
+          max: 0.38,
+          radius: ev.radius ?? 3,
+          dispose: false,
+        });
         continue;
       }
       if (ev.kind === "pulse") {
@@ -550,7 +802,8 @@ export class YardScene {
     }
   }
   private visible(x: number, z: number, radius: number) {
-    this.cullSphere.center.set(x, 0.75, z); this.cullSphere.radius = radius;
+    this.cullSphere.center.set(x, 0.75, z);
+    this.cullSphere.radius = radius;
     return this.frustum.intersectsSphere(this.cullSphere);
   }
   render(s: State, dt: number) {
@@ -559,7 +812,10 @@ export class YardScene {
     this.camera.position.set(s.player.x, 23, s.player.z + 25);
     this.camera.lookAt(s.player.x, 0, s.player.z);
     this.camera.updateMatrixWorld();
-    this.projection.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    this.projection.multiplyMatrices(
+      this.camera.projectionMatrix,
+      this.camera.matrixWorldInverse,
+    );
     this.frustum.setFromProjectionMatrix(this.projection);
     this.sun.position.set(s.player.x - 12, 22, s.player.z - 8);
     this.sun.target.position.set(s.player.x, 0, s.player.z);
@@ -576,6 +832,7 @@ export class YardScene {
     );
     this.robot.rotation.y += diff * Math.min(1, dt * 14);
     this.robot.visible = true;
+    this.renderRobotHurt(s.time);
     for (let i = 0; i < this.orbit.length; i++) {
       const o = this.orbit[i];
       o.visible = i < s.scrap;
@@ -591,30 +848,42 @@ export class YardScene {
     );
     this.ring.position.set(s.player.x, 0.04, s.player.z);
     const orbitPoint = orbitPosition(s, 0);
-    this.ring.scale.setScalar(Math.hypot(orbitPoint.x - s.player.x, orbitPoint.z - s.player.z) / 1.85);
-    this.aim.visible = s.phase === "playing";
-    this.aim.position.set(
-      s.player.x + s.aim.x * 2.4,
-      0.03,
-      s.player.z + s.aim.z * 2.4,
+    this.ring.scale.setScalar(
+      Math.hypot(orbitPoint.x - s.player.x, orbitPoint.z - s.player.z) / 1.85,
     );
-    this.aim.rotation.z = Math.atan2(s.aim.x, -s.aim.z);
     this.renderedEnemies = 0;
     const transform = this.transform;
     for (let i = 0; i < s.enemies.length; i++) {
       const e = s.enemies[i];
       if (!this.visible(e.x, e.z, e.type === "brute" ? 2 : 1.3)) continue;
-      transform.position.set(e.x, Math.abs(Math.sin(s.time * 8 + e.seed)) * 0.065, e.z);
-      transform.rotation.set(0, Math.atan2(s.player.x - e.x, s.player.z - e.z), Math.sin(s.time * 8 + e.seed) * 0.06);
+      transform.position.set(
+        e.x,
+        Math.abs(Math.sin(s.time * 8 + e.seed)) * 0.065,
+        e.z,
+      );
+      transform.rotation.set(
+        0,
+        Math.atan2(s.player.x - e.x, s.player.z - e.z),
+        Math.sin(s.time * 8 + e.seed) * 0.06,
+      );
       const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
       if (e.type === "brute") transform.scale.set(k * 1.85, k * 1.6, k * 1.85);
-      else if (e.type === "runner") transform.scale.set(k * 0.85, k * 1.2, k * 0.85);
+      else if (e.type === "runner")
+        transform.scale.set(k * 0.85, k * 1.2, k * 0.85);
       else transform.scale.setScalar(k * 1.12);
       transform.updateMatrix();
       for (const batch of this.enemyBatches) {
         batch.setMatrixAt(this.renderedEnemies, transform.matrix);
-        const metal = /Brushed steel/i.test((batch.material as THREE.Material).name);
-        this.instanceColor.setHex(metal && e.type !== "can" ? (e.type === "runner" ? 0xff8a55 : 0x62bec6) : 0xffffff);
+        const metal = /Brushed steel/i.test(
+          (batch.material as THREE.Material).name,
+        );
+        this.instanceColor.setHex(
+          metal && e.type !== "can"
+            ? e.type === "runner"
+              ? 0xff8a55
+              : 0x62bec6
+            : 0xffffff,
+        );
         batch.setColorAt(this.renderedEnemies, this.instanceColor);
       }
       this.renderedEnemies++;
@@ -624,40 +893,67 @@ export class YardScene {
     for (const p of s.pickups) {
       if (!this.visible(p.x, p.z, 0.5)) continue;
       const kind = p.kind === "xp" ? 1 : 0;
-      transform.position.set(p.x, 0.16 + Math.sin(s.time * 3 + p.id) * 0.04, p.z);
+      transform.position.set(
+        p.x,
+        0.16 + Math.sin(s.time * 3 + p.id) * 0.04,
+        p.z,
+      );
       transform.rotation.set(0, s.time + p.id, 0);
-      transform.scale.setScalar(p.kind === "xp" && (p.value ?? 1) > 3 ? 0.95 : 0.7);
+      transform.scale.setScalar(
+        p.kind === "xp" && (p.value ?? 1) > 3 ? 0.95 : 0.7,
+      );
       transform.updateMatrix();
-      for (const batch of this.pickupBatches[kind]) batch.setMatrixAt(pickupCounts[kind], transform.matrix);
+      for (const batch of this.pickupBatches[kind])
+        batch.setMatrixAt(pickupCounts[kind], transform.matrix);
       pickupCounts[kind]++;
     }
-    this.pickupBatches.forEach((batches, index) => this.finishBatch(batches, pickupCounts[index]));
+    this.pickupBatches.forEach((batches, index) =>
+      this.finishBatch(batches, pickupCounts[index]),
+    );
     const shotCounts = [0, 0, 0];
     for (const p of s.shots) {
       if (!this.visible(p.x, p.z, 0.8)) continue;
       const kind = p.kind % 3;
       transform.position.set(p.x, 0.65, p.z);
-      transform.rotation.set(s.time * 8, s.time * 12, 0); transform.scale.setScalar(1); transform.updateMatrix();
-      for (const batch of this.shotBatches[kind]) batch.setMatrixAt(shotCounts[kind], transform.matrix);
+      transform.rotation.set(s.time * 8, s.time * 12, 0);
+      transform.scale.setScalar(1);
+      transform.updateMatrix();
+      for (const batch of this.shotBatches[kind])
+        batch.setMatrixAt(shotCounts[kind], transform.matrix);
       shotCounts[kind]++;
     }
-    this.shotBatches.forEach((batches, index) => this.finishBatch(batches, shotCounts[index]));
-    this.sync(this.turretModels, s.turrets.map((t) => t.id));
+    this.shotBatches.forEach((batches, index) =>
+      this.finishBatch(batches, shotCounts[index]),
+    );
+    this.sync(
+      this.turretModels,
+      s.turrets.map((t) => t.id),
+    );
     for (const turret of s.turrets) {
       let model = this.turretModels.get(turret.id);
-      if (!model) { model = this.turretTemplate.clone(true); this.turretModels.set(turret.id, model); this.scene.add(model); }
+      if (!model) {
+        model = this.turretTemplate.clone(true);
+        this.turretModels.set(turret.id, model);
+        this.scene.add(model);
+      }
       model.position.set(turret.x, 0, turret.z);
-      let target = s.enemies[0], nearest = Infinity;
+      let target = s.enemies[0],
+        nearest = Infinity;
       for (const enemy of s.enemies) {
         const d = Math.hypot(enemy.x - turret.x, enemy.z - turret.z);
-        if (d < nearest) { nearest = d; target = enemy; }
+        if (d < nearest) {
+          nearest = d;
+          target = enemy;
+        }
       }
-      if (target) model.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
+      if (target)
+        model.rotation.y = Math.atan2(target.x - turret.x, target.z - turret.z);
       model.scale.setScalar(turret.life < 1 ? Math.max(0.1, turret.life) : 1);
     }
     for (const f of this.abilityFx) {
       f.life -= dt;
-      if (f.radius) f.o.scale.setScalar(f.radius * (0.55 + (1 - f.life / f.max) * 0.45));
+      if (f.radius)
+        f.o.scale.setScalar(f.radius * (0.55 + (1 - f.life / f.max) * 0.45));
       if (f.life <= 0) {
         f.o.removeFromParent();
         if (f.dispose) (f.o as THREE.Line).geometry.dispose();
@@ -677,8 +973,29 @@ export class YardScene {
     this.pulseLife -= dt;
     this.pulse.visible = this.pulseLife > 0;
     this.renderer.info.reset();
-    if (this.composer) this.composer.render();
+    if (this.composer && graphicsProfile(this.quality).ambientOcclusion)
+      this.composer.render();
     else this.renderer.render(this.scene, this.camera);
+  }
+  private renderRobotHurt(time: number) {
+    // Simulation time keeps feedback frozen in menus, upgrades and pause.
+    const age = Math.max(0, time - this.hurtAt);
+    const strength = Math.max(0, 1 - age / 0.85);
+    this.hurtStrength = strength;
+    const tint = !this.reduced && age < 0.075 ? this.hurtWhite : this.hurtRed;
+    for (const { material, color, emissive, intensity } of this
+      .robotMaterials) {
+      material.color.copy(color).lerp(tint, strength * 0.82);
+      material.emissive.copy(emissive).lerp(tint, strength * 0.55);
+      material.emissiveIntensity = intensity + strength * 0.8;
+    }
+    const recoil =
+      !this.reduced && age < 0.25 ? Math.sin((age / 0.25) * Math.PI) : 0;
+    this.hurtRecoil = recoil;
+    this.robot.position.x += this.hurtDirection.x * recoil * 0.16;
+    this.robot.position.z += this.hurtDirection.y * recoil * 0.16;
+    this.robot.rotation.z = recoil * 0.1;
+    this.robot.rotation.x = recoil * -0.06;
   }
   private sync<T extends THREE.Object3D>(map: Map<number, T>, ids: number[]) {
     const alive = new Set(ids);
@@ -689,15 +1006,25 @@ export class YardScene {
       }
   }
   clear() {
+    this.hurtAt = -Infinity;
+    if (this.robot) this.renderRobotHurt(0);
     this.renderedEnemies = 0;
-    for (const batch of [...this.enemyBatches, ...this.pickupBatches.flat(), ...this.shotBatches.flat()]) batch.count = 0;
+    for (const batch of [
+      ...this.enemyBatches,
+      ...this.pickupBatches.flat(),
+      ...this.shotBatches.flat(),
+    ])
+      batch.count = 0;
     for (const map of [this.turretModels]) {
       for (const o of map.values()) o.removeFromParent();
       map.clear();
     }
     for (const f of this.fx) f.o.removeFromParent();
     this.fx = [];
-    for (const f of this.abilityFx) { f.o.removeFromParent(); if (f.dispose) (f.o as THREE.Line).geometry.dispose(); }
+    for (const f of this.abilityFx) {
+      f.o.removeFromParent();
+      if (f.dispose) (f.o as THREE.Line).geometry.dispose();
+    }
     this.abilityFx = [];
     this.pulseLife = 0;
   }

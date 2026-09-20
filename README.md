@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:5184/**. Click **LET’S MAKE A MESS**.
+Open **http://127.0.0.1:5184/**. Choose **PLAY** (or **OYNA** in Turkish).
 
 - **Move:** WASD / arrow keys, or drag anywhere in the yard on a touch device.
 - **Attack:** automatic. Scrap targets the nearest living enemy within 8 units, with a 1.15-second cooldown. Collect wreckage to reload; the automatic close-range pulse keeps attacking when the orbit is empty.
@@ -36,7 +36,7 @@ The map fills the viewport during a run. A thin XP bar, small timer/level/kill c
 
 ## Language / Dil
 
-Use the **TR / EN** button to switch between Turkish and English without restarting your run. During play, pause first to reveal language, sound and help controls. The first visit follows the browser language; your choice is saved locally. Menus, HUD, help, upgrade names/descriptions, results and accessibility labels are translated. Extended Latin font subsets support Turkish characters.
+Choose a language in **Settings → Language**, or cycle languages with the flag/code button without restarting your run. During play, pause first to reveal language, sound and help controls. The first visit follows the browser language; your choice is saved locally. Menus, HUD, help, upgrade names/descriptions, results and accessibility labels are translated. Extended Latin font subsets support the six available languages.
 
 **TR / EN** düğmesiyle dili değiştirebilirsin. Oyun sırasında bu ayarlara ulaşmak için önce duraklat. Oyun sıfırlanmaz; dil tercihin sonraki ziyaretlerde de korunur.
 
@@ -85,13 +85,13 @@ Font and Three.js licenses are included in `public/licenses/`. Game geometry and
 
 ### Main menu
 
-The full-screen title menu includes Play/Continue, New Run, the ten-ability reference, language/sound settings, and How to Play. Pause → Main Menu preserves the current run in memory; Continue resumes it. New Run resets the run. Returning from the results screen prepares a fresh run. Reloading the page does not save an unfinished run. Menu buttons support keyboard focus, Enter/Space, and up/down navigation; Escape returns from a submenu. The portrait layout stacks the character card below the actions, while landscape keeps the controls beside the title.
+The full-screen title menu includes Play/Continue, New Run, the ten-ability reference, language, display-quality and sound settings, and How to Play. Pause → Main Menu preserves the current run in memory; Continue resumes it. New Run resets the run. Returning from the results screen prepares a fresh run. Reloading the page does not save an unfinished run. Menu buttons support keyboard focus, Enter/Space, and up/down navigation; Escape returns from a submenu. The portrait layout stacks the character card below the actions, while landscape keeps the controls beside the title.
 
 `node scripts/menu-browser.mjs` checks the menu, settings, reference, fresh starts and same-run resume at desktop, portrait, narrow portrait and landscape sizes.
 
 ### Illustrated ability guide
 
-Blender renders now illustrate all ten abilities. The guide filters Weapons, Support and Supplies, and selecting a card shows its effect, maximum rank or repeatable status, and how to acquire it. Browsing does not equip upgrades or modify the run. The same artwork appears in level-up choices. Both languages and mobile layouts are supported.
+Blender renders now illustrate all ten abilities. The guide filters Weapons, Support and Supplies, and selecting a card shows its effect, maximum rank or repeatable status, and how to acquire it. Browsing does not equip upgrades or modify the run. The same artwork appears in level-up choices. All six languages and mobile layouts are supported.
 
 `npm run assets:abilities` rebuilds the transparent icons and editable `art/ability-kit.blend`. See `art/ABILITY-ASSETS.md` for provenance and build details. `node scripts/ability-browser.mjs` verifies image delivery, categories, all detail selections, translation, read-only browsing and level-up images.
 
@@ -100,3 +100,11 @@ Blender renders now illustrate all ten abilities. The guide filters Weapons, Sup
 Main menu, settings, ability browsing and Help fit the current viewport. Compact ability screens use explicit previous/next pages and a separate detail screen; Back and Escape return to the same page. Help has five short steps. Orientation changes recalculate the visible cards. Menu symbols are drawn SVGs, and ability images remain the original Blender renders; no emoji icons are used.
 
 `node scripts/fixed-menu-browser.mjs` verifies eight desktop/phone viewport sizes, all ten abilities across pages, both help languages, settings, resume, rotation, visible controls and absence of overflow. `node scripts/menu-dialog-layout.mjs` verifies long-copy upgrade/result layouts using explicitly labeled UI fixtures.
+
+### Display, languages and feedback
+
+Settings → Graphics quality applies immediately and remembers the selected preset. High is the desktop default (native resolution up to 2× device density, antialiasing and richer shadows); Balanced is the touch-device default. Ultra adds 1.5× supersampling, capped at 3× density, and larger shadow maps. Performance reduces resolution and effects. Post-processing now uses the same resolution as the output canvas, fixing the previous desktop softness.
+
+English, Turkish, German, French, Spanish and Portuguese are available through a named language picker with original SVG flags. The choice persists across reloads. Menu/category icons and five How to Play diagrams are original SVG drawings; ability art remains the original Blender renders. The automatic targeting arrow has been removed because attacks require no manual aiming.
+
+Contact damage now changes the robot's own materials with a brief impact highlight, fading red tint and slight visual recoil. This does not move its collision position. Reduced motion removes the recoil; pausing freezes the feedback and restarting resets it.
