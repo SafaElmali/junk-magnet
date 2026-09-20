@@ -14,6 +14,8 @@ import "./menu.css";
 import "./help-art.css";
 import "./pause-menu.css";
 import "./opening-guide.css";
+import "./result-menu.css";
+import { resultBuildMarkup } from "./result-summary";
 import { helpIllustration } from "./help-art";
 import { setGraphicsQuality, type GraphicsQuality } from "./graphics";
 import { menuMarkup, setupMenu } from "./menu";
@@ -45,6 +47,7 @@ const icons = {
   sound:
     '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="M17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   mute: '<path d="m4 9 4 0 5-4v14l-5-4H4Z"/><path d="m17 9 5 6m0-6-5 6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
   play: '<path d="m8 4 12 8-12 8Z"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 3v1"/>',
@@ -85,7 +88,13 @@ app.innerHTML = `
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
  <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="pause-heading pause-only"><span class="pause-location">${svg("magnet")}<span>THE SCRAPYARD</span></span><span class="pause-badge">${svg("pause")}</span></div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div class="pause-summary pause-only"><div><span>SHIFT TIME</span><strong id="pause-time">00:00</strong></div><div><span>LEVEL REACHED</span><strong id="pause-level">1</strong></div><div><span>JUNK RECYCLED</span><strong id="pause-kills">0</strong></div></div><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><div class="pause-actions"><button class="primary-btn" id="resume"><span id="resume-label">CONTINUE</span><span id="resume-icon">${svg("play")}</span></button><button class="text-btn" id="restart">${svg("reset")}<span>NEW RUN</span></button><button id="pause-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div></div></div>
  <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
- <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card"><div class="result-stamp" id="result-stamp">SHIFT COMPLETE</div><h2 id="result-title">That's good junk.</h2><p id="result-copy"></p><div class="result-stats"><div><strong id="result-kills"></strong><span>JUNK RECYCLED</span></div><div><strong id="result-time"></strong><span>SHIFT TIME</span></div><div><strong id="result-level"></strong><span>LEVEL REACHED</span></div></div><p class="result-build" id="result-build"></p><button class="primary-btn" id="again">ONE MORE SHIFT ${svg("reset")}</button><button id="result-menu" class="text-btn">MAIN MENU</button></div></div>
+ <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card">
+ <header class="result-heading"><div class="result-stamp">${svg("magnet")}<span id="result-stamp">BACK TO THE WORKSHOP</span></div><span class="result-unit">SCRAP-01</span></header>
+ <h2 id="result-title">SHIFT COMPLETE</h2><p id="result-copy"></p>
+ <div class="result-stats"><div class="result-stat-time"><span>${svg("clock")}<span>SHIFT TIME</span></span><strong id="result-time"></strong></div><div><span>${svg("nut")}<span>RECYCLED ENEMIES</span></span><strong id="result-kills"></strong></div><div><span>${svg("bolt")}<span>LEVEL REACHED</span></span><strong id="result-level"></strong></div></div>
+ <section class="result-loadout" aria-labelledby="result-build-label"><h3 id="result-build-label">YOUR BUILD</h3><ul class="result-build" id="result-build"></ul></section>
+ <div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
+ </div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
 document.querySelectorAll("#help-content dl > div").forEach((step, index) => {
@@ -594,7 +603,7 @@ function hud() {
     el("upgrade").classList.add("hidden");
     el("result").classList.remove("hidden");
     el("result-stamp").textContent = t("BACK TO THE WORKSHOP");
-    el("result-title").textContent = t("A few dents. No regrets.");
+    el("result-title").textContent = t("SHIFT COMPLETE");
     el("result-copy").textContent = t(
       "The swarm got this shift. {launches} scrap launches made it count.",
       { launches: s.launched },
@@ -602,11 +611,7 @@ function hud() {
     el("result-kills").textContent = String(s.kills);
     el("result-time").textContent = format(s.time);
     el("result-level").textContent = String(s.level);
-    el("result-build").textContent = t("Your build: {build}", {
-      build: ownedAbilities()
-        .map((id) => `${upgradeName(id)} ${s.upgrades[id]}`)
-        .join(" · "),
-    });
+    el("result-build").innerHTML = resultBuildMarkup(s);
     el("again").focus({ preventScroll: true });
     beep(120, 0.3);
   }

@@ -1,6 +1,8 @@
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
+    "RECYCLED ENEMIES": "RECYCELTE GEGNER",
+    "YOUR BUILD": "DEIN BUILD",
     "Your magnet collects nearby scrap.":
       "Dein Magnet sammelt Schrott in der Nähe.",
     "Scrap orbits you, then fires automatically.":
@@ -241,6 +243,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Schrottnachschub",
   },
   fr: {
+    "RECYCLED ENEMIES": "ENNEMIS RECYCLÉS",
+    "YOUR BUILD": "TON ÉQUIPEMENT",
     "Your magnet collects nearby scrap.":
       "Ton aimant ramasse la ferraille à proximité.",
     "Scrap orbits you, then fires automatically.":
@@ -483,6 +487,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recharge de ferraille",
   },
   es: {
+    "RECYCLED ENEMIES": "ENEMIGOS RECICLADOS",
+    "YOUR BUILD": "TUS HABILIDADES",
     "Your magnet collects nearby scrap.": "Tu imán recoge chatarra cercana.",
     "Scrap orbits you, then fires automatically.":
       "La chatarra gira a tu alrededor y luego dispara sola.",
@@ -722,6 +728,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de chatarra",
   },
   pt: {
+    "RECYCLED ENEMIES": "INIMIGOS RECICLADOS",
+    "YOUR BUILD": "AS TUAS HABILIDADES",
     "Your magnet collects nearby scrap.": "Seu ímã coleta sucata próxima.",
     "Scrap orbits you, then fires automatically.":
       "A sucata orbita você e depois dispara automaticamente.",
@@ -962,6 +970,8 @@ export const locales: Record<string, Record<string, string>> = {
     "Scrap Delivery": "Recarga de sucata",
   },
   tr: {
+    "RECYCLED ENEMIES": "YENİLEN DÜŞMAN",
+    "YOUR BUILD": "BU TURDAKİ YETENEKLERİN",
     "Your magnet collects nearby scrap.":
       "Mıknatısın yakındaki hurdaları toplar.",
     "Scrap orbits you, then fires automatically.":
