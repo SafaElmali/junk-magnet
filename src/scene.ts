@@ -102,6 +102,10 @@ export class YardScene {
   floor!: THREE.Mesh;
   sun!: THREE.DirectionalLight;
   enemyBatches: THREE.InstancedMesh[] = [];
+  bossBatches: Record<"boss" | "miniboss", THREE.InstancedMesh[]> = {
+    boss: [],
+    miniboss: [],
+  };
   pickupBatches: THREE.InstancedMesh[][] = [];
   shotBatches: THREE.InstancedMesh[][] = [];
   renderedEnemies = 0;
@@ -437,6 +441,8 @@ export class YardScene {
       "discovery-repair",
       "discovery-salvage",
       "enemy-can",
+      "enemy-boss",
+      "enemy-miniboss",
       "container",
       "tire",
       "cone",
@@ -479,6 +485,11 @@ export class YardScene {
       this.mobile ? "enemy-mobile" : "enemy-can",
       ENTITY_LIMITS.enemies,
     );
+    for (const kind of ["boss", "miniboss"] as const)
+      this.bossBatches[kind] = this.modelBatches(
+        `enemy-${kind}`,
+        ENTITY_LIMITS.enemies,
+      );
     this.pickupBatches = [
       this.modelBatches(
         this.mobile ? "bolt-mobile" : "scrap-bolt",
@@ -1114,6 +1125,8 @@ export class YardScene {
       Math.hypot(orbitPoint.x - s.player.x, orbitPoint.z - s.player.z) / 1.85,
     );
     this.renderedEnemies = 0;
+    let regularCount = 0;
+    const bossCounts = { boss: 0, miniboss: 0 };
     const transform = this.transform;
     for (let i = 0; i < s.enemies.length; i++) {
       const e = s.enemies[i];
@@ -1142,10 +1155,28 @@ export class YardScene {
         Math.sin(s.time * 8 + e.seed) * 0.06,
       );
       const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
-      if (e.type === "boss") transform.scale.set(k * 3.2, k * 2.9, k * 3.2);
-      else if (e.type === "miniboss")
-        transform.scale.set(k * 2.4, k * 2.1, k * 2.4);
-      else if (e.type === "charger")
+      if (e.type === "boss" || e.type === "miniboss") {
+        // Purpose-built silhouettes are authored at gameplay scale. Heavy tracks
+        // stay planted; the crusher leans into its actual charge telegraph.
+        const warning = s.encounters.warnings.find((w) => w.owner === e.id);
+        const charge = warning
+          ? 1 - Math.max(0, warning.remaining) / warning.duration
+          : 0;
+        transform.position.y = 0;
+        transform.rotation.x = e.type === "miniboss" ? charge * 0.1 : 0;
+        transform.rotation.z = 0;
+        transform.scale.setScalar(k);
+        transform.updateMatrix();
+        this.instanceColor.setHex(e.hit > 0 ? 0xffd4ba : 0xffffff);
+        for (const batch of this.bossBatches[e.type]) {
+          batch.setMatrixAt(bossCounts[e.type], transform.matrix);
+          batch.setColorAt(bossCounts[e.type], this.instanceColor);
+        }
+        bossCounts[e.type]++;
+        this.renderedEnemies++;
+        continue;
+      }
+      if (e.type === "charger")
         transform.scale.set(k * 0.9, k * 1.2, k * 1.3);
       else if (e.type === "warden")
         transform.scale.set(k * 1.4, k * 1.2, k * 1.4);
@@ -1156,7 +1187,7 @@ export class YardScene {
       else transform.scale.setScalar(k * 1.12);
       transform.updateMatrix();
       for (const batch of this.enemyBatches) {
-        batch.setMatrixAt(this.renderedEnemies, transform.matrix);
+        batch.setMatrixAt(regularCount, transform.matrix);
         const metal = /Brushed steel/i.test(
           (batch.material as THREE.Material).name,
         );
@@ -1164,18 +1195,19 @@ export class YardScene {
           metal && e.type !== "can"
             ? e.type === "runner" || e.type === "charger"
               ? 0xff8a55
-              : e.type === "boss" || e.type === "miniboss"
-                ? 0xf6c873
-                : e.type === "warden"
-                  ? 0x8b9dc5
-                  : 0x62bec6
+              : e.type === "warden"
+                ? 0x8b9dc5
+                : 0x62bec6
             : 0xffffff,
         );
-        batch.setColorAt(this.renderedEnemies, this.instanceColor);
+        batch.setColorAt(regularCount, this.instanceColor);
       }
+      regularCount++;
       this.renderedEnemies++;
     }
-    this.finishBatch(this.enemyBatches, this.renderedEnemies);
+    this.finishBatch(this.enemyBatches, regularCount);
+    for (const kind of ["boss", "miniboss"] as const)
+      this.finishBatch(this.bossBatches[kind], bossCounts[kind]);
     const pickupCounts = [0, 0];
     for (const p of s.pickups) {
       if (!this.visible(p.x, p.z, 0.5)) continue;
@@ -1381,6 +1413,8 @@ export class YardScene {
     this.renderedEnemies = 0;
     for (const batch of [
       ...this.enemyBatches,
+      ...this.bossBatches.boss,
+      ...this.bossBatches.miniboss,
       ...this.pickupBatches.flat(),
       ...this.shotBatches.flat(),
     ])

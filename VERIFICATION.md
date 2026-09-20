@@ -158,3 +158,14 @@ Production build, five i18n tests and formatting checks pass. `scripts/level-up-
 ### Supply-chest card dismissal
 
 The post-collection supply-chest receipt is now suppressed at the user's request. Nearby unopened-chest previews and actual rewards remain; repair/salvage receipts retain their behavior. Updated real-gameplay `scripts/discovery-browser.mjs` passes at 1440×900 and 390×844: the chest card stays hidden after ability selection, 5 XP and 3 parts are still awarded, salvage reaches 11 earned parts, and pause remains frozen. No page errors. Build and changed-file formatting checks pass.
+
+## Boss silhouettes and depleted discovery points
+
+- Added original Blender furnace-boss and crusher-miniboss models, with reproducible generator and editable source in `art/BOSS-ASSETS.md`. Dedicated material-instance pools replace scaled normal enemies on desktop and mobile.
+- All consumed discovery props now use cached desaturated, non-emissive surfaces and a persistent overhead X. Active rings disappear. Repair/salvage proximity cards explicitly say the point is depleted and hide reward previews; opened chest cards remain dismissed. Streaming and new-run restoration preserve shared asset ownership.
+- `npm test`: 78 passing tests, including consumption/revisit hints, dismissed chest cards, shared material isolation and pooled restoration. `npm run build` passes with the existing bundle-size advisory.
+- `node scripts/boss-discovery-browser.mjs`: desktop, portrait touch and landscape touch fixtures verify boss-only instance routing, all three consumed props, markers, empty rings, proximity hints, removal and stable warmed GPU geometry.
+- `node scripts/expansion-renderer.mjs`: all three robot variants retain attacks, pause behavior, damage feedback and stable geometry on desktop/touch. `node scripts/discovery-art-browser.mjs`: GLB animation, reduced motion, independent lights, streaming and 270 localized HUD layouts pass (six languages × five viewports × three kinds × three states).
+- New screenshots and reports are under `.impeccable/review/boss-discovery-*` and `discovery-depleted-*`. Visually inspected desktop/portrait world states and Turkish portrait/short-landscape depleted cards. These are controlled renderer/UI fixtures, not physical-device performance benchmarks.
+
+After integration with the current main branch, the build and all 88 unit tests pass. The three boss/discovery renderer fixtures also pass again with the updated graphics defaults. Depleted hints have their own brief display key, preserving main's compact active-progress UI and dismissed introductory hints.

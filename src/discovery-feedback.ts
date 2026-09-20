@@ -12,7 +12,10 @@ export function discoveryFeedback(
   status: string,
   reward?: DiscoveryReward,
   progress?: number,
+  depleted = false,
 ) {
+  if (depleted)
+    return `<div class="discovery-heading is-depleted"><span class="discovery-spent-mark" aria-hidden="true">×</span><div><strong>${t(discoveryNames[kind])}</strong><span>${t("Depleted · Cannot be used again")}</span></div></div>`;
   const metrics: [string, string][] =
     kind === "repair"
       ? [[reward ? `+${reward.hp}` : "≤40", t("Health")]]

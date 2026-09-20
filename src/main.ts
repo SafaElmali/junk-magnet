@@ -714,7 +714,8 @@ function renderExpansionHUD() {
     if (
       hint &&
       (s.time >= 3 || hint.mode === "hold" || hint.distance <= 3) &&
-      (hint.mode === "hold" || briefHint(`discovery:${hint.kind}`))
+      (hint.mode === "hold" ||
+        briefHint(`discovery:${hint.kind}${hint.mode === "complete" ? ":depleted" : ""}`))
     ) {
       const status =
         hint.mode === "hold"
@@ -736,7 +737,13 @@ function renderExpansionHUD() {
       compact = hint.mode === "hold";
       markup = compact
         ? discoveryProgress(hint.kind, status, 0)
-        : discoveryFeedback(hint.kind, status);
+        : discoveryFeedback(
+            hint.kind,
+            status,
+            undefined,
+            undefined,
+            hint.mode === "complete",
+          );
     }
   }
   const worldHint = el("world-hint");

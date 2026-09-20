@@ -12,6 +12,7 @@
     "assets": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_assets.py",
     "assets:robots": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_robot_assets.py",
     "assets:discoveries": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_discovery_assets.py",
+    "assets:bosses": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_boss_assets.py",
     "serve": "tsx server/index.ts",
     "start": "tsx server/index.ts",
     "test:coop": "tsx --test src/coop-session.test.ts server/coop.test.ts",

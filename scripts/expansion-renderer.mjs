@@ -88,7 +88,7 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:Object.fromEntr
       assert.ok(warnings.warningKinds.includes("bolt"));
       assert.equal(warnings.cyclone, true);
       assert.equal(warnings.cycloneBlades, 6);
-      assert.ok(warnings.accents >= 10);
+      assert.equal(warnings.accents, 5);
       assert.equal(warnings.allVisibleMeshes, true);
       assert.equal(warnings.scout, robotId === "scout");
       assert.equal(warnings.volt, robotId === "volt");

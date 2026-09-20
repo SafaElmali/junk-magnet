@@ -267,8 +267,13 @@ export function getDiscoveryHint(s: DiscoveryGameState): {
   let nearest: DiscoveryPoint | undefined,
     distance = 6;
   for (const p of s.discovery.points) {
-    if (p.completed) continue;
+    // Open chests already have a persistent visual state; keep their card
+    // dismissed after collection as in the existing chest flow.
+    if (p.completed && p.kind === "chest") continue;
     const d = Math.hypot(s.player.x - p.x, s.player.z - p.z);
+    // Spent props explain themselves only up close, without advertising a
+    // distant exhausted station as the next objective.
+    if (p.completed && d > discoveryRadius(p.kind) + 0.7) continue;
     if (d < distance) {
       nearest = p;
       distance = d;
@@ -278,14 +283,21 @@ export function getDiscoveryHint(s: DiscoveryGameState): {
   const duration = durations[nearest.kind];
   return {
     kind: nearest.kind,
-    mode:
-      nearest.kind === "repair" && s.hp >= 100
+    mode: nearest.completed
+      ? "complete"
+      : nearest.kind === "repair" && s.hp >= 100
         ? "full-health"
         : distance <= discoveryRadius(nearest.kind)
           ? "hold"
           : "approach",
-    progress: duration ? Math.min(1, nearest.progress / duration) : 0,
+    progress: nearest.completed
+      ? 1
+      : duration
+        ? Math.min(1, nearest.progress / duration)
+        : 0,
     distance,
-    seconds: Math.max(0, Math.ceil(duration - nearest.progress)),
+    seconds: nearest.completed
+      ? 0
+      : Math.max(0, Math.ceil(duration - nearest.progress)),
   };
 }

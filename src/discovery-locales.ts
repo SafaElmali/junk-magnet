@@ -1,5 +1,13 @@
 const rows = [
   [
+    "Depleted · Cannot be used again",
+    "Tükendi · Tekrar kullanılamaz",
+    "Aufgebraucht · Nicht erneut nutzbar",
+    "Épuisé · Utilisation impossible",
+    "Agotado · No se puede volver a usar",
+    "Esgotado · Não pode ser usado novamente",
+  ],
+  [
     "Experience",
     "Deneyim",
     "Erfahrung",

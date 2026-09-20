@@ -58,10 +58,12 @@ export class ExpansionView {
     let count = 0;
     const tr = this.transform;
     for (const e of s.enemies) {
-      if (e.type === "can" || e.type === "runner" || e.type === "brute")
+      if (
+        e.type === "can" || e.type === "runner" || e.type === "brute" ||
+        e.type === "boss" || e.type === "miniboss"
+      )
         continue;
-      const boss = e.type === "boss" || e.type === "miniboss",
-        scale = e.type === "boss" ? 2.9 : e.type === "miniboss" ? 2.1 : 1;
+      const scale = 1;
       const a = Math.atan2(s.player.x - e.x, s.player.z - e.z);
       const part = (
         x: number,
@@ -83,11 +85,7 @@ export class ExpansionView {
         this.accents.setMatrixAt(count, tr.matrix);
         this.accents.setColorAt(count++, this.color.setHex(color));
       };
-      if (boss) {
-        part(-0.43, 0.95, 0.05, 0.22, 0.55, 0.5, 0xe8ba59);
-        part(0.43, 0.95, 0.05, 0.22, 0.55, 0.5, 0xe8ba59);
-        part(0, 1.3, 0, 0.5, 0.2, 0.25, 0xf1d394);
-      } else if (e.type === "charger") {
+      if (e.type === "charger") {
         part(-0.28, 0.75, 0.45, 0.17, 0.17, 0.6, 0xf1cf9e);
         part(0.28, 0.75, 0.45, 0.17, 0.17, 0.6, 0xf1cf9e);
       } else if (e.type === "spitter") {

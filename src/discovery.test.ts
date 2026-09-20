@@ -177,7 +177,7 @@ test("render pools retain geometry across streaming and detach cleanly", () => {
     if (o instanceof THREE.Mesh) after.add(o.geometry);
   });
   assert.deepEqual(after, geometries);
-  assert.equal(geometries.size, 4);
+  assert.equal(geometries.size, 6);
   view.dispose();
   assert.equal(scene.children.length, 0);
   assert.equal(sharedDisposed, false);
@@ -257,4 +257,61 @@ test("discovery receipts report capped actual gains and keep completion time on 
     hp: 0,
     parts: 8,
   });
+});
+
+test("depleted hints survive revisits, stay local, and clear on a new run", () => {
+  const s = state();
+  s.hp = 40;
+  const repair = approach(s, "repair");
+  updateDiscovery(s, 0.1);
+  assert.equal(getDiscoveryHint(s)?.mode, "complete");
+  assert.equal(getDiscoveryHint(s)?.seconds, 0);
+  s.player = { x: repair.x, z: repair.z + 4 };
+  assert.notEqual(getDiscoveryHint(s)?.kind, "repair");
+  s.player = { x: 70, z: 0 };
+  updateDiscovery(s, 0.1);
+  s.player = { x: repair.x, z: repair.z };
+  updateDiscovery(s, 0.1);
+  assert.equal(getDiscoveryHint(s)?.mode, "complete");
+  assert.equal(s.hp, 80);
+  s.discovery = createDiscoveryState();
+  assert.equal(getDiscoveryHint(s)?.mode, "hold");
+});
+
+test("depletion changes whole props without leaking into shared models and restores pooled slots", () => {
+  const scene = new THREE.Scene();
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshStandardMaterial({ color: 0x44bba0, emissive: 0x226655 });
+  const model = new THREE.Group();
+  model.add(new THREE.Mesh(geometry, material));
+  const view = new DiscoveryView(scene, { repair: model, chest: model, salvage: model });
+  const s = state();
+  view.update(s);
+  const root = scene.children[0];
+  const slot = root.children[0];
+  const prop = (slot.children[0] as THREE.Group).children[0] as THREE.Mesh;
+  const marker = slot.getObjectByName("Discovery_Unavailable")!;
+  assert.equal(marker.visible, false);
+  s.discovery.points[0].completed = true;
+  view.update(s, true);
+  assert.equal(marker.visible, true);
+  assert.notEqual(prop.material, material);
+  assert.equal((prop.material as THREE.MeshStandardMaterial).emissiveIntensity, 0);
+  assert.equal(material.color.getHex(), 0x44bba0);
+  s.discovery = createDiscoveryState();
+  view.update(s);
+  assert.equal(prop.material, material);
+  assert.equal(marker.visible, false);
+  view.dispose();
+  geometry.dispose();
+  material.dispose();
+});
+
+test("open chest cards remain dismissed while their spent world marker persists", () => {
+  const s = state();
+  const chest = approach(s, "chest");
+  updateDiscovery(s, 1.3);
+  s.discovery.points = [chest];
+  assert.equal(chest.completed, true);
+  assert.equal(getDiscoveryHint(s), null);
 });

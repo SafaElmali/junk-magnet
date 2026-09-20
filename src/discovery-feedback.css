@@ -22,6 +22,20 @@
 .discovery-heading div {
   min-width: 0;
 }
+.discovery-heading .discovery-spent-mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  height: 34px;
+  margin: 0;
+  border: 2px solid #b5b8a7;
+  border-radius: 50%;
+  color: #eee5cf;
+  font: 700 30px/1 sans-serif;
+}
+.discovery-heading.is-depleted span {
+  color: #dfd7c5;
+}
 .discovery-heading strong {
   display: block;
   font-size: 13px;
