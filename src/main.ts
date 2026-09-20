@@ -139,6 +139,11 @@ let s = createState(getRunConfig()),
   modalBefore: "ready" | "playing" = "playing",
   lastFocus: HTMLElement | null = null;
 let runId = crypto.randomUUID();
+let frameRequest: number | undefined;
+function requestFrame() {
+  if (!loaded || document.hidden || frameRequest !== undefined) return;
+  frameRequest = requestAnimationFrame(loop);
+}
 let runReceipt: RunReceipt | null = null;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
@@ -180,6 +185,7 @@ function start() {
   if (touch) el("touch-stick").classList.remove("hidden");
   el("yard").focus({ preventScroll: true });
   gameAudio.play("start");
+  requestFrame();
 }
 function returnToMenu() {
   buildInspector.close();
@@ -208,6 +214,7 @@ function returnToMenu() {
     el(id).classList.add("hidden");
   el("intro").classList.remove("hidden");
   menu.enter(canResume);
+  requestFrame();
 }
 function restart() {
   if (coop.active) {
@@ -276,6 +283,7 @@ function openModal(help = false) {
   el("help-content").classList.toggle("hidden", !help);
   el("modal").classList.remove("hidden");
   el("resume").focus({ preventScroll: true });
+  requestFrame();
 }
 function closeModal() {
   if (s.phase !== "paused" || document.hidden) return;
@@ -284,6 +292,7 @@ function closeModal() {
     app.classList.contains("in-menu") && s.time > 0 ? "paused" : modalBefore;
   el("yard").classList.toggle("is-playing", s.phase === "playing");
   lastFocus?.focus({ preventScroll: true });
+  requestFrame();
 }
 el("pause-menu").addEventListener("click", returnToMenu);
 el("result-menu").addEventListener("click", returnToMenu);
@@ -450,11 +459,14 @@ window.addEventListener("blur", () => {
 document.addEventListener("visibilitychange", () => {
   gameAudio.setHidden(document.hidden);
   if (document.hidden) {
+    if (frameRequest !== undefined) cancelAnimationFrame(frameRequest);
+    frameRequest = undefined;
+    last = 0;
     keys.clear();
     stopStick();
     if (coop.active) coop.stopInput();
     else if (s.phase === "playing") openModal();
-  }
+  } else requestFrame();
 });
 function trapFocus(e: KeyboardEvent) {
   const panel = !el("upgrade").classList.contains("hidden")
@@ -577,6 +589,7 @@ function pickUpgrade(id: UpgradeId | undefined) {
   // Do not leave keyboard focus on a hidden choice, where a held key could fire again.
   el("yard").focus({ preventScroll: true });
   renderUpgrades();
+  requestFrame();
 }
 function renderUpgrades() {
   const loadout =
@@ -733,43 +746,57 @@ function renderExpansionHUD() {
   }
   if (text || markup) el("opening-guide").classList.add("hidden");
 }
+let shownVitals = "";
 function hud() {
   renderOpeningGuide();
   renderExpansionHUD();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
-  el("timer").textContent = format(s.time);
-  el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
-  el("level").textContent = t("LV. {level}", { level: s.level });
-  el("xp-label").textContent = t("{xp} / {needed} XP", {
-    xp: s.xp,
-    needed: s.xpNeeded,
-  });
-  el("xp-current-level").textContent = t("LV. {level}", { level: s.level });
-  el("xp-next-level").textContent = t("LV. {level}", { level: s.level + 1 });
-  el("xp-meter-count").textContent = t("{xp} / {needed} XP", {
-    xp: s.xp,
-    needed: s.xpNeeded,
-  });
-  el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
-  el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
-  el("yard").classList.toggle("low-health", s.hp <= 25);
-  document
-    .querySelector(".health-track")!
-    .setAttribute("aria-valuenow", String(s.hp));
-  el("kills").textContent = String(s.kills);
-  el("xp-progress").style.transform =
-    `scaleX(${Math.min(1, s.xp / s.xpNeeded)})`;
-  const xpBar = document.querySelector(".top-progress")!;
-  xpBar.setAttribute("aria-valuenow", String(Math.min(s.xp, s.xpNeeded)));
-  xpBar.setAttribute("aria-valuemax", String(s.xpNeeded));
-  xpBar.setAttribute(
-    "aria-valuetext",
-    t("Level {level}, {xp} of {needed} experience", {
-      level: s.level,
+  const vitals = [
+    getLanguage(),
+    Math.floor(s.time),
+    s.wave,
+    s.level,
+    s.xp,
+    s.xpNeeded,
+    s.hp,
+    s.kills,
+  ].join("|");
+  if (vitals !== shownVitals) {
+    shownVitals = vitals;
+    el("timer").textContent = format(s.time);
+    el("wave").textContent = t("PRESSURE {wave}", { wave: s.wave });
+    el("level").textContent = t("LV. {level}", { level: s.level });
+    el("xp-label").textContent = t("{xp} / {needed} XP", {
       xp: s.xp,
       needed: s.xpNeeded,
-    }),
-  );
+    });
+    el("xp-current-level").textContent = t("LV. {level}", { level: s.level });
+    el("xp-next-level").textContent = t("LV. {level}", { level: s.level + 1 });
+    el("xp-meter-count").textContent = t("{xp} / {needed} XP", {
+      xp: s.xp,
+      needed: s.xpNeeded,
+    });
+    el("health-value").textContent = `${Math.ceil(s.hp)} / 100`;
+    el("health-fill").style.transform = `scaleX(${s.hp / 100})`;
+    el("yard").classList.toggle("low-health", s.hp <= 25);
+    document
+      .querySelector(".health-track")!
+      .setAttribute("aria-valuenow", String(s.hp));
+    el("kills").textContent = String(s.kills);
+    el("xp-progress").style.transform =
+      `scaleX(${Math.min(1, s.xp / s.xpNeeded)})`;
+    const xpBar = document.querySelector(".top-progress")!;
+    xpBar.setAttribute("aria-valuenow", String(Math.min(s.xp, s.xpNeeded)));
+    xpBar.setAttribute("aria-valuemax", String(s.xpNeeded));
+    xpBar.setAttribute(
+      "aria-valuetext",
+      t("Level {level}, {xp} of {needed} experience", {
+        level: s.level,
+        xp: s.xp,
+        needed: s.xpNeeded,
+      }),
+    );
+  }
   renderUpgrades();
   el<HTMLButtonElement>("pause").disabled =
     s.phase !== "playing" && s.phase !== "paused";
@@ -811,7 +838,8 @@ function hud() {
   }
 }
 function loop(now: number) {
-  const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
+  frameRequest = undefined;
+  const dt = last === 0 ? 0 : Math.min(0.05, (now - last) / 1000);
   last = now;
   const m = {
     x:
@@ -838,7 +866,10 @@ function loop(now: number) {
     s.phase === "playing" ? dt : 0,
   );
   hud();
-  requestAnimationFrame(loop);
+  // Static solo scenes need another frame only after an explicit change.
+  // Co-op keeps presenting network updates while its local menu is open.
+  if (coop.active || s.phase === "playing") requestFrame();
+  else last = 0;
 }
 async function boot() {
   let loadFailed = false;
@@ -869,8 +900,14 @@ async function boot() {
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
     menu.enter(false);
-    new ResizeObserver(() => scene.resize()).observe(el("yard"));
-    requestAnimationFrame(loop);
+    new ResizeObserver(() => {
+      scene.resize();
+      requestFrame();
+    }).observe(el("yard"));
+    window
+      .matchMedia("(prefers-reduced-motion: reduce)")
+      .addEventListener("change", requestFrame);
+    requestFrame();
     // Read-only state snapshot for browser QA, without gameplay mutation hooks.
     Object.defineProperty(window, "__JUNK_MAGNET__", {
       value: {
@@ -1011,6 +1048,7 @@ function chooseQuality(next: GraphicsQuality) {
   track("setting_changed", { setting: "graphics_quality", value: next });
   scene?.setQuality(next);
   menu.refresh();
+  requestFrame();
 }
 el("language").addEventListener("click", toggleLanguage);
 const menu = setupMenu({
@@ -1072,6 +1110,7 @@ const coop = new CoopClient({
     el("again").querySelector("span")!.textContent = ct(
       coop.index === 0 ? "again" : "hostAgain",
     );
+    requestFrame();
   },
   leave() {
     runAnalytics.abandon(s, "coop_left");
@@ -1093,6 +1132,7 @@ const buildInspector = setupBuildInspector({
       s.phase = "paused";
       el("yard").classList.remove("is-playing");
     }
+    requestFrame();
   },
   close() {
     keys.clear();
@@ -1102,6 +1142,7 @@ const buildInspector = setupBuildInspector({
       el("yard").classList.add("is-playing");
     }
     hud();
+    requestFrame();
   },
 });
 el("ability-loadout").addEventListener("click", event => {

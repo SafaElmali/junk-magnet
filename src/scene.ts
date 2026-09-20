@@ -93,6 +93,7 @@ function labelTexture(text: string, width = 512, height = 256) {
 export class YardScene {
   composer?: EffectComposer;
   ao?: SSAOPass;
+  private frames = 0;
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera();
@@ -413,6 +414,15 @@ export class YardScene {
       this.ao.maxDistance = 0.035;
       this.composer.addPass(this.ao);
       this.composer.addPass(new OutputPass());
+    }
+    if (!profile.ambientOcclusion && this.composer) {
+      for (const pass of this.composer.passes) pass.dispose();
+      // SSAOPass.dispose in this Three.js version leaves these owned resources alive.
+      this.ao?.ssaoMaterial.dispose();
+      this.ao?.noiseTexture.dispose();
+      this.composer.dispose();
+      this.composer = undefined;
+      this.ao = undefined;
     }
     this.composer?.setPixelRatio(profile.pixelRatio);
     this.resize();
@@ -896,6 +906,7 @@ export class YardScene {
   }
   diagnostics() {
     return {
+      frames: this.frames,
       camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
       chunks: 9,
       renderedEnemies: this.renderedEnemies,
@@ -1050,6 +1061,7 @@ export class YardScene {
   render(s: State, dt: number) {
     this.clock += dt;
     if (!this.robot) return;
+    this.frames++;
     this.camera.position.set(s.player.x, 23, s.player.z + 25);
     this.camera.lookAt(s.player.x, 0, s.player.z);
     this.camera.updateMatrixWorld();

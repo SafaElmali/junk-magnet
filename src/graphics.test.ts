@@ -24,7 +24,7 @@ test("quality defaults, persistence and session choices survive blocked storage"
       configurable: true,
       value: { matchMedia: () => ({ matches: false }) },
     });
-    assert.equal(getGraphicsQuality(), "high");
+    assert.equal(getGraphicsQuality(), "balanced");
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: { matchMedia: () => ({ matches: true }) },
@@ -43,6 +43,8 @@ test("quality defaults, persistence and session choices survive blocked storage"
         },
       },
     });
+    assert.equal(getGraphicsQuality(), "balanced");
+    saved = "high";
     assert.equal(getGraphicsQuality(), "high");
     saved = "performance";
     assert.equal(getGraphicsQuality(), "performance");

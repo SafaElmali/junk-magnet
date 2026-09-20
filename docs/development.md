@@ -29,6 +29,18 @@ node scripts/survival-browser.mjs
 
 Additional scripts cover menus, abilities, workshop portraits, discovery feedback, and co-op. See [verification notes](../VERIFICATION.md) for measured results and limitations. For co-op checks, use the [Node server](multiplayer.md) instead of Vite preview on 5185.
 
+### Performance checks
+
+For the co-op regression, build with `VITE_COOP_ENABLED=true npm run build`, then start `PORT=5279 npm run serve` in a separate terminal and run these checks sequentially. Normal builds keep co-op hidden; the flag only enables it for this local verification.
+
+```sh
+node scripts/performance-regressions.mjs
+PERF_QUALITIES=high,performance,default PERF_OUTPUT=.impeccable/review/performance-after node scripts/performance-run.mjs
+node --expose-gc --import tsx scripts/performance-simulation.ts
+```
+
+The browser benchmark measures CPU, process RSS, JavaScript heap, and frame timing in an isolated Chrome session. `default` tests a fresh player's Balanced setting; saved quality choices remain unchanged. Idle scenes should render zero additional frames. The regression check covers pause/resume, upgrades, resizing, quality changes, and live co-op. The simulation check runs twelve simulated minutes without rendering. `GAME_URL` changes the server address and `PERF_OUTPUT` changes the output directory. See the [before/after report](../.impeccable/review/performance-after/README.md) for results and measurement limits.
+
 ## Editable assets
 
 Game models are authored with Blender Python and exported as GLB files into [public/models](../public/models/). Editable scenes and generated reference artwork live in [art](../art/).

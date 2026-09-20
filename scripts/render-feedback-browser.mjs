@@ -5,7 +5,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 // Isolated renderer fixture: real YardScene/assets, controlled simulation events.
 // This verifies visual feedback; it does not claim a naturally played damage event.
 const origin = process.env.BASE_URL ?? "http://127.0.0.1:5184";
-const output = ".impeccable/review";
+const output = process.env.PERF_OUTPUT ?? ".impeccable/review";
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage({
@@ -63,8 +63,13 @@ assert.deepEqual(
 for (const profile of profiles) {
   assert.equal(profile.width, 800 * profile.pixelRatio);
   assert.equal(profile.height, 600 * profile.pixelRatio);
-  assert.equal(profile.composerPixelRatio, profile.pixelRatio);
-  assert.equal(profile.composerWidth, profile.width);
+  if (profile.postProcessing) {
+    assert.equal(profile.composerPixelRatio, profile.pixelRatio);
+    assert.equal(profile.composerWidth, profile.width);
+  } else {
+    assert.equal(profile.composerPixelRatio, undefined);
+    assert.equal(profile.composerWidth, undefined);
+  }
 }
 await page.evaluate(() => {
   window.fixtureScene.setQuality("high");

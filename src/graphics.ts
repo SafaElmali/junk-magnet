@@ -17,10 +17,7 @@ export function getGraphicsQuality(): GraphicsQuality {
   } catch {
     /* Storage can be unavailable in embedded/private browsers. */
   }
-  return typeof window !== "undefined" &&
-    window.matchMedia("(pointer: coarse)").matches
-    ? "balanced"
-    : "high";
+  return "balanced";
 }
 
 export function setGraphicsQuality(quality: GraphicsQuality) {
