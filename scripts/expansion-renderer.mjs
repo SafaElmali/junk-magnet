@@ -65,7 +65,12 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:Object.fromEntr
           cycloneBlades: v.cyclone.children.length,
           scout: f.scene.robotModels.get("scout").visible,
           volt: f.scene.robotModels.get("volt").visible,
-          accents: v.accents.count,
+          accents: Object.fromEntries(
+            [...v.accents].map(([kind, batches]) => [
+              kind,
+              batches.map((batch) => batch.count),
+            ]),
+          ),
           geometries: f.scene.diagnostics().geometries,
           allVisibleMeshes: visible.every(
             (w) => w.ring.isMesh && w.lane.isMesh,
@@ -88,7 +93,10 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:Object.fromEntr
       assert.ok(warnings.warningKinds.includes("bolt"));
       assert.equal(warnings.cyclone, true);
       assert.equal(warnings.cycloneBlades, 6);
-      assert.equal(warnings.accents, 5);
+      for (const kind of ["charger", "spitter", "warden"]) {
+        assert.ok(warnings.accents[kind].length > 0);
+        assert.ok(warnings.accents[kind].every((count) => count === 1));
+      }
       assert.equal(warnings.allVisibleMeshes, true);
       assert.equal(warnings.scout, robotId === "scout");
       assert.equal(warnings.volt, robotId === "volt");
@@ -230,7 +238,9 @@ window.fixture={scene,prepare,step,bodyColors,originalBodyColors:Object.fromEntr
           .length,
         resetZones: v.encounters.zones.filter((z) => z.group.visible).length,
         resetProjectiles: v.encounters.bolts.count,
-        resetAccents: v.accents.count,
+        resetAccents: [...v.accents.values()]
+          .flat()
+          .reduce((sum, batch) => sum + batch.count, 0),
         resetCyclone: v.cyclone.visible,
       };
     });

@@ -79,13 +79,74 @@ pts.append((-.24,1.98));poly('Magnet',pts,.22,'red',off=(0,.08,0))
 for x in [-.35,.35]:cube('Pole',(x,.08,2.045),(.22,.23,.16),'silver',.025)
 export('robot')
 # Enemy can
+# A scrappy sentry: a heavy lid, raised optics and open pincers read from above.
+M['optic']=mat('Enemy amber optics',(1,.23,.025),.1,.3)
+optic=M['optic'].node_tree.nodes.get('Principled BSDF')
+optic.inputs['Emission Color'].default_value=(1,.12,.008,1)
+optic.inputs['Emission Strength'].default_value=1.5
 cyl('Body',(0,0,.59),.31,.62,'silver')
-for z in [.31,.38,.81,.90]:torus('Rolled rim',(0,0,z),.313,.021,'darksteel')
-cyl('Lid',(0,0,.905),.295,.035,'silver');torus('Tab',(0,-.01,.932),.082,.017,'darksteel');cube('Face',(0,-.298,.64),(.37,.07,.24),'navy',.06)
-for x in [-.1,.1]:sphere('Optic',(x,-.343,.66),(.052,.02,.048),'red')
+for z in [.31,.38,.81]:torus('Rolled rim',(0,0,z),.313,.021,'darksteel')
+cyl('Lid armor',(0,0,.9),.345,.08,'darksteel')
+cyl('Recessed lid',(0,0,.946),.285,.025,'rust')
+torus('Pull tab',(0,.045,.974),.086,.023,'silver')
+cube('Face',(0,-.282,.72),(.48,.14,.27),'navy',.045)
+for x in [-.135,.135]:
+ cyl('Eye housing',(x,-.355,.77),.104,.085,'darksteel','Y',16)
+ sphere('Optic',(x,-.408,.785),(.073,.03,.066),'optic')
+ brow=cube('Angry brow',(x,-.391,.875),(.205,.085,.042),'silver',.012)
+ brow.rotation_euler[1]=.18 if x<0 else -.18
+for x in [-.1,0,.1]:cube('Mouth grille',(x,-.359,.615),(.043,.025,.065),'silver',.006)
+# Rear vent and shoulder rivets keep the silhouette legible when chasing away.
+cube('Rear service plate',(0,.296,.61),(.29,.055,.28),'darksteel',.025)
+for z in [.54,.61,.68]:cube('Rear vent',(0,.329,z),(.21,.015,.024),'rust',.004)
 for x in [-.25,.25]:
- cyl('Leg',(x,0,.16),.037,.28,'darksteel');cube('Boot',(x,-.06,.06),(.17,.23,.11),'rubber',.04);sphere('Joint',(x*1.42,0,.46),(.06,.07,.07),'darksteel');cube('Arm',(x*1.52,-.01,.37),(.06,.09,.18),'silver',.02)
+ cyl('Leg',(x,0,.18),.047,.28,'darksteel')
+ cube('Boot',(x,-.08,.065),(.21,.29,.13),'rubber',.035)
+ cyl('Shoulder',(x*1.38,0,.63),.085,.12,'darksteel','X',12)
+ cube('Forearm',(x*1.66,-.04,.49),(.085,.13,.25),'silver',.02)
+ cube('Claw palm',(x*1.66,-.08,.36),(.19,.12,.075),'darksteel',.015)
+ for dx in [-.067,.067]:
+  cube('Pincer',(x*1.66+dx,-.15,.30),(.048,.16,.14),'silver',.012)
 export('enemy-can')
+# Special enemies get fitted equipment rather than placeholder rectangular blocks.
+def horn(n,x):
+ centers=[(x,-.23,.70,.095),(x*1.12,-.39,.73,.085),(x*1.16,-.54,.82,.060),(x*1.12,-.65,.96,.008)]
+ verts=[]
+ for cx,cy,cz,r in centers:
+  for i in range(12):
+   a=i*math.tau/12;verts.append((cx+math.cos(a)*r,cy,cz+math.sin(a)*r))
+ faces=[tuple(reversed(range(12))),tuple(range(36,48))]
+ for j in range(3):
+  for i in range(12):
+   k=j*12+i;q=j*12+(i+1)%12;faces.append((k,q,q+12,k+12))
+ mesh=bpy.data.meshes.new(n);mesh.from_pydata(verts,[],faces);mesh.update()
+ o=bpy.data.objects.new(n,mesh);bpy.context.collection.objects.link(o);finish(o,n,'cream')
+ for p in mesh.polygons:p.use_smooth=True
+for x in [-.25,.25]:
+ sphere('Horn socket',(x,-.20,.7),(.12,.10,.12),'darksteel')
+ horn('Curved charging tusk',x)
+cube('Brow ram',(0,-.17,.92),(.43,.19,.09),'rust',.04)
+export('enemy-charger-kit')
+# Hollow, ringed muzzle with a dark bore and two glowing side reservoirs.
+cyl('Nozzle socket',(0,-.28,.59),.16,.14,'darksteel','Y',16)
+cyl('Nozzle barrel',(0,-.41,.59),.125,.22,'teal','Y',16)
+torus('Muzzle rim',(0,-.54,.59),.11,.03,'silver',rot=(math.pi/2,0,0))
+cyl('Dark bore',(0,-.547,.59),.087,.009,'navy','Y',16)
+cyl('Inner aperture',(0,-.554,.59),.04,.01,'optic','Y',12)
+for x in [-.28,.28]:
+ sphere('Pressure pod',(x,.05,.84),(.10,.14,.20),'teal')
+ torus('Pod strap',(x,.05,.84),.105,.02,'darksteel')
+export('enemy-spitter-kit')
+# Chamfered shield plates sit close to the body, with visible hubs and rivets.
+for side in [-1,1]:
+ x=side*.365
+ cube('Shield backing',(x,0,.62),(.09,.49,.63),'darksteel',.04)
+ plate=poly('Clipped shield',[(-.20,.33),(-.27,.47),(-.27,.81),(-.17,.96),(.16,.96),(.26,.81),(.26,.43),(.12,.33)],.075,'silver')
+ plate.rotation_euler[2]=math.pi/2;plate.location.x=x+side*.045
+ cyl('Shield hub',(x+side*.1,0,.65),.105,.04,'darksteel','X',12)
+ for y in [-.15,.15]:
+  for z in [.48,.81]:cyl('Shield rivet',(x+side*.10,y,z),.025,.025,'cream','X',8)
+export('enemy-warden-kit')
 # Container
 cube('Shell',(0,0,1.1),(2.5,5,2.2),'teal',.06)
 for y in [-2.42,2.42]:

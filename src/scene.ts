@@ -452,6 +452,9 @@ export class YardScene {
       "discovery-repair",
       "discovery-salvage",
       "enemy-can",
+      "enemy-charger-kit",
+      "enemy-spitter-kit",
+      "enemy-warden-kit",
       "enemy-boss",
       "enemy-miniboss",
       "container",
@@ -655,7 +658,12 @@ export class YardScene {
     const dark = mat(0x414746),
       ink = mat(C.ink),
       rubber = mat(0x303b36),
-      red = mat(0xed5940);
+      rust = mat(0x9f572d),
+      eye = new THREE.MeshStandardMaterial({
+        color: 0xff8c29,
+        emissive: 0xff4108,
+        emissiveIntensity: 1.5,
+      });
     const add = (
       group: THREE.Group,
       geometry: THREE.BufferGeometry,
@@ -678,36 +686,105 @@ export class YardScene {
       0.59,
       0,
     );
-    for (const y of [0.31, 0.38, 0.81, 0.9]) {
+    for (const y of [0.31, 0.38, 0.81]) {
       const rim = new THREE.TorusGeometry(0.313, 0.021, 3, 12);
       rim.rotateX(Math.PI / 2);
       add(can, rim, dark, 0, y, 0);
     }
-    add(can, new THREE.BoxGeometry(0.37, 0.24, 0.07), ink, 0, 0.64, 0.298);
-    for (const x of [-0.1, 0.1])
-      add(can, new THREE.OctahedronGeometry(0.054), red, x, 0.66, 0.35);
+    add(
+      can,
+      new THREE.CylinderGeometry(0.345, 0.345, 0.08, 12),
+      dark,
+      0,
+      0.9,
+      0,
+    );
+    add(
+      can,
+      new THREE.CylinderGeometry(0.285, 0.285, 0.025, 12),
+      rust,
+      0,
+      0.946,
+      0,
+    );
+    add(can, new THREE.BoxGeometry(0.48, 0.27, 0.14), ink, 0, 0.72, 0.282);
+    for (const x of [-0.135, 0.135]) {
+      const socket = new THREE.CylinderGeometry(0.104, 0.104, 0.085, 8);
+      socket.rotateX(Math.PI / 2);
+      add(can, socket, dark, x, 0.77, 0.355);
+      const lens = add(
+        can,
+        new THREE.SphereGeometry(1, 8, 6),
+        eye,
+        x,
+        0.785,
+        0.408,
+      );
+      lens.scale.set(0.073, 0.066, 0.03);
+      const brow = add(
+        can,
+        new THREE.BoxGeometry(0.205, 0.042, 0.085),
+        steel,
+        x,
+        0.875,
+        0.391,
+      );
+      brow.rotation.z = x < 0 ? -0.18 : 0.18;
+    }
+    for (const x of [-0.1, 0, 0.1])
+      add(
+        can,
+        new THREE.BoxGeometry(0.043, 0.065, 0.025),
+        steel,
+        x,
+        0.615,
+        0.359,
+      );
+    add(can, new THREE.BoxGeometry(0.29, 0.28, 0.055), dark, 0, 0.61, -0.296);
+    for (const y of [0.54, 0.61, 0.68])
+      add(can, new THREE.BoxGeometry(0.21, 0.024, 0.015), rust, 0, y, -0.329);
     for (const x of [-0.25, 0.25]) {
       add(
         can,
-        new THREE.CylinderGeometry(0.037, 0.037, 0.28, 6),
+        new THREE.CylinderGeometry(0.047, 0.047, 0.28, 6),
         dark,
         x,
-        0.16,
+        0.18,
         0,
       );
-      add(can, new THREE.BoxGeometry(0.17, 0.11, 0.23), rubber, x, 0.06, 0.06);
+      add(can, new THREE.BoxGeometry(0.21, 0.13, 0.29), rubber, x, 0.065, 0.08);
+      const shoulder = new THREE.CylinderGeometry(0.085, 0.085, 0.12, 8);
+      shoulder.rotateZ(Math.PI / 2);
+      add(can, shoulder, dark, x * 1.38, 0.63, 0);
       add(
         can,
-        new THREE.BoxGeometry(0.06, 0.18, 0.09),
+        new THREE.BoxGeometry(0.085, 0.25, 0.13),
         steel,
-        x * 1.52,
-        0.37,
-        0.01,
+        x * 1.66,
+        0.49,
+        0.04,
       );
+      add(
+        can,
+        new THREE.BoxGeometry(0.19, 0.075, 0.12),
+        dark,
+        x * 1.66,
+        0.36,
+        0.08,
+      );
+      for (const dx of [-0.067, 0.067])
+        add(
+          can,
+          new THREE.BoxGeometry(0.048, 0.14, 0.16),
+          steel,
+          x * 1.66 + dx,
+          0.3,
+          0.15,
+        );
     }
-    const tab = new THREE.TorusGeometry(0.082, 0.017, 3, 8);
+    const tab = new THREE.TorusGeometry(0.086, 0.023, 3, 8);
     tab.rotateX(Math.PI / 2);
-    add(can, tab, dark, 0, 0.922, 0.01);
+    add(can, tab, steel, 0, 0.974, -0.045);
     models.set("enemy-mobile", can);
     const gem = new THREE.Group();
     add(gem, new THREE.IcosahedronGeometry(0.23, 0), this.xpMat, 0, 0, 0);
@@ -1113,11 +1190,19 @@ export class YardScene {
     );
     this.robot.rotation.y += diff * Math.min(1, dt * 14);
     this.robot.visible = true;
-    this.expansion ??= new ExpansionView(this.scene, {
-      chest: models.get("discovery-chest")!,
-      repair: models.get("discovery-repair")!,
-      salvage: models.get("discovery-salvage")!,
-    });
+    this.expansion ??= new ExpansionView(
+      this.scene,
+      {
+        chest: models.get("discovery-chest")!,
+        repair: models.get("discovery-repair")!,
+        salvage: models.get("discovery-salvage")!,
+      },
+      {
+        charger: models.get("enemy-charger-kit")!,
+        spitter: models.get("enemy-spitter-kit")!,
+        warden: models.get("enemy-warden-kit")!,
+      },
+    );
     this.expansion.update(s, this.reduced);
     for (const [id, model] of this.robotModels)
       model.visible = id === s.config.robotId;
