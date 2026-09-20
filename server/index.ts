@@ -1,3 +1,5 @@
+import type { SpecializationId } from "../src/specializations";
+import type { DroneMode } from "../src/drone";
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
@@ -239,6 +241,11 @@ export function createCoopServer(
         } else if (m.type === "choose") {
           if (typeof m.id === "string" && Number.isInteger(m.level))
             p.room?.session?.choose(p.index, m.id as UpgradeId, m.level);
+        } else if (m.type === "specialize") {
+          if (typeof m.id === "string" && Number.isInteger(m.level))
+            p.room?.session?.specialize(p.index, m.id as SpecializationId, m.level);
+        } else if (m.type === "drone") {
+          if (typeof m.mode === "string") p.room?.session?.droneMode(p.index, m.mode as DroneMode);
         } else if (m.type === "leave") {
           if (p.room) closeRoom(p.room);
         }

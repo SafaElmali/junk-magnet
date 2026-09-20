@@ -1,8 +1,11 @@
+import { setDroneMode, type DroneMode } from "./drone";
+import type { SpecializationId } from "./specializations";
 import {
   createState,
   update,
   offerUpgrade,
   chooseUpgrade,
+  chooseSpecialization,
   type State,
   type Vec,
   type UpgradeId,
@@ -60,6 +63,8 @@ export type PartnerState = Pick<
   | "config"
   | "upgrades"
   | "immunity"
+  | "drone"
+  | "specializations"
 > & { revive: number };
 export type CoopSnapshot = {
   type: "snapshot";
@@ -174,6 +179,18 @@ export class CoopSession {
     p.phase = "playing";
     return chosen;
   }
+  specialize(index: number, id: SpecializationId, level: number) {
+    const p = this.players[index];
+    if (!p || this.finished || p.hp <= 0 || p.level !== level || !p.specializationChoices.includes(id)) return false;
+    p.phase = "upgrade";
+    const chosen = chooseSpecialization(p, id);
+    p.phase = "playing";
+    return chosen;
+  }
+  droneMode(index: number, mode: DroneMode) {
+    const p = this.players[index];
+    return !!p && !this.finished && setDroneMode(p, mode);
+  }
   snapshot(index: number): CoopSnapshot {
     const p = this.players[index],
       partner = this.players[1 - index];
@@ -214,6 +231,8 @@ export class CoopSession {
         config: partner.config,
         upgrades: partner.upgrades,
         immunity: partner.immunity,
+        drone: { ...partner.drone },
+        specializations: { ...partner.specializations },
         revive: this.revive[1 - index],
       },
     };

@@ -1,3 +1,5 @@
+import type { SpecializationId } from "./specializations";
+import type { DroneMode } from "./drone";
 import { getRunConfig } from "./progression";
 import { ct } from "./coop-text";
 import { upgradeChoicesMarkup } from "./level-up";
@@ -89,6 +91,7 @@ export class CoopClient {
         this.expanded = !this.expanded;
         this.renderChoices();
       }
+      if (button?.dataset.specialization) this.specialize(button.dataset.specialization as SpecializationId);
       if (button?.dataset.upgrade)
         this.choose(button.dataset.upgrade as UpgradeId);
     });
@@ -284,17 +287,35 @@ export class CoopClient {
     this.send({ type: "choose", id, level: state.level });
     document.getElementById("yard")!.focus({ preventScroll: true });
   }
+  get controlsBlocked() {
+    return this.active && (this.menuOpen || this.down || (this.expanded && !!(this.latest?.state.choices.length || this.latest?.state.specializationChoices.length)));
+  }
+  droneMode(mode: DroneMode) {
+    if (this.active && !this.menuOpen && !this.down) this.send({ type: "drone", mode });
+  }
+  specialize(id: SpecializationId) {
+    const state = this.latest?.state;
+    if (!state?.specializationChoices.includes(id) || this.down || this.menuOpen || performance.now() - this.lastSentChoice < 250) return;
+    this.lastSentChoice = performance.now();
+    this.send({ type: "specialize", id, level: state.level });
+    document.getElementById("yard")!.focus({ preventScroll: true });
+  }
   chooseKey(index: number) {
-    const id = this.latest?.state.choices[index];
-    if (id) this.choose(id);
+    if (this.menuOpen) return;
+    const branch = this.latest?.state.specializationChoices[index];
+    if (branch) this.specialize(branch);
+    else {
+      const id = this.latest?.state.choices[index];
+      if (id) this.choose(id);
+    }
   }
   private renderChoices() {
     const s = this.latest?.state;
     const visible =
-      !!s?.choices.length && s.phase !== "lost" && !this.down && !this.menuOpen;
+      !!(s?.choices.length || s?.specializationChoices.length) && s!.phase !== "lost" && !this.down && !this.menuOpen;
     this.upgrades.classList.toggle("hidden", !visible);
     if (!visible || !s) return;
-    const key = `${s.level}:${s.choices.join(",")}:${this.expanded}`;
+    const key = `${s.level}:${s.choices.join(",")}:${s.specializationChoices.join(",")}:${this.expanded}`;
     if (this.lastChoice === key) return;
     this.lastChoice = key;
     this.upgrades.innerHTML = `<button class="coop-upgrade-toggle" data-coop="expand" aria-expanded="${this.expanded}"><span>+ ${ct("upgrade")}</span><span>LV ${s.level} ${this.expanded ? "−" : "+"}</span></button>${this.expanded ? `<div class="coop-choice-list">${upgradeChoicesMarkup(s)}</div><p>${ct("live")}</p>` : ""}`;

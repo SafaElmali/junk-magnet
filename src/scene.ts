@@ -2,6 +2,7 @@ import type { PartnerState } from "./coop-session";
 import * as THREE from "three";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
+import { DroneView } from "./drone-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -93,6 +94,10 @@ export class YardScene {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.OrthographicCamera();
+  private drone = new DroneView(this.scene);
+  private partnerDrone = new DroneView(this.scene);
+  private droneVisible = false;
+  private partnerDroneVisible = false;
   robot!: THREE.Group;
   private expansion?: ExpansionView;
   floor!: THREE.Mesh;
@@ -127,6 +132,8 @@ export class YardScene {
   }[] = [];
   renderPartner(p: PartnerState | null, dt: number) {
     if (!p) {
+      this.partnerDrone.clear();
+      this.partnerDroneVisible = false;
       if (this.partnerRoot) this.partnerRoot.visible = false;
       if (this.partnerMarker) this.partnerMarker.visible = false;
       if (this.partnerBadge) this.partnerBadge.visible = false;
@@ -209,6 +216,9 @@ export class YardScene {
       }
       this.partnerRoot.position.set(p.player.x, 0, p.player.z);
     }
+    this.partnerDroneVisible = p.hp > 0;
+    if (this.partnerDroneVisible) this.partnerDrone.update({ drone: p.drone, time: p.time }, this.reduced);
+    else this.partnerDrone.clear();
     const root = this.partnerRoot;
     if (!root.visible) root.position.set(p.player.x, 0, p.player.z);
     root.visible = true;
@@ -408,6 +418,7 @@ export class YardScene {
     const names = [
       "robot",
       "robot-scout",
+      "helper-drone",
       "robot-volt",
       "discovery-chest",
       "discovery-repair",
@@ -429,6 +440,8 @@ export class YardScene {
         onProgress(++done / (names.length + 1));
       }),
     );
+    this.drone.setModel(models.get("helper-drone")!);
+    this.partnerDrone.setModel(models.get("helper-drone")!);
     const texture = await new THREE.TextureLoader().loadAsync(
       `${base}textures/yard-concrete.png`,
     );
@@ -864,6 +877,7 @@ export class YardScene {
     return {
       camera: { x: this.camera.position.x, z: this.camera.position.z - 25 },
       chunks: 9,
+      drones: { local: this.droneVisible, partner: this.partnerDroneVisible },
       renderedEnemies: this.renderedEnemies,
       fx:
         this.fx.length +
@@ -1016,6 +1030,9 @@ export class YardScene {
     this.sun.position.set(s.player.x - 12, 22, s.player.z - 8);
     this.sun.target.position.set(s.player.x, 0, s.player.z);
     this.updateWorld(s.player.x, s.player.z);
+    this.droneVisible = s.hp > 0 && s.phase !== "ready" && s.phase !== "lost";
+    if (this.droneVisible) this.drone.update(s, this.reduced);
+    else this.drone.clear();
     this.robot.position.set(
       s.player.x,
       this.reduced ? 0 : Math.sin(s.time * 8) * 0.015,
@@ -1285,6 +1302,8 @@ export class YardScene {
       }
   }
   clear() {
+    this.drone.clear();
+    this.droneVisible = false;
     this.renderPartner(null, 0);
     this.lightning.clear();
     this.hurtAt = -Infinity;

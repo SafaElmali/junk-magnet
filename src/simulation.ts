@@ -1,4 +1,6 @@
 import { getObstacles } from "./world";
+import { SPECIALIZATIONS, weaponBranches, type SpecializationId, type Specializations, type WeaponId } from "./specializations";
+import { createDroneState, updateDrone, type DroneState } from "./drone";
 import {
   createEncounterState,
   updateEncounters,
@@ -79,6 +81,9 @@ export type GameEvent = Vec & {
 };
 export type State = {
   config: RunConfig;
+  drone: DroneState;
+  specializations: Specializations;
+  specializationChoices: SpecializationId[];
   earnedParts: number;
   encounters: ReturnType<typeof createEncounterState>;
   discovery: ReturnType<typeof createDiscoveryState>;
@@ -241,6 +246,9 @@ function resolveObstacles(p: Vec, radius: number) {
 export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
   const s: State = {
     config: { ...config },
+    drone: createDroneState(),
+    specializations: {},
+    specializationChoices: [],
     earnedParts: 0,
     encounters: createEncounterState(),
     discovery: createDiscoveryState(),
@@ -350,7 +358,7 @@ function spawn(
   s.spawned++;
 }
 export function offerUpgrade(s: State) {
-  if (s.choices.length || s.hp <= 0 || s.xp < s.xpNeeded) return;
+  if (s.choices.length || s.specializationChoices.length || s.hp <= 0 || s.xp < s.xpNeeded) return;
   s.xp -= s.xpNeeded;
   s.level++;
   s.xpNeeded = 5 + (s.level - 1) * 4;
@@ -372,6 +380,7 @@ export function offerUpgrade(s: State) {
 export function chooseUpgrade(s: State, id: UpgradeId): boolean {
   if (
     s.phase !== "upgrade" ||
+    s.specializationChoices.length > 0 ||
     !s.choices.includes(id) ||
     s.upgrades[id] >= UPGRADES[id].maxRank
   )
@@ -389,19 +398,34 @@ export function chooseUpgrade(s: State, id: UpgradeId): boolean {
   for (const evolved of unlockEvolutions(s.upgrades, s.evolutions))
     s.evolutionNotice = { id: evolved, until: s.time + 4 };
   s.choices = [];
+  const branches = weaponBranches(id);
+  if (s.upgrades[id] >= 3 && branches.length && !s.specializations[id as WeaponId]) {
+    s.specializationChoices = branches;
+    return true;
+  }
+  s.phase = "playing";
+  offerUpgrade(s);
+  return true;
+}
+export function chooseSpecialization(s: State, id: SpecializationId): boolean {
+  if (s.phase !== "upgrade" || !s.specializationChoices.includes(id)) return false;
+  const weapon = SPECIALIZATIONS[id].weapon;
+  if (s.specializations[weapon] || s.upgrades[weapon] < 3) return false;
+  s.specializations[weapon] = id;
+  s.specializationChoices = [];
   s.phase = "playing";
   offerUpgrade(s);
   return true;
 }
 export function orbitPosition(
-  s: Pick<State, "time" | "upgrades" | "scrap" | "player">,
+  s: Pick<State, "time" | "upgrades" | "scrap" | "player"> & Partial<Pick<State, "specializations">>,
   index: number,
 ): Vec {
   const rank = Math.max(0, s.upgrades.saw - 1);
   const a =
       s.time * (2.3 + rank * 0.25) +
       (index * Math.PI * 2) / Math.max(1, s.scrap),
-    radius = ORBIT_RADIUS + rank * 0.12;
+    radius = ORBIT_RADIUS + rank * 0.12 + (s.specializations?.saw === "saw_reaper" ? 0.6 : 0);
   return {
     x: s.player.x + Math.cos(a) * radius,
     z: s.player.z + Math.sin(a) * radius,
@@ -429,7 +453,9 @@ export function launch(s: State, target?: Vec): boolean {
       vz: Math.sin(a) * 17,
       life: 1.6,
       kind: i % 3,
-      damage: 4 + s.upgrades.saw,
+      damage: (4 + s.upgrades.saw) * (s.specializations.saw === "saw_rail" ? 1.5 : s.specializations.saw === "saw_reaper" ? 0.75 : 1),
+      pierce: s.specializations.saw === "saw_rail" ? 2 : 0,
+      hitIds: [],
     });
   }
   s.scrap = 0;
@@ -535,11 +561,14 @@ function abilities(s: State, dt: number) {
   if (lightning && s.abilityTimers.lightning <= 0) {
     let origin = s.player;
     const hit = new Set<number>();
-    for (let i = 0; i < lightning + 1 + (s.evolutions.storm ? 4 : 0); i++) {
+    const chain = s.specializations.lightning === "lightning_chain";
+    const focus = s.specializations.lightning === "lightning_focus";
+    const targets = focus ? 1 : lightning + 1 + (s.evolutions.storm ? 4 : 0) + (chain ? 3 : 0);
+    for (let i = 0; i < targets; i++) {
       const e = nearestEnemy(
         s,
         origin,
-        i ? (s.evolutions.storm ? 5.5 : 3.8) : s.evolutions.storm ? 9 : 6,
+        i ? (chain ? 6 : s.evolutions.storm ? 5.5 : 3.8) : s.evolutions.storm ? 9 : 6,
         hit,
       );
       if (!e) break;
@@ -551,7 +580,7 @@ function abilities(s: State, dt: number) {
         fromZ: origin.z,
       });
       hit.add(e.id);
-      hurt(s, e, 2 + lightning * 2);
+      hurt(s, e, (2 + lightning * 2) * (focus ? 3 : chain ? 0.75 : 1));
       origin = e;
     }
     s.abilityTimers.lightning =
@@ -559,14 +588,17 @@ function abilities(s: State, dt: number) {
   }
   const burst = s.upgrades.burst;
   if (burst && s.abilityTimers.burst <= 0) {
-    const radius = 2.8 + burst * 0.4;
+    const wave = s.specializations.burst === "burst_wave";
+    const crush = s.specializations.burst === "burst_crush";
+    const radius = (2.8 + burst * 0.4) * (wave ? 1.5 : crush ? 0.75 : 1);
+    const knockback = wave ? 3 : crush ? 0.5 : 1.5;
     emit(s, { kind: "burst", ...s.player, radius });
     for (const e of s.enemies) {
       const d = distance(s.player, e);
       if (d < radius && e.hp > 0) {
-        hurt(s, e, 2 + burst * 2);
-        e.x += ((e.x - s.player.x) / (d || 1)) * 1.5;
-        e.z += ((e.z - s.player.z) / (d || 1)) * 1.5;
+        hurt(s, e, (2 + burst * 2) * (crush ? 2.2 : wave ? 0.75 : 1));
+        e.x += ((e.x - s.player.x) / (d || 1)) * knockback;
+        e.z += ((e.z - s.player.z) / (d || 1)) * knockback;
         resolveObstacles(e, enemyRadius(e));
       }
     }
@@ -587,27 +619,29 @@ function abilities(s: State, dt: number) {
     });
     s.abilityTimers.turret = 8;
   }
+  const rapid = s.specializations.turret === "turret_rapid";
+  const sniper = s.specializations.turret === "turret_sniper";
   for (const t of s.turrets) {
     t.life -= dt;
     t.fireTimer -= dt;
     if (t.fireTimer <= 0) {
-      const e = nearestEnemy(s, t, 8);
+      const e = nearestEnemy(s, t, sniper ? 14 : 8);
       if (e && s.shots.length < ENTITY_LIMITS.shots) {
         const d = distance(e, t) || 1;
         s.shots.push({
           id: s.nextId++,
           x: t.x,
           z: t.z,
-          vx: ((e.x - t.x) / d) * 14,
-          vz: ((e.z - t.z) / d) * 14,
+          vx: ((e.x - t.x) / d) * (sniper ? 20 : 14),
+          vz: ((e.z - t.z) / d) * (sniper ? 20 : 14),
           life: 0.9,
           kind: 1,
-          damage: 2 + t.rank + (s.evolutions.fortress ? 6 : 0),
-          pierce: s.evolutions.fortress ? 2 : 0,
+          damage: (2 + t.rank + (s.evolutions.fortress ? 6 : 0)) * (sniper ? 2 : rapid ? 0.7 : 1),
+          pierce: (s.evolutions.fortress ? 2 : 0) + (sniper ? 1 : 0),
           hitIds: [],
         });
       }
-      t.fireTimer = (0.9 - t.rank * 0.1) * (s.evolutions.fortress ? 0.7 : 1);
+      t.fireTimer = (0.9 - t.rank * 0.1) * (s.evolutions.fortress ? 0.7 : 1) * (rapid ? 0.6 : sniper ? 1.6 : 1);
     }
   }
   s.turrets = s.turrets.filter((t) => t.life > 0);
@@ -797,7 +831,7 @@ export function update(
     if (!e.hit)
       for (let i = 0; i < s.scrap; i++)
         if (distance(e, orbitPosition(s, i)) < enemyRadius(e) + 0.25) {
-          hurt(s, e, 1 + s.upgrades.saw);
+          hurt(s, e, (1 + s.upgrades.saw) * (s.specializations.saw === "saw_reaper" ? 1.5 : s.specializations.saw === "saw_rail" ? 0.65 : 1));
           break;
         }
   }
@@ -876,6 +910,11 @@ export function update(
         }
       }
   }
+  updateDrone(s, dt, {
+    players,
+    damage: (enemy, amount) => hurt(s, enemy, amount),
+    emit: event => emit(s, event),
+  });
   s.enemies = s.enemies.filter((e) => e.hp > 0);
   s.shots = s.shots.filter((p) => p.life > 0);
   collectPickups(s, dt, players);

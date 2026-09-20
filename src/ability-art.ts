@@ -57,6 +57,6 @@ export const abilityGuide: Record<
   },
 };
 export const abilityAsset = (id: UpgradeId) =>
-  `${import.meta.env.BASE_URL}abilities/${id}.png`;
+  `${(import.meta.env?.BASE_URL ?? "/")}abilities/${id}.png`;
 export const abilityImage = (id: UpgradeId, className = "ability-art") =>
   `<img class="${className}" src="${abilityAsset(id)}" width="384" height="384" alt="" decoding="async">`;

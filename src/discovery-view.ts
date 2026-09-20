@@ -19,6 +19,7 @@ export class DiscoveryView {
     loot?: THREE.Object3D;
     lights: { mesh: THREE.Mesh; material: THREE.Material | THREE.Material[] }[];
     ring: THREE.Mesh;
+    area: THREE.Mesh;
     ticks: THREE.Mesh[];
     sparks: THREE.Mesh[];
   }[] = [];
@@ -32,25 +33,41 @@ export class DiscoveryView {
       color: 0xf4c558,
       depthWrite: false,
     });
-    const faded = new THREE.MeshBasicMaterial({
-      color: 0x65bdb3,
+    const progressMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffd34e,
       transparent: true,
-      opacity: 0.35,
+      opacity: 1,
+      depthWrite: false,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+    });
+    const faded = new THREE.MeshBasicMaterial({
+      color: 0xb4d2ca,
+      transparent: true,
+      opacity: 0.85,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    this.materials.push(gold, faded, this.spent);
-    const ring = new THREE.RingGeometry(0.97, 1, 48);
+    const areaMaterial = new THREE.MeshBasicMaterial({
+      color: 0x3f5961,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    this.materials.push(gold, progressMaterial, faded, areaMaterial, this.spent);
+    const ring = new THREE.RingGeometry(0.94, 1, 48);
+    const disc = new THREE.CircleGeometry(0.94, 48);
     const tick = new THREE.RingGeometry(
-      0.89,
-      0.96,
+      0.80,
+      0.91,
       3,
       1,
       0,
       ((Math.PI * 2) / 24) * 0.8,
     );
     const spark = new THREE.IcosahedronGeometry(0.07, 0);
-    this.geometries.push(ring, tick, spark);
+    this.geometries.push(ring, disc, tick, spark);
     for (let i = 0; i < DISCOVERY_LIMITS.points; i++) {
       const root = new THREE.Group();
       this.root.add(root);
@@ -74,15 +91,23 @@ export class DiscoveryView {
             lights.push({ mesh: o, material: o.material });
         });
       }
+      const area = new THREE.Mesh(disc, areaMaterial);
+      area.rotation.x = -Math.PI / 2;
+      area.position.y = 0.025;
+      root.add(area);
       const outline = new THREE.Mesh(ring, faded);
       outline.rotation.x = -Math.PI / 2;
       outline.position.y = 0.04;
+      outline.renderOrder = 1;
       root.add(outline);
       const ticks: THREE.Mesh[] = [];
       for (let n = 0; n < 24; n++) {
-        const t = new THREE.Mesh(tick, gold);
+        const t = new THREE.Mesh(tick, progressMaterial);
         t.rotation.set(-Math.PI / 2, 0, (n * Math.PI * 2) / 24);
-        t.position.y = 0.055;
+        t.position.y = 0.065;
+        // Draw after the translucent floor so it cannot wash out progress.
+        // Keep depth testing enabled so the marker stays behind solid objects.
+        t.renderOrder = 2;
         root.add(t);
         ticks.push(t);
       }
@@ -101,6 +126,7 @@ export class DiscoveryView {
         lid: models.chest.getObjectByName("Chest_Lid"),
         loot: models.chest.getObjectByName("Chest_Loot"),
         ring: outline,
+        area,
         ticks,
         sparks,
       });
@@ -116,6 +142,8 @@ export class DiscoveryView {
       const radius = discoveryRadius(p.kind);
       slot.ring.scale.setScalar(radius);
       slot.ring.visible = !p.completed;
+      slot.area.scale.setScalar(radius);
+      slot.area.visible = !p.completed;
       for (const kind of ["repair", "chest", "salvage"] as const)
         slot.models[kind].visible = kind === p.kind;
       const age =

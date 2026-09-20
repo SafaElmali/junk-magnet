@@ -272,6 +272,13 @@ test("late-run deterministic soak keeps all systems bounded with advanced enemie
   s.evolutions = { vortex: true, storm: true, fortress: true };
   s.hp = 100;
   s.immunity = 1000; // Explicit durability fixture; does not claim normal play survival.
+  // Stress every advanced AI independently of the flight path's kill timing.
+  // Scheduling has dedicated checks above: a living encounter intentionally blocks
+  // later slots, so a five-minute evasive orbit need not naturally spawn both bosses.
+  for (const [index, type] of (["charger", "spitter", "warden", "miniboss", "boss"] as const).entries()) {
+    const angle = index * Math.PI * 2 / 5;
+    enemy(s, type, Math.cos(angle) * 15, Math.sin(angle) * 15, 300);
+  }
   const seen = new Set<string>();
   let peaks = { enemies: 0, warnings: 0, projectiles: 0, zones: 0 };
   for (let frame = 0; frame < 6000; frame++) {

@@ -1,3 +1,7 @@
+import { FieldControls } from "./field-controls";
+import { setDroneMode, DRONE_MODES, type DroneMode } from "./drone";
+import { specializationCopy, specializationHeading } from "./specialization-ui";
+import type { SpecializationId } from "./specializations";
 import { CoopClient } from "./coop-client";
 import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
@@ -52,6 +56,7 @@ import {
   update,
   UPGRADES,
   chooseUpgrade,
+  chooseSpecialization,
   type UpgradeId,
   type Vec,
 } from "./simulation";
@@ -388,8 +393,13 @@ window.addEventListener("keydown", (e) => {
     const numpad = ["Numpad1", "Numpad2", "Numpad3"].indexOf(e.code);
     if (index >= 0 || numpad >= 0) {
       e.preventDefault();
-      if (!e.repeat) pickUpgrade(s.choices[Math.max(index, numpad)]);
+      if (!e.repeat) pickChoice(Math.max(index, numpad));
     }
+    return;
+  }
+  if (e.code === "KeyQ" && !e.repeat && s.phase === "playing" && !coop.controlsBlocked) {
+    e.preventDefault();
+    changeDrone(DRONE_MODES[(DRONE_MODES.indexOf(s.drone.mode) + 1) % DRONE_MODES.length]);
     return;
   }
   const isButton = target.tagName === "BUTTON";
@@ -540,7 +550,11 @@ function ownedAbilities() {
     (id) => Number.isFinite(UPGRADES[id].maxRank) && s.upgrades[id] > 0,
   );
 }
-function pickUpgrade(id: UpgradeId | undefined) {
+function pickChoice(index: number) {
+  if (s.specializationChoices.length) pickUpgrade(s.specializationChoices[index], true);
+  else pickUpgrade(s.choices[index]);
+}
+function pickUpgrade(id: UpgradeId | SpecializationId | undefined, specialization = false) {
   if (
     !id ||
     s.phase !== "upgrade" ||
@@ -548,12 +562,12 @@ function pickUpgrade(id: UpgradeId | undefined) {
     performance.now() < upgradeReadyAt
   )
     return;
-  if (!chooseUpgrade(s, id)) return;
+  if (!(specialization ? chooseSpecialization(s, id as SpecializationId) : chooseUpgrade(s, id as UpgradeId))) return;
   keys.clear();
   stopStick();
   shownUpgrade = "";
   el("upgrade").classList.add("hidden");
-  el("yard").classList.toggle("is-playing", s.choices.length === 0);
+  el("yard").classList.toggle("is-playing", s.choices.length === 0 && s.specializationChoices.length === 0);
   // Do not leave keyboard focus on a hidden choice, where a held key could fire again.
   el("yard").focus({ preventScroll: true });
   beep(720, 0.14, "triangle");
@@ -563,7 +577,7 @@ function renderUpgrades() {
   const loadout =
     ownedAbilities()
       .map((id) => `${id}:${s.upgrades[id]}`)
-      .join("|") + Object.values(s.evolutions).join();
+      .join("|") + Object.values(s.evolutions).join() + Object.values(s.specializations).join();
   if (loadout !== shownLoadout) {
     shownLoadout = loadout;
     el("ability-loadout").innerHTML = ownedAbilities()
@@ -571,7 +585,8 @@ function renderUpgrades() {
         const evolution = (Object.keys(EVOLUTIONS) as EvolutionId[]).find(
           (key) => s.evolutions[key] && EVOLUTIONS[key].weapon === id,
         );
-        const name = evolution
+        const branch = s.specializations[id as keyof typeof s.specializations];
+        const name = branch ? specializationCopy(branch)[0] : evolution
           ? t(EVOLUTIONS[evolution].name)
           : upgradeName(id);
         return `<span class="ability-chip${evolution ? " is-evolved" : ""}" title="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}" aria-label="${t("{name}, rank {rank}", { name, rank: s.upgrades[id] })}">${svg(abilityIcons[id])}<b>${s.upgrades[id]}</b></span>`;
@@ -579,7 +594,7 @@ function renderUpgrades() {
       .join("");
   }
   if (coop.active || s.phase !== "upgrade") return;
-  const signature = `${s.level}:${s.choices.join(",")}:${loadout}`;
+  const signature = `${s.level}:${s.choices.join(",")}:${s.specializationChoices.join(",")}:${loadout}`;
   if (signature === shownUpgrade) return;
   shownUpgrade = signature;
   upgradeReadyAt = performance.now() + 250;
@@ -587,9 +602,9 @@ function renderUpgrades() {
   stopStick();
   el("yard").classList.remove("is-playing");
   el("modal").classList.add("hidden");
-  el("upgrade-copy").textContent = t("Level {level} · Choose one upgrade.", {
-    level: s.level,
-  });
+  const specializing = s.specializationChoices.length > 0;
+  el("upgrade-title").textContent = specializing ? specializationHeading()[0] : t("Level up");
+  el("upgrade-copy").textContent = specializing ? specializationHeading()[1] : t("Level {level} · Choose one upgrade.", { level: s.level });
   el("upgrade-choices").innerHTML = upgradeChoicesMarkup(s);
   el("upgrade").classList.remove("hidden");
   el("upgrade-choices")
@@ -599,9 +614,10 @@ function renderUpgrades() {
 }
 el("upgrade-choices").addEventListener("click", (e) => {
   const button = (e.target as Element).closest<HTMLButtonElement>(
-    "button[data-upgrade]",
+    "button[data-upgrade], button[data-specialization]",
   );
-  if (button) pickUpgrade(button.dataset.upgrade as UpgradeId);
+  if (button?.dataset.specialization) pickUpgrade(button.dataset.specialization as SpecializationId, true);
+  else if (button) pickUpgrade(button.dataset.upgrade as UpgradeId);
 });
 let shownOpening = "";
 function renderOpeningGuide() {
@@ -720,7 +736,12 @@ function renderExpansionHUD() {
   }
   if (text || markup) el("opening-guide").classList.add("hidden");
 }
+function changeDrone(mode: DroneMode) {
+  if (coop.active) coop.droneMode(mode);
+  else setDroneMode(s, mode);
+}
 function hud() {
+  fieldControls.update(s, s.phase === "playing" && !app.classList.contains("in-menu") && !coop.controlsBlocked);
   renderOpeningGuide();
   renderExpansionHUD();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
@@ -878,6 +899,9 @@ async function boot() {
           robot: { ...s.config },
           earnedParts: s.earnedParts,
           evolutions: { ...s.evolutions },
+          drone: { ...s.drone },
+          specializations: { ...s.specializations },
+          specializationChoices: [...s.specializationChoices],
           boss: s.encounters.active ? { ...s.encounters.active } : null,
           encounterWarnings: s.encounters.warnings.map((w) => ({ ...w })),
           hostileShots: s.encounters.projectiles.length,
@@ -1003,6 +1027,7 @@ const menu = setupMenu({
   sound: toggleSound,
   soundEnabled: () => sound,
 });
+const fieldControls = new FieldControls(el("yard"), changeDrone);
 const coop = new CoopClient({
   snapshot(packet, first) {
     const events = [...s.events, ...packet.events].slice(-160);

@@ -1,0 +1,19 @@
+.field-controls {
+  position: absolute; z-index: 6; right: max(12px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom)); width: 184px;
+  display: grid; gap: 7px; touch-action: manipulation;
+}
+.field-controls button:focus-visible { outline: 3px solid #efbd56; outline-offset: 2px; }
+.is-coop .coop-upgrades:not(:has(.coop-choice-list)) { bottom: 150px; }
+#app.in-run .opening-guide, #app.in-run #world-hint { bottom: 90px; }
+#app.is-coop #world-hint { bottom: 215px; }
+#app.is-coop:has(.coop-choice-list) #world-hint,
+#app.is-coop:has(.coop-choice-list) .opening-guide { display: none; }
+@media (pointer: coarse) and (min-height: 501px) {
+  #app.in-run .opening-guide, #app.in-run #world-hint { bottom: 155px; }
+  #app.is-coop #world-hint { bottom: 215px; }
+}
+@media (max-height: 500px) {
+  .field-controls { width: 166px; bottom: 8px; gap: 5px; }
+  #app.in-run .opening-guide, #app.in-run #world-hint { bottom: 12px; max-width: calc(100% - 390px); }
+}

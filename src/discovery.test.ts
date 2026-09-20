@@ -177,7 +177,7 @@ test("render pools retain geometry across streaming and detach cleanly", () => {
     if (o instanceof THREE.Mesh) after.add(o.geometry);
   });
   assert.deepEqual(after, geometries);
-  assert.equal(geometries.size, 4);
+  assert.equal(geometries.size, 5);
   view.dispose();
   assert.equal(scene.children.length, 0);
   assert.equal(sharedDisposed, false);

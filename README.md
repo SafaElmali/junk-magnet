@@ -77,7 +77,7 @@ See `VERIFICATION.md` for measured results and limitations.
 
 ## Scope and next stage
 
-The game is local, single-player, and has no server, accounts, ads or CrazyGames SDK integration. The endless survival loop is implemented; it is still a prototype requiring balance and physical-device profiling. Enemy and visual counts are bounded rather than retaining every object forever.
+Solo play runs locally; optional two-player co-op uses the Node server described below. There are no accounts, ads or CrazyGames SDK integration. The endless survival loop is implemented; it is still a prototype requiring balance and physical-device profiling. Enemy and visual counts are bounded rather than retaining every object forever.
 
 Weapon evolutions, bosses, local permanent progression and alternate robots are implemented. Physical mobile/Chromebook profiling, broader browser coverage, further art work and platform integration are still needed before submission.
 
@@ -183,3 +183,26 @@ node scripts/coop-browser.mjs
 ```
 
 The browser check uses two independent sessions (desktop + touch mobile), real room creation/joining, real chest XP, movement and enemies during pending upgrades, separate choices, menus without pause, touch movement, disconnect handling and return to solo. No browser gameplay state is injected.
+
+## Field tools and weapon specializations
+
+Every robot now starts with a hovering helper drone. **Q** or the drone button cycles its role during a run: Collector transports nearby existing scrap and energy, Repair restores 3 HP every 5 seconds, and Guard attacks a nearby enemy every 2 seconds. Changing roles retains the action cooldown; a disabled robot cannot repair itself back to life. The Blender-built companion has twin ducted fans, smooth turning and banking, and role-specific equipment: a salvage magnet, repair nozzle or twin guard barrels. Its light and beam match the active role. Regenerate the model and studio preview with `npm run assets:drone`; the editable source is `art/drone-kit.blend`.
+
+
+At rank 3, each weapon offers a permanent, exclusive specialization for the current run, without consuming another level:
+
+| Weapon | First branch | Second branch |
+| --- | --- | --- |
+| Orbiting Saws | Wide Reaper: wider, stronger orbit with weaker launches | Rail Shards: stronger piercing launches with weaker orbit damage |
+| Chain Lightning | Chain Network: more targets and longer jumps with less damage | Focused Bolt: triple damage to one target, without chaining |
+| Scrap Turret | Rapid Sentry: shorter firing intervals with weaker shots | Rail Sentry: stronger, longer-range piercing shots with slower fire |
+| Magnetic Burst | Repulsion Wave: wider blasts and stronger knockback with less damage | Core Crusher: concentrated damage in a smaller radius |
+
+Existing rank progression and weapon evolutions continue to work with both branches. Pending XP waits for the branch choice in solo; co-op keeps simulating while each player chooses. The chosen branch appears in loadout tooltips and the end-of-run build report.
+
+
+The new controls and descriptions support all six languages and desktop/touch layouts. Drone roles and specialization choices are validated by the co-op server; each teammate owns their own choices and cooldowns. Existing saves do not need migration.
+
+`node scripts/field-browser.mjs` checks real keyboard/touch controls, paused timers, responsive layouts, and independent co-op field tools. New simulation tests cover specialization tradeoffs, drone behavior, and streamed terrain.
+
+`node scripts/drone-solo-browser.mjs` checks only solo gameplay at five desktop/mobile viewport sizes, including role controls, the Blender asset, pause and movement across the original scrapyard.
