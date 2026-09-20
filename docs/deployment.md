@@ -92,6 +92,24 @@ npx wrangler dev --port 8797 --var ALLOWED_ORIGINS:http://127.0.0.1:5184
 VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 ```
 
+## Search and sharing metadata
+
+The game entry page includes static search and social metadata and `VideoGame`
+JSON-LD. `/guide/` is a readable, JavaScript-free gameplay guide, linked from the
+game menu and included in `public/sitemap.xml`. Keep its facts in sync with
+`docs/gameplay.md`, especially progression costs, controls, and co-op availability.
+
+`public/og-image.png` is an exact copy of `art/cover.png`, the README promotional
+cover. If the cover changes, update that copy and the image dimensions in both
+HTML pages. The cover is artwork, not a gameplay screenshot. Production social
+cards use absolute `https://playjunkmagnet.com/og-image.png` URLs; previews need
+the production deployment to contain the image before remote unfurlers can load it.
+
+Metadata and guide changes ship with the normal frontend build. After deploying,
+check the canonical URLs, `/guide/`, `/og-image.png`, `/robots.txt`, and
+`/sitemap.xml`. Search indexing and cached social previews update independently
+of deployment.
+
 ## Limits and costs
 
 The existing limits remain: 12 rooms, 32 sockets, and two players per room. Keep

@@ -330,6 +330,14 @@
 .menu-shell.is-submenu {
   width: min(1050px, 100%);
 }
+#intro .intro-note a {
+  color: #edbb53;
+  text-underline-offset: 3px;
+}
+#intro .intro-note a:focus-visible {
+  outline: 2px solid #edbb53;
+  outline-offset: 4px;
+}
 .is-submenu .menu-brand,
 .is-submenu .menu-stage,
 #intro .is-submenu .intro-note {

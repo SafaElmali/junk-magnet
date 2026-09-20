@@ -107,7 +107,7 @@ export const menuMarkup = `
     <div id="menu-quality-picker" class="menu-picker quality-picker hidden"></div>
   </section>
   <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
-  <span class="intro-note">Move with WASD or arrows · Attacks are automatic</span>
+  <span class="intro-note"><span>Move with WASD or arrows · Attacks are automatic</span> · <a href="./guide/" target="_blank" rel="noopener" aria-label="Gameplay guide (opens in a new tab)">Gameplay guide</a></span>
 </div>`;
 
 export function setupMenu(actions: {
