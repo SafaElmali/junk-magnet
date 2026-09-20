@@ -36,15 +36,17 @@ const menuIcons = {
     '<path d="M4 4h6l2 2 2-2h6v15h-6l-2 2-2-2H4ZM12 6v15M7 8h2M7 12h2m6-4h2m-2 4h2"/>',
   ),
   All: icon(
-    '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    '<rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" fill-opacity=".2"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" fill-opacity=".2"/>',
   ),
   Weapons: icon(
-    '<path d="m5 19 3-8 8-8 5 5-8 8-8 3ZM14 5l5 5M8 11l5 5M3 21l4-4"/>',
+    '<path d="m12 2 2.4 3.7 4.4-.8-.8 4.4 3.7 2.7-3.7 2.4.8 4.4-4.4-.8L12 22l-2.4-4-4.4.8.8-4.4L2 12l4-2.7-.8-4.4 4.4.8Z" fill="currentColor" fill-opacity=".18"/><circle cx="12" cy="12" r="3"/>',
   ),
   Support: icon(
-    '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6ZM12 8v8m-4-4h8"/>',
+    '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" fill="currentColor" fill-opacity=".18"/><path d="M12 8v8m-4-4h8"/>',
   ),
-  Supplies: icon('<path d="M3 7h18v14H3ZM3 7l4-4h10l4 4M9 7v6l3-2 3 2V7"/>'),
+  Supplies: icon(
+    '<path d="M3 8h18v13H3Z" fill="currentColor" fill-opacity=".18"/><path d="m3 8 4-5h10l4 5M9 8v5l3-2 3 2V8M7 17h3"/>',
+  ),
   quality: icon(
     '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 13l4-4 3 3 2-2 3 3"/>',
   ),
@@ -150,7 +152,7 @@ export function setupMenu(actions: {
       String(!compact() ? 5 : innerHeight <= 420 ? size : size === 4 ? 2 : 3),
     );
     el("menu-library").innerHTML = `
-      <div class="ability-filters ${single ? "hidden" : ""}" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}">${menuIcons[filter]}<span>${t(filter)}</span></button>`).join("")}</div>
+      <div class="ability-filters ${single ? "hidden" : ""}" role="group" aria-label="${t("Filter abilities")}">${(["All", "Weapons", "Support", "Supplies"] as const).map((filter) => `<button data-filter="${filter}" aria-pressed="${category === filter}"><span class="category-icon" aria-hidden="true">${menuIcons[filter]}</span><span>${t(filter)}</span></button>`).join("")}</div>
       <div class="ability-browser ${single ? "detail-only" : ""}"><div class="ability-grid ${single ? "hidden" : ""}">${visible.map((id) => `<button class="ability-tile" data-ability="${id}" aria-pressed="${selected === id}" aria-controls="ability-detail">${abilityImage(id)}<strong>${upgradeName(id)}</strong></button>`).join("")}</div>
       <section class="ability-detail ${compact() && !single ? "hidden" : ""}" id="ability-detail" tabindex="-1" aria-live="polite" aria-labelledby="ability-detail-name">
         <div class="detail-art">${abilityImage(selected)}</div>

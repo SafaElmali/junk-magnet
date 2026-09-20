@@ -305,7 +305,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  width: min(440px, 100%);
+  width: min(520px, 100%);
 }
 .ability-filters button {
   display: flex;
@@ -322,10 +322,28 @@
   font-size: 12px;
   font-weight: 700;
 }
+.ability-filters .category-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  background: #83bbb414;
+  color: #e9c97f;
+}
 .ability-filters svg {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.65;
+}
+.ability-filters button[aria-pressed="true"] .category-icon {
+  background: #19323c14;
+  color: #19323c;
+}
+.ability-filters button:hover:not([aria-pressed="true"]) {
+  border-color: #d9bf83;
+  background: #2b4850;
 }
 .ability-filters button[aria-pressed="true"] {
   background: #e6b750;
