@@ -1,6 +1,11 @@
-import { ROBOTS, getProgress } from "./progression";
+import { ROBOTS, canAffordWorkshop, getProgress } from "./progression";
 import { track } from "./analytics";
-import { setupWorkshop, workshopIcon, robotPortrait } from "./workshop";
+import {
+  setupWorkshop,
+  workshopIcon,
+  robotPortrait,
+  minutes,
+} from "./workshop";
 import { evolutionGuideMarkup } from "./evolutions";
 import {
   getLanguage,
@@ -67,6 +72,25 @@ const qualityDescriptions: Record<GraphicsQuality, string> = {
   high: "Sharp resolution, richer shadows",
   ultra: "Maximum resolution and effects",
 };
+// Scrap orbits the wordmark like the in-run magnet orbit. Each piece's static
+// position doubles as the reduced-motion layout; CSS animates it otherwise.
+const scrapPieces = [
+  '<path d="M12 3.5 19.4 7.8v8.4L12 20.5 4.6 16.2V7.8Z" fill="#cdd6cf" stroke="#657f7c" stroke-width="1.6"/><circle cx="12" cy="12" r="3.3" fill="#173342"/>',
+  '<path d="M9.5 10h5v10.5h-5Z" fill="#b9c5bf" stroke="#657f7c" stroke-width="1.4"/><path d="M6 4.5h12l1.5 5.5h-15Z" fill="#efbd56" stroke="#a16734" stroke-width="1.4"/>',
+  '<path d="m12 2 2 3.2 3.6-1 .3 3.7 3.5 1.2-1.9 3.2 1.9 3.2-3.5 1.2-.3 3.7-3.6-1L12 22l-2-3.2-3.6 1-.3-3.7-3.5-1.2 1.9-3.2-1.9-3.2 3.5-1.2.3-3.7 3.6 1Z" fill="#cdd6cf" stroke="#657f7c" stroke-width="1.2"/><circle cx="12" cy="12" r="3.6" fill="#3c9298" stroke="#173342" stroke-width="1.2"/>',
+  '<path d="M4 7.5 17.5 4l2.5 11.5L6.5 20Z" fill="#3c9298" stroke="#173342" stroke-width="1.4"/><circle cx="8" cy="9" r="1.3" fill="#e3ecdf"/><circle cx="16" cy="15" r="1.3" fill="#e3ecdf"/>',
+  '<path d="M12 3.5 19.4 7.8v8.4L12 20.5 4.6 16.2V7.8Z" fill="#efbd56" stroke="#a16734" stroke-width="1.6"/><circle cx="12" cy="12" r="3.3" fill="#173342"/>',
+];
+const logoOrbit = `<span class="logo-orbit" aria-hidden="true"><i class="logo-ring is-back"></i><i class="logo-ring is-front"></i>${scrapPieces
+  .map((piece, i) => {
+    const angle = (i / scrapPieces.length) * Math.PI * 2;
+    return `<i class="orbit-piece" style="--i:${i};--x:${Math.cos(angle).toFixed(3)};--y:${Math.sin(angle).toFixed(3)};--z:${Math.sin(angle) > 0 ? 1 : -2}"><i><svg viewBox="0 0 24 24" focusable="false">${piece}</svg></i></i>`;
+  })
+  .join("")}</span>`;
+const partsIcon = icon(
+  '<path d="M12 3.5 19.4 7.8v8.4L12 20.5 4.6 16.2V7.8Z"/><circle cx="12" cy="12" r="3"/>',
+);
+const swapIcon = icon('<path d="M4 8h13l-3-3M20 16H7l3 3"/>');
 const previousIcon = icon('<path d="m14 6-6 6 6 6"/>');
 const nextIcon = icon('<path d="m10 6 6 6-6 6"/>');
 
@@ -75,12 +99,12 @@ const audioControls = (channel: "sound" | "music", label: string) =>
 
 export const menuMarkup = `
 <div class="menu-shell">
-  <div class="menu-brand"><span class="menu-eyebrow">SURVIVE. SALVAGE. REPEAT.</span><h2>JUNK<span>MAGNET</span></h2><p>THE SWARM IS YOUR AMMO.</p></div>
+  <div class="menu-brand"><span class="menu-eyebrow">SURVIVE. SALVAGE. REPEAT.</span><h2>JUNK<span class="logo-line">MAGNET</span>${logoOrbit}</h2><p>THE SWARM IS YOUR AMMO.</p></div>
   <div class="menu-home" id="menu-home">
     <nav class="menu-actions" aria-label="Main menu">
       <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span>${playIcon}</button>
       <button id="new-run" class="menu-button hidden">${menuIcons.restart}<span>NEW RUN</span></button>
-      <button id="menu-workshop" class="menu-button">${workshopIcon}<span>WORKSHOP</span></button>
+      <button id="menu-workshop" class="menu-button">${workshopIcon}<span>WORKSHOP</span><b id="menu-parts" class="menu-parts hidden" aria-hidden="true"></b></button>
       <button id="menu-abilities" class="menu-button">${menuIcons.abilities}<span>ABILITIES</span></button>
       <button id="menu-settings" class="menu-button">${menuIcons.settings}<span>SETTINGS</span></button>
       <button id="menu-help" class="menu-button">${menuIcons.help}<span>HOW TO PLAY</span></button>
@@ -90,6 +114,7 @@ export const menuMarkup = `
       <div class="pilot-art" aria-hidden="true"></div>
       <h3 id="menu-pilot-name">SCRAP-01</h3><p id="menu-pilot-copy">Tiny robot. Endless potential.</p>
       <div class="pilot-weapon"><span>STARTING WEAPON</span><strong id="menu-weapon"></strong></div>
+      <button id="menu-robots" class="pilot-change">${swapIcon}<span>CHANGE ROBOT</span></button>
     </aside>
   </div>
   <section id="menu-panel" class="menu-panel hidden" aria-labelledby="menu-panel-title">
@@ -106,7 +131,7 @@ export const menuMarkup = `
     <div id="menu-language-picker" class="menu-picker hidden"></div>
     <div id="menu-quality-picker" class="menu-picker quality-picker hidden"></div>
   </section>
-  <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status">READY</span></div>
+  <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status" id="menu-best">READY</span></div>
   <span class="intro-note"><span>Move with WASD or arrows · Attacks are automatic</span> · <a href="./guide/" target="_blank" rel="noopener" aria-label="Gameplay guide (opens in a new tab)">Gameplay guide</a></span>
 </div>`;
 
@@ -133,6 +158,8 @@ export function setupMenu(actions: {
     | "workshop"
     | "evolutions" = "home";
   let resumable = false;
+  // Returning from the workshop restores focus to whichever control opened it.
+  let workshopOpener = "menu-workshop";
   const workshop = setupWorkshop(el("menu-workshop-content"), refresh);
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
@@ -191,14 +218,28 @@ export function setupMenu(actions: {
   function refresh() {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
-    const robot = ROBOTS.find(
-      (robot) => robot.id === getProgress().selectedRobot,
-    )!;
+    const progress = getProgress();
+    const robot = ROBOTS.find((robot) => robot.id === progress.selectedRobot)!;
+    const affordable = canAffordWorkshop(progress);
+    el("menu-parts").innerHTML = `${partsIcon}<span>${progress.parts}</span>`;
+    el("menu-parts").classList.toggle("hidden", progress.parts === 0);
+    el("menu-parts").classList.toggle("is-ready", affordable);
+    if (progress.parts)
+      el("menu-workshop").setAttribute(
+        "aria-label",
+        `${t("WORKSHOP")} · ${progress.parts} ${t("Parts")}${affordable ? ` · ${t("Upgrade available")}` : ""}`,
+      );
+    else el("menu-workshop").removeAttribute("aria-label");
+    el("menu-best").classList.toggle("is-record", progress.bestTime > 0);
+    el("menu-best").textContent = progress.bestTime
+      ? t("BEST {time}", { time: minutes(progress.bestTime) })
+      : t("READY");
     el("menu-weapon").textContent = upgradeName(robot.startingWeapon);
     el("menu-pilot-name").textContent = robot.name;
     el("menu-pilot-copy").textContent = t(robot.description);
     document.querySelector(".pilot-art")!.innerHTML = robotPortrait(robot.id);
     el("menu-workshop").querySelector("span")!.textContent = t("WORKSHOP");
+    el("menu-robots").querySelector("span")!.textContent = t("CHANGE ROBOT");
     el("menu-evolutions-open").setAttribute("aria-label", t("EVOLUTIONS"));
     el("menu-evolutions-open").setAttribute("title", t("EVOLUTIONS"));
     el("menu-evolutions-open").querySelector("span")!.textContent =
@@ -295,7 +336,7 @@ export function setupMenu(actions: {
       el(
         page === "home"
           ? previous === "workshop"
-            ? "menu-workshop"
+            ? workshopOpener
             : previous === "abilities"
               ? "menu-abilities"
               : "menu-settings"
@@ -346,7 +387,15 @@ export function setupMenu(actions: {
   el("start").addEventListener("click", actions.start);
   el("new-run").addEventListener("click", actions.restart);
   el("menu-help").addEventListener("click", actions.help);
-  el("menu-workshop").addEventListener("click", () => show("workshop"));
+  el("menu-workshop").addEventListener("click", () => {
+    workshopOpener = "menu-workshop";
+    show("workshop");
+  });
+  el("menu-robots").addEventListener("click", () => {
+    workshopOpener = "menu-robots";
+    workshop.showRobots();
+    show("workshop");
+  });
   el("menu-evolutions-open").addEventListener("click", () =>
     show("evolutions"),
   );

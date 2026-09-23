@@ -47,17 +47,19 @@ try {
           );
       });
       const check = async (name) => {
-        if (await page.locator(".workshop-robot").isVisible()) {
+        // The home pilot card also renders a portrait; check the workshop's own.
+        const workshopRobot = page.locator("#menu-workshop-content .workshop-robot");
+        if (await workshopRobot.isVisible()) {
           await page.waitForFunction(() => {
-            const image = document.querySelector("img.workshop-robot");
+            const image = document.querySelector(
+              "#menu-workshop-content img.workshop-robot",
+            );
             return image?.complete && image.naturalWidth === 768;
           });
-          const portrait = await page
-            .locator(".workshop-robot")
-            .evaluate((image) => ({
-              src: image.getAttribute("src"),
-              id: image.parentElement.dataset.robot,
-            }));
+          const portrait = await workshopRobot.evaluate((image) => ({
+            src: image.getAttribute("src"),
+            id: image.parentElement.dataset.robot,
+          }));
           assert.ok(portrait.src.endsWith(`/robots/${portrait.id}.png`));
         }
         const violations = await page.evaluate(() =>

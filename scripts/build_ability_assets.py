@@ -1,8 +1,11 @@
-"""Original toy-machined ability kit. Ten editable Blender scenes and transparent UI renders."""
-import bpy, math, os
+"""Original toy-machined ability kit. Thirteen editable Blender scenes and transparent UI renders.
+
+Pass ability ids after `--` to re-render only those icons; every scene is still rebuilt and saved."""
+import bpy, math, os, sys
 from mathutils import Vector
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'public', 'abilities')
+DRONE = os.path.join(ROOT, 'public', 'models', 'helper-drone.glb')
 os.makedirs(OUT, exist_ok=True)
 bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
 
@@ -77,6 +80,24 @@ def magnet():
         box('Steel pole',(x,0,1.83),(.43,.48,.29),'cream',.035)
         screws([x],1.2,-.25)
 
+def drone(role):
+    # Import the gameplay drone so its icon matches the yard; keep only this role's tool.
+    before=set(bpy.data.objects); bpy.ops.import_scene.gltf(filepath=DRONE)
+    imported=[o for o in bpy.data.objects if o not in before]
+    def tool(o):
+        while o:
+            base=o.name.split('.')[0]
+            if base.startswith('Tool_'): return base.split('_')[1]
+            o=o.parent
+    for o in [o for o in imported if tool(o) not in (None,role.capitalize())]: bpy.data.objects.remove(o)
+    # Shared kit materials keep the drone icons consistent with the other ten renders.
+    shared={'Amber':'gold','Ivory':'cream','Navy':'navy','Steel':'steel','Status':'cyan','Rubber':'rubber'}
+    for o in bpy.data.objects:
+        if o not in before and o.type=='MESH':
+            o.data.materials[0]=M[shared[o.data.materials[0].name.split('.')[0].split('_')[1]]]
+    root=next(o for o in bpy.data.objects if o not in before and o.name.split('.')[0]=='Helper_Drone')
+    root.scale=(1.38,1.38,1.38); root.location=(-.1,.2,1.5); root.rotation_euler=(0,0,math.radians(-18))
+
 def build(id):
     if id=='saw':
         saw();ring('Orbit path',(0,.2,1),1.12,.035,'gold');cyl('Orbiting rivet',(1,.13,1.5),.12,.15,'gold','Y',6)
@@ -125,8 +146,28 @@ def build(id):
             z=.48+i*.26
             for x in [-.77,.77]:box('Gold contact',(x,0,z),(.3,.24,.1),'gold',.02)
         bolt(0,-.4,1,.64,'gold');cyl('Status light',(.43,-.35,1.48),.055,.04,'cyan','Y')
+    elif id=='drone_collector':
+        drone('collector')
+        for z,r in [(.72,.36),(.5,.27)]:ring('Pull field',(-.14,.05,z),r,.032,'cyan',(0,0,0))
+        ring('Pulled nut',(-.4,-.55,.02),.33,.14,'steel',(math.pi/2,.5,0))
+        cyl('Pulled bolt',(.46,-.45,.02),.12,.66,'steel');cyl('Bolt head',(.46,-.45,.44),.25,.18,'gold',vertices=6)
+    elif id=='drone_repair':
+        drone('repair')
+        ring('Repair aura',(.05,-.2,-.05),.85,.045,'cyan',(0,0,0))
+        box('Cross backing upright',(.6,-.62,.35),(.5,.1,1.25),'cream',.06);box('Cross backing arms',(.6,-.62,.35),(1.25,.09,.5),'cream',.06)
+        box('Cross upright',(.6,-.7,.35),(.3,.1,1.0),'red',.04);box('Cross arms',(.6,-.7,.35),(1.0,.09,.3),'red',.04)
+    elif id=='drone_guard':
+        drone('guard')
+        for x,y in [(-.34,-.875),(-.536,-.811)]:
+            cyl('Tracer round',(x,y,1.1),.06,.6,'cyan','Y').rotation_euler=(math.pi/2,0,math.radians(-18))
+        pts=[(-.3,.62),(0,.72),(.3,.62),(.25,.2),(0,-.02),(-.25,.2)]
+        crest=lambda k:[(x*k+.6,(z-.35)*k+.3) for x,z in pts]
+        poly('Guard crest',crest(1.9),.16,'red',-.55);poly('Crest face',crest(1.35),.08,'cream',-.66)
+        poly('Crest stripe',[(.6+x*1.35,(z-.35)*1.35+.3) for x,z in [(-.05,.6),(.05,.6),(.045,.2),(0,.08),(-.045,.2)]],.05,'gold',-.72)
 
-for id in ['saw','lightning','turret','burst','boots','magnet','armor','repair','refill','overclock']:
+IDS=['saw','lightning','turret','burst','boots','magnet','armor','repair','refill','overclock','drone_collector','drone_repair','drone_guard']
+ONLY=set(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else IDS)
+for id in IDS:
     scene=bpy.data.scenes.new('Ability — '+id);bpy.context.window.scene=scene
     scene.render.engine='CYCLES';scene.cycles.samples=32;scene.cycles.use_denoising=True
     scene.render.resolution_x=384;scene.render.resolution_y=384;scene.render.resolution_percentage=100
@@ -137,6 +178,7 @@ for id in ['saw','lightning','turret','burst','boots','magnet','armor','repair',
     for name,p,power,size in [('Key',(-3,-4,6),650,4),('Rim',(3,2,4),850,3),('Fill',(4,-3,2),220,3)]:
         bpy.ops.object.light_add(type='AREA',location=p);o=bpy.context.object;o.name=name;o.data.energy=power;o.data.shape='DISK';o.data.size=size;o.rotation_euler=(Vector((0,0,1))-o.location).to_track_quat('-Z','Y').to_euler()
     bpy.ops.object.camera_add(location=(3.1,-6,3.2));cam=bpy.context.object;cam.rotation_euler=(Vector((0,0,.95))-cam.location).to_track_quat('-Z','Y').to_euler();cam.data.type='ORTHO';cam.data.ortho_scale=2.95;scene.camera=cam
+    if id not in ONLY: continue
     scene.render.filepath=os.path.join(OUT,id+'.png');bpy.ops.render.render(write_still=True)
     print('ABILITY_RENDERED',id,flush=True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','ability-kit.blend'))

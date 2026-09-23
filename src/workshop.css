@@ -150,6 +150,54 @@
   font-size: 13px;
   color: #fff1ce;
 }
+/* Locked robots read as unavailable before the label is parsed. */
+.is-locked .workshop-robot {
+  filter: grayscale(0.85) brightness(0.55) contrast(1.1)
+    drop-shadow(0 10px 8px #061b3055);
+}
+.workshop-lock {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #ffdb89;
+  border-radius: 50%;
+  background: #173342e6;
+  color: #efbd56;
+  box-shadow: 0 6px 14px #04151d80;
+}
+.workshop-lock svg {
+  width: 26px;
+  height: 26px;
+}
+.workshop-progress {
+  position: relative;
+  height: 22px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid #54756d;
+  border-radius: 5px;
+  background: #0d2530;
+}
+.workshop-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--progress);
+  background: linear-gradient(90deg, #a6743a, #efbd56);
+}
+.workshop-progress span {
+  position: relative;
+  display: block;
+  color: #fff1ce;
+  font: 700 12px/20px "DM Sans", sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  text-shadow: 0 1px 2px #061b30;
+}
 .workshop-buy {
   width: 100%;
   min-height: 44px;
@@ -188,11 +236,33 @@
   gap: 12px;
   align-items: center;
 }
-.workshop-upgrade-heading > svg {
-  width: 44px;
-  height: 44px;
-  color: #efbd56;
-  flex-shrink: 0;
+.workshop-upgrade-art {
+  display: grid;
+  place-items: center;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #56756a;
+  border-radius: 7px;
+  background: radial-gradient(circle at 50% 30%, #3a5d60, #1b353e 75%);
+}
+.workshop-upgrade-art .ability-art {
+  width: 86%;
+  height: 86%;
+}
+.workshop-ranks {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.workshop-ranks i {
+  width: 18px;
+  height: 5px;
+  border-radius: 2px;
+  background: #3d575a;
+}
+.workshop-ranks i.is-filled {
+  background: #efbd56;
 }
 #intro .workshop-upgrade h4 {
   font-size: 25px;
@@ -283,6 +353,14 @@
   .workshop-robot {
     height: 140px;
   }
+  .workshop-lock {
+    width: 38px;
+    height: 38px;
+  }
+  .workshop-lock svg {
+    width: 20px;
+    height: 20px;
+  }
   .workshop-machine-copy {
     text-align: center;
   }
@@ -305,9 +383,10 @@
   .workshop-upgrade {
     padding: 12px;
   }
-  .workshop-upgrade-heading > svg {
-    width: 32px;
-    height: 32px;
+  .workshop-upgrade-art {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
   }
   #intro .workshop-upgrade p {
     margin: 6px 0 10px;
@@ -343,6 +422,15 @@
   .workshop-robot {
     height: 76px;
   }
+  .workshop-lock {
+    width: 28px;
+    height: 28px;
+    border-width: 1.5px;
+  }
+  .workshop-lock svg {
+    width: 15px;
+    height: 15px;
+  }
   .workshop-machine {
     padding: 8px;
   }
@@ -354,6 +442,14 @@
   }
   #intro .workshop-upgrade h4 {
     font-size: 19px;
+  }
+  .workshop-upgrade-art {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+  }
+  .workshop-ranks {
+    display: none;
   }
   .workshop-footer > div {
     font-size: 9px;
@@ -389,6 +485,15 @@
   }
   .workshop-robot {
     height: 100px;
+  }
+  .workshop-lock {
+    width: 32px;
+    height: 32px;
+    border-width: 1.5px;
+  }
+  .workshop-lock svg {
+    width: 17px;
+    height: 17px;
   }
   #intro .workshop-machine h4 {
     font-size: 23px;
@@ -433,9 +538,21 @@
     font-size: 11px;
     margin: 5px 0 8px;
   }
-  .workshop-upgrade-heading > svg {
-    width: 26px;
-    height: 26px;
+  .workshop-upgrade-art {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+  }
+  .workshop-ranks {
+    display: none;
+  }
+  .workshop-progress {
+    height: 16px;
+    margin-bottom: 6px;
+  }
+  .workshop-progress span {
+    font-size: 10px;
+    line-height: 14px;
   }
 }
 

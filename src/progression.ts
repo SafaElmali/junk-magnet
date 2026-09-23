@@ -152,6 +152,20 @@ export function saveProgress(
     return false;
   }
 }
+/** True when saved parts cover a locked robot or the next permanent upgrade rank. */
+export function canAffordWorkshop(progress: Progress): boolean {
+  return (
+    ROBOTS.some(
+      (robot) =>
+        !progress.unlockedRobots.includes(robot.id) &&
+        progress.parts >= robot.cost,
+    ) ||
+    (["hull", "magnet"] as const).some((id) => {
+      const cost = UPGRADE_PRICES[progress.upgrades[id]];
+      return cost !== undefined && progress.parts >= cost;
+    })
+  );
+}
 /** Separate instances let tests exercise storage denial without browser globals. */
 export function createProgression(storage = browserStorage()) {
   let progress = loadProgress(storage);

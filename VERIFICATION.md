@@ -216,3 +216,12 @@ Production build, nine discovery tests and whitespace checks pass. `GAME_URL=htt
 Integrated with main through `d44eddf`, retaining its hidden co-op entry, boss/depleted-station models, forgiving salvage progress, audio, analytics, deployment setup, compact HUD and performance improvements. Drone/specialization messages now use the extracted shared server hub. Owned-ability tiles retain the new inspector and show the chosen specialization name.
 
 Post-merge validation: production build and Worker dry-run build passed; 93 solo tests passed with co-op files/named tests excluded. Five drone viewport checks, 48 specialization layout fixtures and desktop/mobile discovery gameplay checks all passed with no browser errors. Co-op tests were not run at the user's request.
+
+## Menu and ability art refresh (2026-09-24)
+
+Each drone role now has its own transparent 384px icon (`public/abilities/drone_*.png`), rendered from the gameplay drone GLB with the ability kit's camera, lights and materials. They replace the shared opaque `drone.png`. The home menu adds the orbiting scrap wordmark, a Workshop parts badge with an affordability state, the best-run record, and a Change Robot shortcut. The Workshop adds locked-robot portraits, an unlock progress bar and illustrated upgrade cards. Four strings were added in all six languages.
+
+- `npm test`: 120 passed, including a new `canAffordWorkshop` test. `npm run build`: passed; the existing bundle-size advisory remains.
+- Against a production build (`PORT=5199 npx tsx server/index.ts`): `menu-browser`, `fixed-menu-browser` (8 sizes), `workshop-browser` (6 languages × 5 sizes), `ability-browser`, `ability-loading-browser`, `menu-dialog-layout`, `language-browser` and `pause-menu-browser` passed. `drone-upgrade-browser` passed against the dev server, which it requires.
+- Stale test expectations were updated: 13 abilities, 6 Support entries, per-drone icon paths, and a workshop portrait selector scoped away from the home card's portrait. The original commit also overflowed the resumable home at 1024×600 by 24px; short desktop screens now use tighter action spacing.
+- The orbit was sampled over time: pieces move, their z-order flips between the back and front halves, and they stay still under reduced motion. Screenshots were reviewed at desktop and phone sizes. Review screenshots in `.impeccable/review` were not refreshed. Co-op layouts and physical devices were not tested.

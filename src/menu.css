@@ -27,7 +27,9 @@
   z-index: 6;
   overflow: clip;
   touch-action: manipulation;
-  background: radial-gradient(ellipse at 50% 35%, #183e45d9, #091e2af5 85%);
+  background:
+    radial-gradient(circle at 50% 24%, #f2c8671f, transparent 42%),
+    radial-gradient(ellipse at 50% 35%, #1b444acc, #091e2af5 85%);
   color: var(--cream);
   padding: max(16px, env(safe-area-inset-top))
     max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
@@ -162,7 +164,7 @@
     0 4px 0 #a96c37,
     0 8px 0 #091d27;
 }
-.menu-brand h2 span {
+.menu-brand h2 .logo-line {
   display: block;
   color: #efbd56;
 }
@@ -1210,5 +1212,304 @@
   }
   .menu-options > div {
     padding: 6px 0;
+  }
+}
+
+/* Home screen character: scrap orbits the wordmark, and controls answer touch. */
+#intro .menu-brand h2 {
+  position: relative;
+  isolation: isolate;
+}
+.logo-orbit {
+  --rx: 1.72em;
+  --ry: 0.3em;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.logo-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--rx) * 2);
+  height: calc(var(--ry) * 2);
+  translate: -50% -50%;
+  border: 0.025em solid #efbd5659;
+  border-radius: 50%;
+}
+.logo-ring.is-back {
+  z-index: -2;
+  clip-path: inset(0 0 50% 0);
+}
+.logo-ring.is-front {
+  z-index: 1;
+  clip-path: inset(50% 0 0 0);
+}
+.orbit-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.28em;
+  height: 0.28em;
+  margin: -0.14em;
+  z-index: var(--z);
+  transform: translateY(calc(var(--y) * var(--ry)))
+    scale(calc(0.95 + var(--y) * 0.17));
+}
+.orbit-piece > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: translateX(calc(var(--x) * var(--rx)));
+}
+.orbit-piece svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  rotate: calc(var(--i) * 47deg);
+  filter: drop-shadow(0 0.025em 0 #091d27);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .orbit-piece {
+    animation: orbit-depth 5s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+    animation-delay: calc(var(--i) * -2s - 2.5s);
+  }
+  .orbit-piece > i {
+    animation: orbit-sweep 5s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+    animation-delay: calc(var(--i) * -2s);
+  }
+  .orbit-piece svg {
+    animation: orbit-tumble 4s linear infinite;
+  }
+  .menu-shell:not(.is-submenu) > .menu-brand,
+  .menu-actions > .menu-button,
+  .pilot-card,
+  .menu-shell:not(.is-submenu) > .menu-stage {
+    animation: menu-rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .menu-actions > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .menu-actions > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .menu-actions > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .menu-actions > :nth-child(n + 5),
+  .pilot-card {
+    animation-delay: 160ms;
+  }
+  .menu-shell:not(.is-submenu) > .menu-stage {
+    animation-delay: 200ms;
+  }
+}
+@keyframes orbit-sweep {
+  from {
+    transform: translateX(var(--rx));
+  }
+  to {
+    transform: translateX(calc(var(--rx) * -1));
+  }
+}
+/* Pieces pass behind the letters on the far side and in front on the near side. */
+@keyframes orbit-depth {
+  from {
+    transform: translateY(calc(var(--ry) * -1)) scale(0.78);
+    z-index: -2;
+  }
+  to {
+    transform: translateY(var(--ry)) scale(1.12);
+    z-index: 1;
+  }
+}
+@keyframes orbit-tumble {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes menu-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.menu-actions .menu-button:not(.menu-play):hover > svg {
+  color: #efbd56;
+}
+.menu-button:active:not(:disabled) {
+  box-shadow: inset 0 3px 8px #0a202a59;
+}
+.menu-play {
+  position: relative;
+  overflow: hidden;
+}
+.menu-play::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    #fff7d98c 50%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .menu-play:hover::after {
+    transform: translateX(120%);
+    transition: transform 0.6s ease;
+  }
+}
+.menu-parts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 3px 7px 3px 5px;
+  border-radius: 999px;
+  background: #0f262e;
+  color: #efcd82;
+  font:
+    700 15px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.menu-actions .menu-button .menu-parts > svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+.menu-parts.is-ready {
+  position: relative;
+  background: #efbd56;
+  color: #172f38;
+}
+.menu-parts.is-ready::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #2c484e;
+  border-radius: 50%;
+  background: #e0573f;
+}
+.stage-status.is-record {
+  color: #efcd82;
+  font:
+    700 16px "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.pilot-change {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  border: 1px solid #68877a;
+  border-radius: 5px;
+  background: #1a3942;
+  color: #efc565;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.pilot-change:hover {
+  border-color: #d9bf83;
+  background: #2b4850;
+}
+.pilot-change svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+@media (max-width: 520px) {
+  .pilot-card {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+  }
+  .pilot-change {
+    grid-column: 3;
+    grid-row: 1 / 5;
+    width: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+  }
+  .menu-parts {
+    padding: 2px 6px;
+    font-size: 13px;
+  }
+  .menu-parts.is-ready::after {
+    display: none;
+  }
+  .menu-actions .menu-button .menu-parts > svg {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .menu-parts {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    font-size: 0;
+  }
+  .menu-parts:not(.is-ready) {
+    display: none;
+  }
+}
+/* Short desktop screens fit six actions, and dock the robot control in the card corner. */
+@media (min-width: 521px) and (min-height: 551px) and (max-height: 720px) {
+  .menu-shell {
+    gap: 12px;
+  }
+  .menu-actions {
+    gap: 6px;
+  }
+  .menu-actions .menu-button {
+    min-height: 44px;
+    padding-block: 5px;
+  }
+  .menu-actions .menu-play {
+    min-height: 52px;
+  }
+  .pilot-card {
+    position: relative;
+  }
+  .pilot-change {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 40px;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+  }
+}
+@media (max-width: 520px), (min-width: 521px) and (min-height: 551px) and (max-height: 720px) {
+  .pilot-change span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (min-width: 521px) and (max-height: 550px) {
+  .logo-orbit {
+    --rx: 1.45em;
+  }
+  .pilot-change {
+    margin-top: 6px;
+    min-height: 40px;
   }
 }

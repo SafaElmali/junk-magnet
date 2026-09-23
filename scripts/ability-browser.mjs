@@ -54,9 +54,9 @@ try {
     });
     for (const [category, count] of [
       ["Weapons", 4],
-      ["Support", 3],
+      ["Support", 6],
       ["Supplies", 3],
-      ["All", 10],
+      ["All", 13],
     ]) {
       await page.locator(`[data-filter="${category}"]`).click();
       assert.equal(
@@ -74,6 +74,9 @@ try {
       "repair",
       "refill",
       "overclock",
+      "drone_collector",
+      "drone_repair",
+      "drone_guard",
       "saw",
     ]) {
       await selectAbility(id);

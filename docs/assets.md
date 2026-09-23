@@ -10,7 +10,7 @@ The game combines original Blender geometry, Blender-rendered UI artwork, genera
 | --- | --- | --- |
 | Base robot, common enemies, equipment, props, scrap | [Base builder](../scripts/build_assets.py), [character guide](character-builds.md) | `public/models/*.glb`, `art/junk-magnet-assets.blend` |
 | Scout, Volt, three workshop portraits | [Robot builder](../scripts/build_robot_assets.py), [kit notes](../art/ROBOT-ASSETS.md) | Variant GLBs, `public/robots/*.png`, `art/robot-kit.blend` |
-| Ten ability illustrations | [Ability builder](../scripts/build_ability_assets.py), [kit notes](../art/ABILITY-ASSETS.md) | `public/abilities/*.png`, `art/ability-kit.blend` |
+| Thirteen ability illustrations, including one per drone role | [Ability builder](../scripts/build_ability_assets.py), [kit notes](../art/ABILITY-ASSETS.md) | `public/abilities/*.png`, `art/ability-kit.blend` |
 | Chest, repair dock, salvage console | [Discovery builder](../scripts/build_discovery_assets.py), [kit notes](../art/DISCOVERY-ASSETS.md) | Discovery GLBs, `public/discoveries/*.png`, `art/discovery-kit.blend` |
 | Furnace boss, crusher miniboss | [Boss builder](../scripts/build_boss_assets.py), [kit notes](../art/BOSS-ASSETS.md) | Boss GLBs, `art/boss-kit.blend` |
 | Helper drone | [Drone builder](../scripts/build_drone_asset.py), [character guide](character-builds.md) | `public/models/helper-drone.glb`, `art/helper-drone.png`, `art/drone-kit.blend` |

@@ -160,6 +160,38 @@ const rows: [string, string, string, string, string, string][] = [
     "Especialista eléctrico. +15 % de daño, −5 % de velocidad.",
     "Especialista elétrico. +15% de dano, −5% de velocidade.",
   ],
+  [
+    "CHANGE ROBOT",
+    "ROBOTU DEĞİŞTİR",
+    "ROBOTER WECHSELN",
+    "CHANGER DE ROBOT",
+    "CAMBIAR ROBOT",
+    "TROCAR ROBÔ",
+  ],
+  [
+    "BEST {time}",
+    "EN İYİ {time}",
+    "BESTZEIT {time}",
+    "RECORD {time}",
+    "RÉCORD {time}",
+    "RECORDE {time}",
+  ],
+  [
+    "Upgrade available",
+    "Geliştirme alınabilir",
+    "Verbesserung verfügbar",
+    "Amélioration disponible",
+    "Mejora disponible",
+    "Melhoria disponível",
+  ],
+  [
+    "Parts toward unlock",
+    "Kilidi açmak için parça",
+    "Teile bis zur Freischaltung",
+    "Pièces avant déblocage",
+    "Piezas para desbloquear",
+    "Peças para desbloquear",
+  ],
 ];
 export const workshopLocales: Record<
   string,

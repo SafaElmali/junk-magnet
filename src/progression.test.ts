@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createProgression, loadProgress } from "./progression";
+import {
+  canAffordWorkshop,
+  createProgression,
+  loadProgress,
+} from "./progression";
 const storage = (seed?: unknown) => {
   let data = seed === undefined ? null : JSON.stringify(seed);
   return {
@@ -130,4 +134,22 @@ test("blocked storage keeps in-memory progression and bounded receipt history", 
     null,
   );
   assert.equal(a.unlockRobot("scout"), true);
+});
+
+test("workshop affordability covers locked robots and the next upgrade rank only", () => {
+  const base = loadProgress(storage());
+  const maxed: typeof base = {
+    ...base,
+    upgrades: { hull: 3, magnet: 3 },
+    unlockedRobots: ["scrap", "scout", "volt"],
+  };
+  assert.equal(canAffordWorkshop(base), false);
+  assert.equal(canAffordWorkshop({ ...base, parts: 24 }), false);
+  assert.equal(canAffordWorkshop({ ...base, parts: 25 }), true);
+  assert.equal(canAffordWorkshop({ ...maxed, parts: 999 }), false);
+  assert.equal(
+    canAffordWorkshop({ ...maxed, unlockedRobots: ["scrap"], parts: 80 }),
+    true,
+    "Scout costs 80 parts",
+  );
 });

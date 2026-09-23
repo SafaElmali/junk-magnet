@@ -38,7 +38,7 @@ try {
     await page.waitForFunction(() =>
       document.querySelector("#load-meter")?.getAttribute("aria-valuenow") === "90",
     );
-    assert.equal(requested.size, 11, "all unique icons preload, including later pages");
+    assert.equal(requested.size, 13, "all unique icons preload, including later pages");
     assert.equal(await page.locator("#loading").isVisible(), true);
     assert.equal(await page.locator("#intro").isVisible(), false);
     release();
@@ -60,7 +60,7 @@ try {
   }
 
   const page = await browser.newPage();
-  await page.route("**/abilities/drone.png", (route) => route.abort());
+  await page.route("**/abilities/drone_guard.png", (route) => route.abort());
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   assert.equal(await page.locator("#intro").isVisible(), true);
