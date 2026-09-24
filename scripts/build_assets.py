@@ -1,15 +1,18 @@
 """Original Junk Magnet asset kit. Blender Z-up/-Y front -> glTF Y-up/+Z front."""
-import bpy,math,random,os
+import bpy,math,random,os,sys
 from mathutils import Vector
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)));sys.dont_write_bytecode=True;import robot_rig
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));OUT=os.path.join(ROOT,'public','models')
 os.makedirs(OUT,exist_ok=True)
 bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False);random.seed(18)
 def mat(n,c,metal=0,rough=.5):
  m=bpy.data.materials.new(n);m.diffuse_color=(*c,1);m.use_nodes=True;p=m.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(*c,1);p.inputs['Metallic'].default_value=metal;p.inputs['Roughness'].default_value=rough;return m
 M={'yellow':mat('Butter yellow',(.94,.61,.035),.25,.36),'cream':mat('Warm ivory',(.94,.87,.69),.08,.34),'navy':mat('Midnight blue',(.025,.064,.095),.15,.36),'blue':mat('Cobalt glass',(.016,.16,.4),.4,.22),'glint':mat('Sky highlight',(.15,.65,.9),.25,.23),'rubber':mat('Rubber',(.04,.047,.042),0,.9),'tread':mat('Worn tread',(.075,.082,.07),0,.83),'red':mat('Vermilion',(.63,.065,.035),.22,.4),'silver':mat('Brushed steel',(.46,.5,.48),.72,.37),'darksteel':mat('Gunmetal',(.15,.19,.19),.65,.45),'rust':mat('Rust',(.35,.13,.05),.22,.91),'teal':mat('Sea green',(.11,.39,.38),.28,.64),'teallight':mat('Raised ribs',(.16,.48,.46),.3,.59),'orange':mat('Traffic orange',(.91,.19,.035),0,.55),'white':mat('Tape',(.93,.9,.79),.1,.5)}
-parts=[];assets=[]
+parts=[];chassis=[];rig=[];assets=[]
 def finish(o,n,m):
  o.name=n;o.data.materials.append(M[m]);parts.append(o);return o
+def take(o):
+ parts.remove(o);return o
 def cube(n,loc,s,m,b=.05):
  bpy.ops.mesh.primitive_cube_add(size=1,location=loc);o=bpy.context.object;o.scale=s;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
  if b:
@@ -39,33 +42,41 @@ def poly(n,pts,d,m,plane='XZ',off=(0,0,0)):
  l=len(pts);fs=[tuple(reversed(range(l))),tuple(range(l,l*2))]+[(i,(i+1)%l,(i+1)%l+l,i+l) for i in range(l)]
  me=bpy.data.meshes.new(n);me.from_pydata(vs,[],fs);me.update();o=bpy.data.objects.new(n,me);bpy.context.collection.objects.link(o);bpy.context.view_layer.objects.active=o
  mod=o.modifiers.new('Machined bevel','BEVEL');mod.width=.025;mod.segments=3;bpy.ops.object.modifier_apply(modifier=mod.name);return finish(o,n,m)
-def export(n):
- global parts
+def merge(objects,label):
  merged=[]
  for material in M.values():
-  group=[o for o in parts if o.data.materials and o.data.materials[0]==material]
+  group=[o for o in objects if o.data.materials and o.data.materials[0]==material]
   if not group:continue
-  parts=[o for o in parts if o not in group]
+  objects=[o for o in objects if o not in group]
   bpy.ops.object.select_all(action='DESELECT')
   for o in group:o.select_set(True)
-  bpy.context.view_layer.objects.active=group[0];bpy.ops.object.join();o=bpy.context.object;o.name=n+'_'+material.name;merged.append(o)
+  bpy.context.view_layer.objects.active=group[0];bpy.ops.object.join();o=bpy.context.object;o.name=label+'_'+material.name;merged.append(o)
+ return merged
+def export(n,pivot=None):
+ global parts,chassis,rig
+ merged=merge(parts,n)
+ # A robot body merges apart from its fixed chassis so the game can rock it on the suspension.
+ if pivot:merged=[robot_rig.pivot(merged,pivot)]+merged
+ merged+=merge(chassis,n+'_chassis')+rig
  bpy.ops.object.select_all(action='DESELECT')
  for o in merged:o.select_set(True)
  bpy.ops.export_scene.gltf(filepath=os.path.join(OUT,n+'.glb'),export_format='GLB',use_selection=True,export_apply=True)
- for o in merged:o.location.x+=(len(assets)%4)*5;o.location.y+=(len(assets)//4)*5
- assets.append(n);parts=[]
+ for o in merged:
+  if not o.parent:o.location.x+=(len(assets)%4)*5;o.location.y+=(len(assets)//4)*5
+ assets.append(n);parts=[];chassis=[];rig=[]
 # Robot
 sphere('Shell',(0,0,.79),(.61,.46,.62),'yellow');sphere('Rim',(0,-.39,.85),(.46,.115,.43),'navy');sphere('Face',(0,-.438,.855),(.429,.103,.398),'cream')
 for x in [-.16,.16]:
  sphere('Socket',(x,-.526,.89),(.078,.025,.145),'navy');sphere('Lens',(x,-.545,.9),(.059,.014,.119),'blue');sphere('Glint',(x-.014,-.558,.96),(.023,.007,.036),'glint')
 for s in [-1,1]:
- cube('Track',(s*.59,.01,.25),(.27,.9,.39),'rubber',.13)
- for y in [-.255,.255]:cyl('Hub',(s*.74,y,.25),.14,.04,'yellow','X');cyl('Axle',(s*.765,y,.25),.07,.05,'darksteel','X')
- for i in range(9):cube('Rib',(s*.59,-.36+i*.09,.444),(.29,.046,.05),'tread',.014)
- for y in [-.45,.45]:
-  for z in [.15,.24,.33]:cube('End rib',(s*.59,y,z),(.29,.04,.046),'tread',.01)
+ chassis.append(take(cube('Track',(s*.59,.01,.25),(.27,.9,.39),'rubber',.13)))
  cyl('Hinge',(s*.49,.12,1.18),.11,.095,'darksteel','X');cyl('Screw',(s*.55,.12,1.18),.055,.03,'silver','X',6)
  for z in [.68,1.12]:cyl('Shell screw',(s*.44,-.34,z),.032,.03,'darksteel','Y',6)
+# Wheels and tread links stay separate so the game can drive them (robot_rig.py); lugs show the spin.
+wheel=[cyl('Hub',(0,0,0),.14,.04,'yellow','X'),cyl('Axle',(.025,0,0),.07,.05,'darksteel','X',6)]
+for i in range(4):a=math.pi/4+i*math.pi/2;wheel.append(cyl('Lug',(.025,.1*math.cos(a),.1*math.sin(a)),.018,.02,'darksteel','X',6))
+rig+=robot_rig.wheels(robot_rig.solid([take(o) for o in wheel]),.74,[-.255,.255],.25)
+rig+=robot_rig.treads(take(cube('Tread link',(0,0,0),(.29,.046,.05),'tread',.014)),.59,robot_rig.belt(.01,.25,.45,.195,.13,.09))
 cube('Service cover',(0,.435,.77),(.53,.055,.56),'yellow',.1)
 for z in [.7,.79,.88]:cube('Vent',(0,.471,z),(.30,.018,.027),'navy',.01)
 cube('Mount',(0,.08,1.3),(.43,.26,.23),'darksteel',.07)
@@ -77,7 +88,7 @@ for i in range(13):
  a=math.tau-math.pi*i/12;pts.append((.24*math.cos(a),1.67+.24*math.sin(a)))
 pts.append((-.24,1.98));poly('Magnet',pts,.22,'red',off=(0,.08,0))
 for x in [-.35,.35]:cube('Pole',(x,.08,2.045),(.22,.23,.16),'silver',.025)
-export('robot')
+export('robot',pivot=(0,0,.45))
 # Enemy can
 # A scrappy sentry: a heavy lid, raised optics and open pincers read from above.
 M['optic']=mat('Enemy amber optics',(1,.23,.025),.1,.3)

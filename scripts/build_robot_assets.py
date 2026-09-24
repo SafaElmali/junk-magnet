@@ -5,7 +5,11 @@ The existing SCRAP GLB is read only; SCOUT and VOLT use the same rounded toy-mac
 import bpy
 import math
 import os
+import sys
 from mathutils import Vector
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.dont_write_bytecode = True
+import robot_rig
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODELS = os.path.join(ROOT, 'public', 'models')
@@ -43,6 +47,9 @@ M = {
     'cyan': material('Electric ceramic', (.17, .73, .85), .22, .24, .45),
 }
 parts = []
+# Fixed undercarriage and driven wheels/links export apart from the rocking body.
+chassis = []
+rig = []
 
 
 def finish(o, name, key, bevel=0, smooth=False):
@@ -101,6 +108,27 @@ def rod(name, a, b, radius, key):
     return o
 
 
+def take(objects):
+    for o in objects:
+        parts.remove(o)
+    return objects
+
+
+def undercarriage(o):
+    chassis.extend(take([o]))
+    return o
+
+
+def road_wheel(kind):
+    """A painted wheel with a brass nut and lug bolts, so its spin reads in game."""
+    hub = cyl('Painted road wheel', (0, 0, 0), .137, .045, kind, 'X')
+    brass = [cyl('Brass axle', (.028, 0, 0), .061, .055, 'gold', 'X', 6)]
+    for i in range(4):
+        a = math.pi / 4 + i * math.pi / 2
+        brass.append(cyl('Lug bolt', (.03, .1 * math.cos(a), .1 * math.sin(a)), .018, .02, 'gold', 'X', 6))
+    return robot_rig.solid(take([hub] + brass))
+
+
 def body(kind):
     width = .57 if kind == 'scout' else .63
     sphere('Rounded enamel shell', (0, 0, .79), (width, .46, .62), kind)
@@ -112,20 +140,15 @@ def body(kind):
         sphere('Eye glint', (x-.014, -.558, .96), (.023, .007, .036), 'glint')
     for side in [-1, 1]:
         x = side * .59
-        box('Rubber track', (x, .01, .25), (.27, .94, .39), 'rubber', .13)
-        for y in [-.28, 0, .28]:
-            cyl('Painted road wheel', (side*.74, y, .25), .137, .045, kind, 'X')
-            cyl('Brass axle', (side*.768, y, .25), .061, .055, 'gold', 'X', 6)
-        for i in range(10):
-            box('Top tread', (x, -.395+i*.09, .444), (.29, .046, .05), 'tread', .012)
-        for y in [-.46, .48]:
-            for z in [.15, .24, .33]:
-                box('End tread', (x, y, z), (.29, .04, .046), 'tread', .01)
-        box('Track fender', (x, .05, .51), (.3, .79, .07), kind, .032)
+        undercarriage(box('Rubber track', (x, .01, .25), (.27, .94, .39), 'rubber', .13))
+        undercarriage(box('Track fender', (x, .05, .51), (.3, .79, .07), kind, .032))
         for z in [.68, 1.12]:
             cyl('Face hex fastener', (side*.44, -.34, z), .032, .03, 'steel', 'Y', 6)
         cyl('Shoulder pivot', (side*.50, .11, 1.17), .11, .095, 'dark', 'X')
         cyl('Pivot bolt', (side*.557, .11, 1.17), .055, .03, 'gold', 'X', 6)
+    rig.extend(robot_rig.wheels(road_wheel(kind), .74, [-.28, 0, .28], .25))
+    link = take([box('Tread link', (0, 0, 0), (.29, .046, .05), 'tread', .012)])[0]
+    rig.extend(robot_rig.treads(link, .59, robot_rig.belt(.01, .25, .47, .195, .13, .09)))
     box('Rear service panel', (0, .435, .78), (.52, .065, .53), kind, .08)
     for z in [.67, .77, .87]:
         box('Cooling vent', (0, .479, z), (.29, .02, .028), 'navy', .01)
@@ -175,25 +198,34 @@ def volt():
         box('Backpack heat sink', (x, .595, 1.15), (.045, .10, .31), 'steel', .015)
 
 
-def export_model(kind):
-    global parts
-    # Merge by material so detailed bolts/treads do not each cost a draw call.
+def merge(objects, label):
+    merged = []
     for material in M.values():
-        group = [o for o in list(parts) if o.data.materials[0] == material]
+        group = [o for o in objects if o.data.materials[0] == material]
         if not group:
             continue
-        parts = [o for o in parts if o not in group]
+        objects = [o for o in objects if o not in group]
         bpy.ops.object.select_all(action='DESELECT')
         for o in group:
             o.select_set(True)
         bpy.context.view_layer.objects.active = group[0]
         bpy.ops.object.join()
-        bpy.context.object.name = kind + '_' + material.name
+        bpy.context.object.name = label + '_' + material.name
+        merged.append(bpy.context.object)
+    return merged
+
+
+def export_model(kind):
+    global parts, chassis, rig
+    # Merge by material so detailed bolts do not each cost a draw call. The body merges apart from
+    # the fixed chassis because the game rocks it on its suspension.
+    body = robot_rig.pivot(merge(parts, kind), (0, 0, .45))
+    exported = [body, *body.children, *merge(chassis, kind + '_chassis'), *rig]
     bpy.ops.object.select_all(action='DESELECT')
-    for o in bpy.context.scene.objects:
-        if o.type == 'MESH':
-            o.select_set(True)
+    for o in exported:
+        o.select_set(True)
     bpy.ops.export_scene.gltf(filepath=os.path.join(MODELS, 'robot-'+kind+'.glb'), export_format='GLB', use_selection=True, export_apply=True)
+    parts, chassis, rig = [], [], []
 
 
 def studio(scene, kind, focus=(0, 0, 1.05), scale=2.8):
@@ -242,6 +274,9 @@ def build_assets():
             scout() if kind=='scout' else volt()
             export_model(kind)
         studio(scene,kind)
+        # Object names are global across scenes: free the rig names for the next robot.
+        for o in scene.objects:
+            o.name=kind+' '+o.name
         print('ROBOT_READY',kind,flush=True)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','robot-kit.blend'))
 

@@ -90,6 +90,8 @@ Other character builders use the same Blender-to-GLB workflow:
 
 The robot-variant builder reads the existing base robot GLB for its portrait, so generate the base asset first when rebuilding everything from source.
 
+The playable robots, unlike the enemies, export separate moving parts: a rocking `body`, spinning wheels and tread links that run round the tracks. The [robot asset notes](../art/ROBOT-ASSETS.md#moving-parts) describe the naming the game relies on. For the September 24 wheel-animation change, only the base builder's common setup/helpers and robot section were executed to export `robot.glb`, followed by the full robot-variant build. As with the enemy change, `art/junk-magnet-assets.blend` was not regenerated.
+
 ## Checking a character change
 
 1. Edit the Blender recipe and regenerate the affected GLBs. Match shared-body changes in `mobileModels()`.

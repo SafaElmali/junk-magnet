@@ -42,7 +42,7 @@ blender --background --factory-startup --python scripts/build_robot_assets.py
 
 The scripts run inside Blender's Python; they do not require a separate `pip install bpy`. They save editable `.blend` snapshots and export the deliverables. Treat the Python recipe as the reproducible source of geometry; manual edits to a `.blend` are not automatically reflected in the next scripted rebuild. The base library snapshot has a documented revision caveat in [character builds](character-builds.md).
 
-Preserve named transform groups used for animation, such as the discovery chest lid and the drone fans/tools. When changing enemy geometry, check the desktop models and the corresponding mobile rendering path. Commit the recipe, affected GLBs/PNGs, refreshed scene snapshots when rebuilt, and relevant notes together.
+Preserve named transform groups used for animation, such as the discovery chest lid, the drone fans/tools, and the robots' `body`, `wheel_*` and `tread_*` parts ([robot rig](../art/ROBOT-ASSETS.md#moving-parts)). When changing enemy geometry, check the desktop models and the corresponding mobile rendering path. Commit the recipe, affected GLBs/PNGs, refreshed scene snapshots when rebuilt, and relevant notes together.
 
 ## Generate or revise images
 

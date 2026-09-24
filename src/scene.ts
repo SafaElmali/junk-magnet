@@ -1,5 +1,6 @@
 import type { PartnerState } from "./coop-session";
 import * as THREE from "three";
+import { RobotRig } from "./robot-rig";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
 import { DroneView } from "./drone-view";
@@ -130,6 +131,7 @@ export class YardScene {
   quality: GraphicsQuality = getGraphicsQuality();
   private partnerRoot?: THREE.Group;
   private partnerVariants = new Map<string, THREE.Group>();
+  private partnerRigs = new Map<string, RobotRig>();
   private partnerOrbit: THREE.Group[] = [];
   private partnerFill?: THREE.Mesh;
   private partnerMarker?: THREE.Mesh;
@@ -154,6 +156,7 @@ export class YardScene {
       this.partnerRoot.name = "coop-teammate";
       for (const id of ["scrap", "scout", "volt"]) {
         const model = instance(id === "scrap" ? "robot" : `robot-${id}`);
+        this.partnerRigs.set(id, new RobotRig(model));
         const materials = new Map<THREE.Material, THREE.Material>();
         model.traverse((o) => {
           if (!(o instanceof THREE.Mesh)) return;
@@ -244,6 +247,15 @@ export class YardScene {
     root.rotation.z = p.hp <= 0 ? -Math.PI / 2 : 0;
     for (const [id, model] of this.partnerVariants)
       model.visible = id === p.config.robotId;
+    this.partnerRigs
+      .get(p.config.robotId)
+      ?.update(
+        root.position.x,
+        root.position.z,
+        root.rotation.y,
+        dt,
+        this.reduced,
+      );
     for (const { material, emissive, intensity } of this.partnerMaterials) {
       material.emissive.copy(emissive);
       material.emissiveIntensity = intensity;
@@ -272,6 +284,7 @@ export class YardScene {
     }
   }
   private robotModels = new Map<State["config"]["robotId"], THREE.Group>();
+  private robotRigs = new Map<State["config"]["robotId"], RobotRig>();
   private hurtAt = -Infinity;
   private hurtDirection = new THREE.Vector2(0, -1);
   private hurtStrength = 0;
@@ -536,6 +549,7 @@ export class YardScene {
       model.name = `robot-${id}`;
       model.visible = id === "scrap";
       this.robotModels.set(id, model);
+      this.robotRigs.set(id, new RobotRig(model));
       this.robot.add(model);
     }
     // GLTF clones normally share materials: isolate the robot before tinting hits.
@@ -1188,11 +1202,8 @@ export class YardScene {
     this.droneVisible = s.hp > 0 && s.phase !== "ready" && s.phase !== "lost";
     if (this.droneVisible) this.drone.update(s, this.reduced);
     else this.drone.clear();
-    this.robot.position.set(
-      s.player.x,
-      this.reduced ? 0 : Math.sin(s.time * 8) * 0.015,
-      s.player.z,
-    );
+    // The tracks stay planted; RobotRig bobs and rocks the body above them.
+    this.robot.position.set(s.player.x, 0, s.player.z);
     const facing = Math.atan2(s.facing.x, s.facing.z);
     const diff = Math.atan2(
       Math.sin(facing - this.robot.rotation.y),
@@ -1216,6 +1227,9 @@ export class YardScene {
     this.expansion.update(s, this.reduced);
     for (const [id, model] of this.robotModels)
       model.visible = id === s.config.robotId;
+    this.robotRigs
+      .get(s.config.robotId)
+      ?.update(s.player.x, s.player.z, this.robot.rotation.y, dt, this.reduced);
     this.renderRobotHurt(s.time);
     if (s.hp <= 0) this.robot.rotation.z = -Math.PI / 2;
     for (let i = 0; i < this.orbit.length; i++) {
