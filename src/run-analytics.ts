@@ -57,7 +57,13 @@ export function createRunAnalytics(
     /** A solo run restored after a reload: no second start or passed milestones. */
     resume(id: string, state: State, properties: AnalyticsProperties = {}) {
       if (current?.id === id) return;
-      current = { id, mode: "solo", robot: state.config.robotId, ended: false };
+      current = {
+        id,
+        mode: "solo",
+        robot: state.config.robotId,
+        stage: state.config.stage ?? "yard",
+        ended: false,
+      };
       upgrades = { ...state.upgrades };
       evolutions = { ...state.evolutions };
       milestones = new Set(MILESTONES.filter((seconds) => state.time >= seconds));
