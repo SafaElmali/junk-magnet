@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { State } from "./simulation";
 import { ENTITY_LIMITS } from "./simulation";
+import { areaScale, ELITE } from "./arsenal";
 import { EncounterView } from "./encounters-view";
 import { DiscoveryView, type DiscoveryModels } from "./discovery-view";
 type EnemyKits = Record<"charger" | "spitter" | "warden", THREE.Group>;
@@ -75,12 +76,13 @@ export class ExpansionView {
     this.discovery.update(s, reduced);
     this.cyclone.visible = s.evolutions.vortex;
     this.cyclone.position.set(s.player.x, 0.6, s.player.z);
+    const reach = 3.3 * areaScale(s);
     this.cyclone.children.forEach((m, i) => {
       const a = s.time * 3.5 + (i * Math.PI) / 3;
       m.position.set(
-        Math.cos(a) * 3.3,
+        Math.cos(a) * reach,
         Math.sin(a * 2) * 0.15,
-        Math.sin(a) * 3.3,
+        Math.sin(a) * reach,
       );
       m.rotation.y = -a;
     });
@@ -100,7 +102,9 @@ export class ExpansionView {
         Math.atan2(s.player.x - e.x, s.player.z - e.z),
         Math.sin(s.time * 8 + e.seed) * 0.06,
       );
-      const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
+      const k =
+        (e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1) *
+        (e.elite ? ELITE.scale : 1);
       if (e.type === "charger") tr.scale.set(k * 0.9, k * 1.2, k * 1.3);
       else if (e.type === "warden") tr.scale.set(k * 1.4, k * 1.2, k * 1.4);
       else tr.scale.setScalar(k * 1.12);
