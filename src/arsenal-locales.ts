@@ -3,7 +3,7 @@
 const rows: [string, string, string, string, string, string][] = [
   ["Magnet Harpoon", "Mıknatıslı Zıpkın", "Magnetharpune", "Harpon magnétique", "Arpón magnético", "Arpão magnético"],
   ["Slag Mortar", "Cüruf Havanı", "Schlackemörser", "Mortier à scories", "Mortero de escoria", "Morteiro de escória"],
-  ["Capacitor Bank", "Kondansatör Bankası", "Kondensatorbank", "Batterie de condensateurs", "Banco de condensadores", "Banco de capacitores"],
+  ["Capacitor Bank", "Kondansatör Bankası", "Kondensatorbank", "Condensateurs", "Condensadores", "Capacitores"],
   ["Field Amplifier", "Alan Yükseltici", "Feldverstärker", "Amplificateur de champ", "Amplificador de campo", "Amplificador de campo"],
   ["Pulse Reactor", "Darbe Reaktörü", "Pulsreaktor", "Réacteur à impulsions", "Reactor de pulsos", "Reator de pulsos"],
   ["Meltdown", "Çekirdek Erimesi", "Kernschmelze", "Fusion du cœur", "Fusión del núcleo", "Fusão do núcleo"],
@@ -45,8 +45,8 @@ const rows: [string, string, string, string, string, string][] = [
     "Her {seconds} saniyede ileriye delici bir kanca fırlatır; gidişte ve dönüşte {damage} hasar verir.",
     "Wirft alle {seconds} s einen durchschlagenden Haken nach vorn: {damage} Schaden hin und zurück.",
     "Lance un crochet perforant devant toi toutes les {seconds} s : {damage} dégâts à l’aller et au retour.",
-    "Lanza un garfio perforante hacia delante cada {seconds} s: {damage} de daño a la ida y a la vuelta.",
-    "Lança um gancho perfurante à frente a cada {seconds} s: {damage} de dano na ida e na volta.",
+    "Un garfio perforante cada {seconds} s: {damage} de daño a la ida y a la vuelta.",
+    "Um gancho perfurante a cada {seconds} s: {damage} de dano na ida e na volta.",
   ],
   [
     "Hook damage {before} → {after}; +1 hook; throws every {seconds}s.",
