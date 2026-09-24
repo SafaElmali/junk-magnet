@@ -34,7 +34,7 @@ export const WORKSHOP_COPY: Record<
   hull: { name: "Reinforced hull", description: "−1 contact damage per rank.", art: "armor" },
   magnet: { name: "Magnet tuning", description: "+0.35 m pickup range per rank.", art: "magnet" },
   rerolls: { name: "Spare parts bin", description: "+1 level-up reroll per run, per rank.", art: "refill" },
-  banishes: { name: "Scrap filter", description: "+1 banish per run, per rank: remove an upgrade from later choices.", art: "burst" },
+  banishes: { name: "Scrap filter", description: "+1 banish per rank: drop an upgrade for the rest of the run.", art: "burst" },
   revive: { name: "Backup battery", description: "Once per run, revive at half health.", art: "repair" },
   xp: { name: "Energy condenser", description: "+5% XP per rank.", art: "lightning" },
   scrap: { name: "Preloaded orbit", description: "Start each run with +4 scrap per rank.", art: "saw" },
@@ -46,7 +46,7 @@ const upgradeGrid = () => {
   return {
     columns: wide ? 2 : 1,
     rows:
-      innerHeight <= 420
+      innerHeight <= 420 || (innerWidth <= 360 && innerHeight < 640)
         ? 2
         : innerHeight > 640 && (wide || innerHeight >= 700)
           ? 4
@@ -106,6 +106,7 @@ export function setupWorkshop(host: HTMLElement, changed: () => void) {
   });
   function render() {
     layout = JSON.stringify(upgradeGrid());
+    host.dataset.tab = tab;
     const progress = getProgress(),
       robot = ROBOTS[index],
       unlocked = progress.unlockedRobots.includes(robot.id),

@@ -479,6 +479,12 @@
   height: min(100%, 620px);
   max-width: none;
 }
+@media (max-width: 520px) {
+  /* Portrait phones give the paged upgrade rows the full height. */
+  .is-workshop .menu-panel {
+    height: 100%;
+  }
+}
 @media (max-height: 500px) {
   .is-workshop .menu-panel {
     gap: 6px;
@@ -524,7 +530,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(var(--upgrade-columns, 1), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--upgrade-rows, 1), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--upgrade-rows, 1), minmax(min-content, 1fr));
   gap: 8px 10px;
 }
 .workshop-upgrade {
@@ -689,5 +695,9 @@
   }
   .workshop-pages button {
     height: 40px;
+  }
+  /* Two upgrade rows need the footer's space; the Robots tab keeps its note. */
+  #menu-workshop-content[data-tab="upgrades"] .workshop-footer {
+    display: none;
   }
 }

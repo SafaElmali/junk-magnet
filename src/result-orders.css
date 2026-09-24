@@ -79,7 +79,7 @@
 .result-goals .is-daily .result-line-icon {
   color: #edbd58;
 }
-@media (max-width: 520px), (max-height: 650px) {
+@media (max-height: 650px) {
   /* Compact screens fold several completed orders into one summary row. */
   .result-done.has-summary .is-done {
     display: none;
@@ -176,6 +176,13 @@
   .result-line-reward {
     font-size: 13px;
   }
+  .result-done + .result-goals li:nth-child(n + 3),
+  .result-goals li:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 521px) and (max-height: 379px) {
+  /* Three lines fit a landscape phone; shorter screens keep two, then one. */
   .result-done + .result-goals li:nth-child(n + 2),
   .result-goals li:nth-child(n + 3) {
     display: none;

@@ -1641,6 +1641,15 @@
   }
 }
 @media (max-width: 360px) {
+  .stage-option {
+    column-gap: 8px;
+    padding-inline: 8px;
+  }
+  .stage-copy strong {
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    overflow-wrap: anywhere;
+  }
   #intro .menu-actions .menu-button {
     gap: 6px;
     padding: 8px 6px;
@@ -1651,5 +1660,78 @@
 @media (min-width: 760px) and (max-height: 550px) {
   .menu-shell:not(.is-submenu) .menu-home {
     grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) and (max-height: 600px) {
+  .menu-shell {
+    gap: 10px;
+  }
+  .menu-home {
+    gap: 8px;
+  }
+}
+/* Short desktops fit the two extra entries by tightening spacing, not by dropping controls. */
+@media (min-width: 521px) and (min-height: 551px) and (max-height: 800px) {
+  .menu-shell:not(.is-submenu) {
+    gap: 10px;
+  }
+}
+@media (min-width: 521px) and (min-height: 721px) and (max-height: 800px) {
+  #intro .menu-actions .menu-button {
+    min-height: 45px;
+    padding-block: 6px;
+  }
+  #intro .menu-actions .menu-play {
+    min-height: 52px;
+  }
+}
+@media (min-width: 521px) and (min-height: 551px) and (max-height: 720px) {
+  /* A wider shell pairs the secondary actions, as on phones and short landscape. */
+  .menu-shell:not(.is-submenu) {
+    width: min(760px, 100%);
+  }
+  .menu-shell:not(.is-submenu) .menu-home {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .menu-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+  .menu-actions #start,
+  .menu-actions #new-run,
+  .menu-actions #menu-daily,
+  .menu-actions #menu-help:last-child {
+    grid-column: 1 / -1;
+  }
+  .menu-home.is-resumable .menu-actions #start,
+  .menu-home.is-resumable .menu-actions #new-run {
+    grid-column: auto;
+  }
+  #intro .menu-actions .menu-button {
+    gap: 10px;
+    padding-inline: 12px;
+    font-size: 19px;
+    letter-spacing: 0.03em;
+  }
+  #intro .menu-actions .menu-play {
+    font-size: 24px;
+  }
+  #intro .menu-shell:not(.is-submenu) .intro-note {
+    display: none;
+  }
+  #intro .menu-brand h2 {
+    margin: 8px 0 6px;
+  }
+  #intro .menu-brand p {
+    margin-top: 8px;
+  }
+  .stage-option {
+    min-height: 48px;
+    padding-block: 5px;
+  }
+}
+@media (min-width: 521px) and (max-height: 360px), (max-width: 360px) and (max-height: 600px) {
+  /* The slogan yields to the stage picker and its unlock hint. */
+  .menu-shell:not(.is-submenu) .menu-eyebrow {
+    display: none;
   }
 }

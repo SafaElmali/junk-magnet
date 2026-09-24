@@ -81,8 +81,8 @@
 .order-tabs button.has-new::after {
   content: "";
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: 3px;
+  right: 3px;
   width: 9px;
   height: 9px;
   border: 2px solid #16333b;
@@ -100,7 +100,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(var(--order-columns, 1), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--order-rows, 1), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--order-rows, 1), minmax(min-content, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
