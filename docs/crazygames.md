@@ -1,6 +1,6 @@
 # CrazyGames release
 
-[Deployment](deployment.md) · [Analytics](analytics.md) · [Asset pipeline](assets.md)
+[Agent release](crazygames-agent-release.md) · [Deployment](deployment.md) · [Analytics](analytics.md) · [Asset pipeline](assets.md)
 
 Junk Magnet is in CrazyGames **Basic Launch** (started 23 September 2026, ends 14 October 2026). Promotion to Full Launch is judged on [three metrics](https://docs.crazygames.com/resources/basic-launch-metrics/): average playtime (10+ minutes for strong games), Day 1 retention (10–15%) and conversion, meaning players who play at least one minute (80%+, under 10 s load and under 20 MB build for top games). Updates during Basic Launch are approved automatically, and metrics keep running across versions.
 
@@ -16,7 +16,7 @@ This builds `dist-crazygames/`, opens Chrome on the game's portal page, clicks *
 npm run publish:crazygames -- --save
 ```
 
-With `--save` the script clicks Save as soon as it is enabled, prints the QA tool URL and closes the browser, which frees the session for another browser to open that URL. The first run asks you to log in (Google, or email if Google rejects the automated browser); the session is kept in `.crazygames-session/`, which is gitignored along with the screenshots the script writes there: the filled form, and the page at any failure. If the portal changes its form, the script fails at the missing control; update the selector in `scripts/publish-crazygames.mjs`.
+With `--save` the script clicks Save as soon as it is enabled, prints the QA tool URL and closes the browser, which frees the session for another browser to open that URL. [CrazyGames agent release](crazygames-agent-release.md) covers the whole agent-driven flow, through the QA checklist. The first run asks you to log in (Google, or email if Google rejects the automated browser); the session is kept in `.crazygames-session/`, which is gitignored along with the screenshots the script writes there: the filled form, and the page at any failure. If the portal changes its form, the script fails at the missing control; update the selector in `scripts/publish-crazygames.mjs`.
 
 Saving creates a **Draft** in Game Versions and opens it in the QA tool on crazygames.com/preview; the script prints that URL. Play it (press Play promptly, since its load time runs until the first gameplay start), check its Log and Warnings tabs, then press **Continue**, which opens the QA checklist in a new tab. The checklist is self-attested: answer each requirement, scan **Show QR** to test on a phone, add update notes and confirm. During Basic Launch the update is then approved automatically and goes live. To finish a draft later, click **Submit update** on it in Game Versions. Discard drafts you won't submit.
 

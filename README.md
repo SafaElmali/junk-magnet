@@ -72,6 +72,6 @@ npm run build         # Type-check and production build
 
 [Production domain and deployment](docs/deployment.md): `playjunkmagnet.com`.
 
-[CrazyGames release](docs/crazygames.md): `npm run publish:crazygames`.
+[CrazyGames release](docs/crazygames.md): `npm run publish:crazygames`. [Agent-driven release](docs/crazygames-agent-release.md).
 
 This is a playable prototype; balancing and physical-device testing are ongoing. No accounts or ads; the CrazyGames build integrates the CrazyGames SDK for loading/gameplay events, cloud saves and muting. Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.
