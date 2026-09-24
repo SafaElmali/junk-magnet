@@ -94,6 +94,11 @@ export function getDailyShift(date = new Date()): DailyShift {
   const preset = DAILY_RULES[index];
   return { key, seed, rule: { ...preset, modifiers: structuredClone(preset.modifiers) } };
 }
+/** The shift for a saved date key, such as the date a Daily Shift run started. */
+export function dailyShiftFor(key: string): DailyShift {
+  const [y, m, d] = key.split("-").map(Number);
+  return getDailyShift(new Date(y, m - 1, d, 12));
+}
 export const dailyReward = (streak: number) =>
   DAILY_REWARD + DAILY_STREAK_REWARD * Math.min(DAILY_STREAK_CAP, Math.max(1, streak));
 /** The streak still alive on `key`: finished today or yesterday. */

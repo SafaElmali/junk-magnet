@@ -1,4 +1,13 @@
-import { ROBOTS, canAffordWorkshop, getProgress } from "./progression";
+import {
+  ROBOTS,
+  canAffordWorkshop,
+  getProgress,
+  markOrdersSeen,
+  selectStage,
+  stageUnlocked,
+  type StageId,
+} from "./progression";
+import { STAGES, STAGE_IDS } from "./stages";
 import { track } from "./analytics";
 import {
   setupWorkshop,
@@ -6,6 +15,16 @@ import {
   robotPortrait,
   minutes,
 } from "./workshop";
+import {
+  calendarIcon,
+  dailyPageMarkup,
+  renderDailyEntry,
+} from "./daily-shift-view";
+import {
+  newOrderCount,
+  ordersIcon,
+  setupWorkOrders,
+} from "./work-orders-view";
 import { evolutionGuideMarkup } from "./evolutions";
 import {
   getLanguage,
@@ -91,6 +110,17 @@ const partsIcon = icon(
   '<path d="M12 3.5 19.4 7.8v8.4L12 20.5 4.6 16.2V7.8Z"/><circle cx="12" cy="12" r="3"/>',
 );
 const swapIcon = icon('<path d="M4 8h13l-3-3M20 16H7l3 3"/>');
+const lockIcon = icon(
+  '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+);
+const clearedIcon = icon('<path d="m5 12 5 5 9-10"/>');
+// Unknown future stages fall back to the endless mark.
+const stageIcons: Partial<Record<StageId, string>> = {
+  yard: icon(
+    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  ),
+  night: icon('<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5Z"/>'),
+};
 const previousIcon = icon('<path d="m14 6-6 6 6 6"/>');
 const nextIcon = icon('<path d="m10 6 6 6-6 6"/>');
 
@@ -104,7 +134,9 @@ export const menuMarkup = `
     <nav class="menu-actions" aria-label="Main menu">
       <button id="start" class="menu-button menu-play"><span id="start-label">PLAY</span>${playIcon}</button>
       <button id="new-run" class="menu-button hidden">${menuIcons.restart}<span>NEW RUN</span></button>
+      <button id="menu-daily" class="menu-button menu-daily">${calendarIcon}<span class="menu-daily-copy"><span>DAILY SHIFT</span><small data-daily-detail></small></span><b class="menu-streak hidden" data-daily-streak aria-hidden="true"></b></button>
       <button id="menu-workshop" class="menu-button">${workshopIcon}<span>WORKSHOP</span><b id="menu-parts" class="menu-parts hidden" aria-hidden="true"></b></button>
+      <button id="menu-orders" class="menu-button">${ordersIcon}<span>WORK ORDERS</span><b id="menu-orders-new" class="menu-parts is-ready hidden" aria-hidden="true"></b></button>
       <button id="menu-abilities" class="menu-button">${menuIcons.abilities}<span>ABILITIES</span></button>
       <button id="menu-settings" class="menu-button">${menuIcons.settings}<span>SETTINGS</span></button>
       <button id="menu-help" class="menu-button">${menuIcons.help}<span>HOW TO PLAY</span></button>
@@ -120,6 +152,8 @@ export const menuMarkup = `
   <section id="menu-panel" class="menu-panel hidden" aria-labelledby="menu-panel-title">
     <header><h3 id="menu-panel-title"></h3><div class="menu-panel-tools"><button id="menu-evolutions-open" class="hidden" aria-label="EVOLUTIONS" title="EVOLUTIONS">${menuIcons.abilities}<span>Recipes</span></button><button id="menu-back" class="menu-back">BACK</button></div></header>
     <div id="menu-workshop-content" class="hidden"></div>
+    <div id="menu-daily-content" class="menu-daily-page hidden"></div>
+    <div id="menu-orders-content" class="menu-orders-page hidden"></div>
     <div id="menu-evolutions" class="hidden"></div>
     <div id="menu-library" class="menu-library hidden"></div>
     <div id="menu-options" class="menu-options hidden">
@@ -131,7 +165,7 @@ export const menuMarkup = `
     <div id="menu-language-picker" class="menu-picker hidden"></div>
     <div id="menu-quality-picker" class="menu-picker quality-picker hidden"></div>
   </section>
-  <div class="menu-stage"><span class="stage-mark">${endlessIcon}</span><div><strong>THE SCRAPYARD</strong><span>Endless survival · Increasing difficulty</span></div><span class="stage-status" id="menu-best">READY</span></div>
+  <div class="menu-stage" id="menu-stage" role="group" aria-label="Stage"></div>
   <span class="intro-note"><span>Move with WASD or arrows · Attacks are automatic</span>${
     // CrazyGames forbids links out of the game; its build also omits the guide page.
     import.meta.env.MODE === "crazygames"
@@ -140,8 +174,31 @@ export const menuMarkup = `
   }</span>
 </div>`;
 
+function stagePickerMarkup() {
+  const progress = getProgress();
+  return STAGE_IDS.map((id) => {
+    const stage = STAGES[id],
+      open = stageUnlocked(progress, id),
+      selected = open && progress.stage === id,
+      best = progress.stageBest[id] ?? 0,
+      cleared = progress.clearedStages.includes(id);
+    const detail = open
+      ? t(stage.description)
+      : t("Clear {stage} to unlock", { stage: t(STAGES[stage.unlockedBy!].name) });
+    const status = !open
+      ? ""
+      : best
+        ? `${cleared ? clearedIcon : ""}${t("BEST {time}", { time: minutes(best) })}`
+        : selected
+          ? t("READY")
+          : "";
+    return `<button class="stage-option${open ? "" : " is-locked"}${cleared ? " is-cleared" : ""}" data-stage="${id}" aria-pressed="${selected}"${open ? "" : ' aria-disabled="true"'}><span class="stage-mark">${open ? (stageIcons[id] ?? endlessIcon) : lockIcon}</span><span class="stage-copy"><strong>${t(stage.name)}</strong><span>${detail}</span></span>${status ? `<span class="stage-status${best ? " is-record" : ""}">${status}</span>` : ""}</button>`;
+  }).join("");
+}
 export function setupMenu(actions: {
   start: () => void;
+  /** Starts today's Daily Shift, ending any paused run. */
+  daily: () => void;
   restart: () => void;
   help: () => void;
   language: (next: Language) => void;
@@ -161,11 +218,14 @@ export function setupMenu(actions: {
     | "language"
     | "quality"
     | "workshop"
-    | "evolutions" = "home";
+    | "evolutions"
+    | "daily"
+    | "orders" = "home";
   let resumable = false;
   // Returning from the workshop restores focus to whichever control opened it.
   let workshopOpener = "menu-workshop";
   const workshop = setupWorkshop(el("menu-workshop-content"), refresh);
+  const workOrders = setupWorkOrders(el("menu-orders-content"));
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
   let sheet = 0;
@@ -223,6 +283,7 @@ export function setupMenu(actions: {
   function refresh() {
     el("start-label").textContent = t(resumable ? "CONTINUE" : "PLAY");
     el("new-run").classList.toggle("hidden", !resumable);
+    el("menu-home").classList.toggle("is-resumable", resumable);
     const progress = getProgress();
     const robot = ROBOTS.find((robot) => robot.id === progress.selectedRobot)!;
     const affordable = canAffordWorkshop(progress);
@@ -235,10 +296,26 @@ export function setupMenu(actions: {
         `${t("WORKSHOP")} · ${progress.parts} ${t("Parts")}${affordable ? ` · ${t("Upgrade available")}` : ""}`,
       );
     else el("menu-workshop").removeAttribute("aria-label");
-    el("menu-best").classList.toggle("is-record", progress.bestTime > 0);
-    el("menu-best").textContent = progress.bestTime
-      ? t("BEST {time}", { time: minutes(progress.bestTime) })
-      : t("READY");
+    const fresh = newOrderCount(progress);
+    el("menu-orders-new").textContent = String(fresh);
+    el("menu-orders-new").classList.toggle("hidden", fresh === 0);
+    el("menu-orders").querySelector("span")!.textContent = t("WORK ORDERS");
+    el("menu-orders").setAttribute(
+      "aria-label",
+      fresh
+        ? `${t("WORK ORDERS")} · ${t("{count} new", { count: fresh })}`
+        : t("WORK ORDERS"),
+    );
+    renderDailyEntry(el("menu-daily"));
+    el("menu-stage").setAttribute("aria-label", t("Stage"));
+    const focusedStage = el("menu-stage").contains(document.activeElement)
+      ? (document.activeElement as HTMLElement).dataset.stage
+      : undefined;
+    el("menu-stage").innerHTML = stagePickerMarkup();
+    if (focusedStage)
+      el("menu-stage")
+        .querySelector<HTMLElement>(`[data-stage="${focusedStage}"]`)
+        ?.focus({ preventScroll: true });
     el("menu-weapon").textContent = upgradeName(robot.startingWeapon);
     el("menu-pilot-name").textContent = robot.name;
     el("menu-pilot-copy").textContent = t(robot.description);
@@ -301,10 +378,20 @@ export function setupMenu(actions: {
               ? "Language"
               : page === "quality"
                 ? "Graphics quality"
-                : "SETTINGS",
+                : page === "daily"
+                  ? "DAILY SHIFT"
+                  : page === "orders"
+                    ? "WORK ORDERS"
+                    : "SETTINGS",
     );
     if (page === "abilities") renderLibrary();
     if (page === "workshop") workshop.refresh();
+    if (page === "orders") workOrders.refresh();
+    if (page === "daily") {
+      const focused = document.activeElement?.id === "daily-start";
+      el("menu-daily-content").innerHTML = dailyPageMarkup(resumable);
+      if (focused) el("daily-start").focus({ preventScroll: true });
+    }
     if (page === "evolutions")
       el("menu-evolutions").innerHTML = evolutionGuideMarkup();
   }
@@ -326,10 +413,21 @@ export function setupMenu(actions: {
     document
       .querySelector(".menu-shell")!
       .classList.toggle("is-evolutions", page === "evolutions");
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-daily", page === "daily");
+    document
+      .querySelector(".menu-shell")!
+      .classList.toggle("is-orders", page === "orders");
     el("menu-workshop-content").classList.toggle("hidden", page !== "workshop");
+    el("menu-daily-content").classList.toggle("hidden", page !== "daily");
+    el("menu-orders-content").classList.toggle("hidden", page !== "orders");
     el("menu-evolutions").classList.toggle("hidden", page !== "evolutions");
     el("menu-evolutions-open").classList.toggle("hidden", page !== "abilities");
     if (page === "workshop") workshop.enter(resumable);
+    // Opening the page acknowledges new completions; they stay highlighted this visit.
+    if (page === "orders" && previous !== "orders")
+      workOrders.enter(markOrdersSeen());
     el("menu-home").classList.toggle("hidden", page !== "home");
     el("menu-panel").classList.toggle("hidden", page === "home");
     el("menu-library").classList.toggle("hidden", page !== "abilities");
@@ -344,8 +442,14 @@ export function setupMenu(actions: {
             ? workshopOpener
             : previous === "abilities"
               ? "menu-abilities"
-              : "menu-settings"
-          : "menu-back",
+              : previous === "daily"
+                ? "menu-daily"
+                : previous === "orders"
+                  ? "menu-orders"
+                  : "menu-settings"
+          : page === "daily"
+            ? "daily-start"
+            : "menu-back",
       ).focus();
   }
   el("menu-library").addEventListener("click", (event) => {
@@ -406,6 +510,25 @@ export function setupMenu(actions: {
   );
   el("menu-abilities").addEventListener("click", () => show("abilities"));
   el("menu-settings").addEventListener("click", () => show("settings"));
+  el("menu-daily").addEventListener("click", () => show("daily"));
+  el("menu-orders").addEventListener("click", () => show("orders"));
+  el("menu-daily-content").addEventListener("click", (event) => {
+    if (!(event.target as Element).closest("#daily-start")) return;
+    // start() only runs from the home page, which also resets focus for the return trip.
+    show("home", false);
+    actions.daily();
+  });
+  el("menu-stage").addEventListener("click", (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>(
+      "[data-stage]",
+    );
+    const id = button?.dataset.stage as StageId | undefined;
+    if (!id || button!.getAttribute("aria-pressed") === "true") return;
+    if (selectStage(id)) {
+      track("stage_selected", { stage_id: id });
+      refresh();
+    }
+  });
   const goBack = () => {
     if (page === "evolutions") show("abilities");
     else if (detailOpen && compact()) closeDetail();

@@ -103,13 +103,13 @@ export const dueWorkOrders = (p: Progress, robots: readonly Robot[]) =>
   workOrders(robots).filter(
     (o) => !p.orders.includes(o.id) && o.value(p) >= o.target,
   );
-/** The unfinished order nearest to completion, as a reason to play again. */
+/** The unmet order nearest to completion, as a reason to play again. */
 export function nextWorkOrder(p: Progress, robots: readonly Robot[]) {
   let best: WorkOrder | undefined,
     ratio = -1;
   for (const o of workOrders(robots)) {
-    if (p.orders.includes(o.id)) continue;
-    const r = Math.min(1, o.value(p) / o.target);
+    const r = o.value(p) / o.target;
+    if (p.orders.includes(o.id) || r >= 1) continue;
     if (r > ratio) {
       best = o;
       ratio = r;

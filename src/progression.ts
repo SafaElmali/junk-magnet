@@ -171,6 +171,8 @@ export type Progress = {
   // Later fields are optional in stored JSON; loadProgress fills them for older saves.
   stage: StageId;
   clearedStages: StageId[];
+  /** Longest run per stage; runs before stages existed were all in the yard. */
+  stageBest: Partial<Record<StageId, number>>;
   stats: LifetimeStats;
   evolutions: EvolutionId[];
   robotsUsed: RobotId[];
@@ -276,6 +278,15 @@ export function loadProgress(storage = gameStorage()): Progress {
         ? data.stage
         : "yard",
     clearedStages,
+    stageBest: Object.fromEntries(
+      STAGE_IDS.map((id) => [
+        id,
+        Math.max(
+          integer(data.stageBest?.[id]),
+          id === "yard" && !data.stageBest ? integer(data.bestTime) : 0,
+        ),
+      ]).filter(([, time]) => time),
+    ),
     stats: {
       kills: integer(stats.kills, 1_000_000_000),
       bosses: integer(stats.bosses),
@@ -443,6 +454,7 @@ export function createProgression(storage = gameStorage()) {
       );
       addParts(earned);
       progress.bestTime = Math.max(progress.bestTime, time);
+      progress.stageBest[stage] = Math.max(progress.stageBest[stage] ?? 0, time);
       progress.bestKills = Math.max(progress.bestKills, kills);
       progress.completedRuns = Math.min(1_000_000, progress.completedRuns + 1);
       progress.recentRunIds = [...progress.recentRunIds, run.runId].slice(-64);
