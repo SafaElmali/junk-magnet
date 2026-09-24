@@ -8,6 +8,7 @@ export type AnalyticsEvent =
   | "game_loaded"
   | "game_load_failed"
   | "run_started"
+  | "run_resumed"
   | "run_completed"
   | "run_abandoned"
   | "survival_milestone"

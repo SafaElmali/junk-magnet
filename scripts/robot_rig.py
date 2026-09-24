@@ -2,7 +2,8 @@
 
 The game finds these objects by name (src/robot-rig.ts): `wheel_*` spin about their axle, each
 side's `tread_<side>_<nn>` links step around the track in belt order, and the `body` empty rocks
-on the suspension. Duplicates share one mesh, so each GLB stores a single wheel and link shape.
+on the suspension. Duplicates share one mesh, so each GLB stores a single wheel and link shape;
+wheels may be scaled copies, and the game spins each by its own radius.
 """
 import bpy
 import math
@@ -60,6 +61,15 @@ def wheels(template, x, ys, z):
     """Road wheels on both tracks; the right-hand copies turn around to face outward."""
     return place(template, [(f'wheel_{side}_{i}', (s * x, y, z), (0, 0, 0 if s > 0 else math.pi))
                             for s, side in SIDES for i, y in enumerate(ys)])
+
+
+def sized_wheels(template, x, placements):
+    """Like wheels(), but each (y, z, scale) wheel can differ in size while sharing one mesh."""
+    objects = place(template, [(f'wheel_{side}_{i}', (s * x, y, z), (0, 0, 0 if s > 0 else math.pi))
+                               for s, side in SIDES for i, (y, z, _) in enumerate(placements)])
+    for o, (_, _, scale) in zip(objects, placements * len(SIDES)):
+        o.scale = (scale, scale, scale)
+    return objects
 
 
 def treads(template, x, poses):

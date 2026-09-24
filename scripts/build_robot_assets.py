@@ -1,6 +1,8 @@
 """Original playable robot variants and matching transparent workshop portraits.
 Run with Blender --background --factory-startup --python scripts/build_robot_assets.py.
-The existing SCRAP GLB is read only; SCOUT and VOLT use the same rounded toy-machine language.
+The existing SCRAP GLB is read only; SCOUT, VOLT and MAGNA use the same rounded toy-machine language.
+Name robots after `--` (for example `-- magna`) to rebuild only those; only a full build saves the
+editable kit, so it always holds every robot.
 """
 import bpy
 import math
@@ -45,6 +47,9 @@ M = {
     'copper': material('Copper windings', (.62, .24, .075), .72, .3),
     'teal': material('Teal accents', (.065, .32, .32), .35),
     'cyan': material('Electric ceramic', (.17, .73, .85), .22, .24, .45),
+    # MAGNA; appended so the other robots' material merge order is unchanged.
+    'magna': material('Magna cobalt enamel', (.035, .12, .52), .3),
+    'red': material('Vermilion', (.63, .065, .035), .22, .4),
 }
 parts = []
 # Fixed undercarriage and driven wheels/links export apart from the rocking body.
@@ -106,6 +111,39 @@ def rod(name, a, b, radius, key):
     o = cyl(name, middle, radius, (Vector(b) - Vector(a)).length, key)
     o.rotation_euler = (Vector(b) - Vector(a)).to_track_quat('Z', 'Y').to_euler()
     return o
+
+
+def extrude(name, outline, depth, key, axis='Z', at=0, bevel=.03):
+    """A prism from a 2D outline: top-view (x, y) points rising from z=at, or side-view (y, z)
+    points centred on x=at."""
+    if sum(ax * by - bx * ay for (ax, ay), (bx, by) in zip(outline, outline[1:] + outline[:1])) < 0:
+        outline = outline[::-1]  # Counter-clockwise, so both caps face outward.
+    n = len(outline)
+    lift = (lambda a, b, h: (a, b, at + h)) if axis == 'Z' else (lambda a, b, h: (at + h - depth / 2, a, b))
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata([lift(a, b, h) for h in (0, depth) for a, b in outline], [],
+                     [tuple(reversed(range(n))), tuple(range(n, 2 * n))] +
+                     [(i, (i + 1) % n, (i + 1) % n + n, i + n) for i in range(n)])
+    mesh.update()
+    o = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(o)
+    bpy.context.view_layer.objects.active = o
+    return finish(o, name, key, bevel)
+
+
+def horseshoe(outer, inner, length, y, segments=16):
+    """Top view of a U magnet: the bend at the back (+Y), both arms reaching forward to the poles."""
+    bend = [math.pi * i / segments for i in range(segments + 1)]
+    return ([(outer, y - length)] + [(outer * math.cos(a), y + outer * math.sin(a)) for a in bend] +
+            [(-outer, y - length), (-inner, y - length)] +
+            [(inner * math.cos(a), y + inner * math.sin(a)) for a in reversed(bend)] + [(inner, y - length)])
+
+
+def rounded(cy, cz, hy, hz, radius, segments=6):
+    """Side view of a track block: a (y, z) rounded rectangle like robot_rig.belt()'s path."""
+    return [(cy + sy * (hy - radius) + radius * math.cos(a), cz + sz * (hz - radius) + radius * math.sin(a))
+            for k, (sy, sz) in enumerate([(1, 1), (-1, 1), (-1, -1), (1, -1)])
+            for a in (math.pi / 2 * (k + i / segments) for i in range(segments + 1))]
 
 
 def take(objects):
@@ -198,6 +236,55 @@ def volt():
         box('Backpack heat sink', (x, .595, 1.15), (.045, .10, .31), 'steel', .015)
 
 
+def shell_y(x, z):
+    """MAGNA's front (-Y) shell surface, for seating fasteners flush."""
+    return -.5 * math.sqrt(max(0, 1 - (x / .66) ** 2 - ((z - .86) / .58) ** 2))
+
+
+def magna():
+    # Heavy magnet unit: a broad cobalt shell on long, deep tracks. The horseshoe magnet lies flat
+    # over the head with its poles forward, so its U reads from the game's high camera.
+    sphere('Rounded enamel shell', (0, 0, .86), (.66, .5, .58), 'magna')
+    sphere('Face gasket', (0, -.43, .89), (.5, .12, .44), 'navy')
+    sphere('Ivory faceplate', (0, -.478, .895), (.468, .106, .408), 'cream')
+    for x in [-.175, .175]:
+        sphere('Eye socket', (x, -.566, .93), (.084, .025, .15), 'navy')
+        sphere('Glass eye', (x, -.585, .94), (.063, .014, .122), 'blue')
+        sphere('Eye glint', (x - .015, -.598, 1.0), (.024, .007, .037), 'glint')
+    for side in [-1, 1]:
+        x = side * .62
+        # The rubber block follows the belt's profile, so links hug its rounded ends.
+        undercarriage(extrude('Rubber track', rounded(0, .29, .547, .212, .177), .3, 'rubber', 'X', x))
+        undercarriage(box('Track fender', (x, 0, .59), (.34, .96, .07), 'magna', .032))
+        for z in [.7, 1.1]:
+            cyl('Face hex fastener', (side * .5, shell_y(.5, z) - .005, z), .032, .03, 'steel', 'Y', 6)
+        cyl('Shoulder pivot', (side * .6, .1, 1.1), .125, .1, 'dark', 'X')
+        cyl('Pivot bolt', (side * .66, .1, 1.1), .06, .03, 'gold', 'X', 6)
+        rod('Magnet strut', (side * .6, .1, 1.1), (side * .36, -.12, 1.54), .038, 'steel')
+    # Big idlers at each end and a road wheel between: one wheel mesh at two sizes.
+    rig.extend(robot_rig.sized_wheels(road_wheel('magna'), .79, [(-.37, .29, 1.2), (0, .22, .92), (.37, .29, 1.2)]))
+    link = take([box('Tread link', (0, 0, 0), (.31, .046, .05), 'tread', .012)])[0]
+    rig.extend(robot_rig.treads(link, .62, robot_rig.belt(0, .29, .57, .235, .2, .09)))
+    # A flat U raised on a gunmetal mount, with steel pole shoes behind glowing field bands.
+    extrude('Horseshoe magnet', horseshoe(.5, .22, .45, 0), .19, 'red', 'Z', 1.5)
+    box('Magnet mount', (0, .36, 1.42), (.34, .2, .22), 'dark', .05)
+    for side in [-1, 1]:
+        box('Steel pole shoe', (side * .36, -.525, 1.595), (.3, .15, .23), 'steel', .03)
+        box('Field band', (side * .36, -.45, 1.595), (.32, .035, .245), 'cyan', .008)
+    for a in [-.35, 0, .35]:
+        cyl('Bend rivet', (.36 * math.sin(a), .36 * math.cos(a), 1.695), .026, .02, 'gold', 'Z', 6)
+    box('Rear service panel', (0, .49, .84), (.54, .065, .5), 'magna', .08)
+    for z in [.72, .82, .92]:
+        box('Cooling vent', (0, .525, z), (.3, .02, .028), 'navy', .01)
+    box('Counterweight', (0, .45, .47), (.5, .16, .2), 'dark', .05)
+    box('Front bumper', (0, -.47, .45), (.56, .17, .13), 'dark', .04)
+    # Brass hazard stripes share the bolts' material, saving a draw call.
+    for x in [-.15, -.05, .05, .15]:
+        box('Hazard stripe', (x, -.558, .45), (.045, .012, .12), 'gold', .004).rotation_euler.y = math.pi / 4
+    for x in [-.23, .23]:
+        cyl('Bumper light', (x, -.558, .45), .03, .014, 'cyan', 'Y')
+
+
 def merge(objects, label):
     merged = []
     for material in M.values():
@@ -215,16 +302,16 @@ def merge(objects, label):
     return merged
 
 
-def export_model(kind):
+def export_model(kind, pivot=.45, **options):
     global parts, chassis, rig
     # Merge by material so detailed bolts do not each cost a draw call. The body merges apart from
     # the fixed chassis because the game rocks it on its suspension.
-    body = robot_rig.pivot(merge(parts, kind), (0, 0, .45))
+    body = robot_rig.pivot(merge(parts, kind), (0, 0, pivot))
     exported = [body, *body.children, *merge(chassis, kind + '_chassis'), *rig]
     bpy.ops.object.select_all(action='DESELECT')
     for o in exported:
         o.select_set(True)
-    bpy.ops.export_scene.gltf(filepath=os.path.join(MODELS, 'robot-'+kind+'.glb'), export_format='GLB', use_selection=True, export_apply=True)
+    bpy.ops.export_scene.gltf(filepath=os.path.join(MODELS, 'robot-'+kind+'.glb'), export_format='GLB', use_selection=True, export_apply=True, **options)
     parts, chassis, rig = [], [], []
 
 
@@ -262,23 +349,33 @@ def studio(scene, kind, focus=(0, 0, 1.05), scale=2.8):
     bpy.ops.render.render(write_still=True)
 
 
+BUILDERS = {'scout': scout, 'volt': volt, 'magna': magna}
+# MAGNA's taller tracks raise its suspension pivot. It exports only its own scene (not the
+# startup cube's) and no UVs, which its untextured materials never read, to keep the GLB small.
+# Its shorter, wider body is framed a little lower in the portrait.
+EXPORT = {'magna': {'pivot': .5, 'use_active_scene': True, 'export_texcoords': False}}
+FRAMING = {'magna': {'focus': (0, 0, .9)}}
+
+
 def build_assets():
     global parts
-    for kind in ['scrap','scout','volt']:
+    wanted = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    for kind in [k for k in ['scrap','scout','volt','magna'] if not wanted or k in wanted]:
         scene=bpy.data.scenes.new('Robot — '+kind)
         bpy.context.window.scene=scene
         parts=[]
         if kind=='scrap':
             bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS,'robot.glb'))
         else:
-            scout() if kind=='scout' else volt()
-            export_model(kind)
-        studio(scene,kind)
+            BUILDERS[kind]()
+            export_model(kind, **EXPORT.get(kind, {}))
+        studio(scene,kind,**FRAMING.get(kind, {}))
         # Object names are global across scenes: free the rig names for the next robot.
         for o in scene.objects:
             o.name=kind+' '+o.name
         print('ROBOT_READY',kind,flush=True)
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','robot-kit.blend'))
+    if not wanted:
+        bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art','robot-kit.blend'))
 
 
 if __name__ == '__main__':
