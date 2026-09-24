@@ -18,6 +18,8 @@ const KEY = "junkmagnet-run-v1";
 const analytics = process.env.ANALYTICS === "1";
 const read = (page) => page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
 const saved = (page) => page.evaluate((key) => localStorage.getItem(key), KEY);
+// PostHog batches for a few seconds; let it send before a reload drops the page.
+const flush = (page) => analytics && page.waitForTimeout(4000);
 const ready = (page) =>
   page.waitForFunction(() => window.__JUNK_MAGNET__, null, { timeout: 30000 });
 /** Steers toward energy (or circles), taking the first choice at each level-up. */
@@ -79,6 +81,11 @@ try {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: "en-US",
+    // PostHog ignores headless Chrome's user agent.
+    ...(analytics && {
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+    }),
   });
   const events = [];
   if (analytics) {
@@ -114,7 +121,7 @@ try {
   const bytes = (await saved(page)).length;
   report.snapshotBytesAt20s = bytes;
   assert.ok(bytes > 1000 && bytes < 300_000, `${bytes} bytes`);
-  if (analytics) await page.waitForTimeout(4000); // Let PostHog flush its batch.
+  await flush(page);
   await page.reload();
   await ready(page);
   await page.locator("#start-label").waitFor();
@@ -138,6 +145,7 @@ try {
 
   // 2. Closing or reloading mid-play saves on pagehide, not the older autosave.
   await play(page, 3);
+  await flush(page);
   const before = await read(page);
   await page.reload();
   await ready(page);
@@ -159,6 +167,7 @@ try {
     () => window.__JUNK_MAGNET__.snapshot().phase === "upgrade",
   );
   const choosing = await read(page);
+  await flush(page);
   await page.reload();
   await ready(page);
   const pending = await read(page);
@@ -195,6 +204,7 @@ try {
   report.checks.push(`mid-level-up reload kept choices ${choosing.choices.join(", ")}`);
 
   // 4. New Run discards the saved run.
+  await flush(page);
   await page.reload();
   await ready(page);
   assert.equal(await page.locator("#start-label").textContent(), "CONTINUE");
@@ -233,6 +243,7 @@ try {
   assert.equal(lost.phase, "lost");
   await page.locator("#result").waitFor({ state: "visible" });
   assert.equal(await saved(page), null, "defeat clears the snapshot");
+  await flush(page);
   await page.reload();
   await ready(page);
   assert.equal(await page.locator("#start-label").textContent(), "PLAY");
@@ -242,6 +253,7 @@ try {
   if (analytics) {
     await page.waitForTimeout(4000);
     const of = (name) => events.filter((e) => e.event === name);
+    report.events = events.map((e) => e.event);
     // Steps 1 and 3 continue a restored run; 2 and 4 start a new one instead.
     assert.equal(of("run_resumed").length, 2, "one per continued restore");
     const firstRun = of("run_started")[0].properties.run_id;
@@ -251,7 +263,10 @@ try {
       1,
       "a resumed run never starts twice",
     );
-    assert.ok(of("run_resumed")[0].properties.away_seconds >= 4);
+    // Seconds since the page was left: the reload's pagehide saved last.
+    const away = of("run_resumed")[0].properties.away_seconds;
+    assert.ok(Number.isInteger(away) && away >= 0 && away < 60, `away_seconds ${away}`);
+    assert.equal(of("run_completed").length, 1, "the defeat completes once");
     assert.equal(of("run_resumed")[0].properties.level, paused.level);
     report.checks.push(
       `analytics: ${events.map((e) => e.event).filter((e) => e.startsWith("run_")).join(", ")}`,
@@ -305,7 +320,6 @@ try {
     }
     throw Error("menu never settled");
   };
-  report.knownMenuOverflow = {};
   for (const locale of ["en-US", "de-DE"])
     for (const [width, height] of [
       [1440, 900],
@@ -330,8 +344,6 @@ try {
       await live.locator("#pause").click();
       await live.locator("#pause-menu").click();
       const inMemory = await menuLayout(live);
-      const known = await overflow(live, ".menu-shell, #intro button");
-      if (known.length) report.knownMenuOverflow[tag] = known;
       await reference.close();
 
       const layout = await browser.newContext(options);
@@ -350,6 +362,11 @@ try {
       await view.goto(url);
       await ready(view);
       assert.deepEqual(await menuLayout(view), inMemory, `${tag} restored menu`);
+      assert.deepEqual(
+        await overflow(view, ".menu-shell, #intro button, #intro h3, #intro p"),
+        [],
+        `${tag} restored menu fits`,
+      );
       await view.screenshot({ path: path.join(shots, `resume-menu-${tag}.png`) });
       await view.locator("#start").click();
       await view.locator("#upgrade").waitFor({ state: "visible" });
