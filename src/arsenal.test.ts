@@ -20,6 +20,7 @@ import {
   slagStats,
 } from "./arsenal";
 import { CoopSession } from "./coop-session";
+import { eventCue } from "./audio";
 import { LANGUAGES, localizedUpgradeDescription, setLanguage, t } from "./i18n";
 import { specializationCopy } from "./specialization-ui";
 import { SPECIALIZATIONS, type SpecializationId } from "./specializations";
@@ -362,6 +363,21 @@ test("an elite kill pays triple XP, extra scrap and a part, and is counted", () 
   };
   assert.deepEqual(drops(false), { xp: 4, scrap: 2, parts: 0, elites: 0, event: false });
   assert.deepEqual(drops(true), { xp: 12, scrap: ELITE.scrap, parts: 1, elites: 1, event: true });
+});
+
+test("new weapons and elite kills reuse existing sounds", () => {
+  const at = { x: 0, z: 0 };
+  assert.equal(eventCue({ kind: "harpoon", ...at }), "launch");
+  assert.equal(eventCue({ kind: "slag", ...at }), "burst");
+  assert.equal(eventCue({ kind: "kill", ...at, elite: true }), "reward");
+  assert.equal(eventCue({ kind: "kill", ...at }), "kill");
+  const s = isolated();
+  s.upgrades.harpoon = 1;
+  s.upgrades.slag = 1;
+  enemy(s, 4);
+  run(s, 0.7);
+  assert.ok(s.events.some((e) => e.kind === "harpoon"));
+  assert.ok(s.events.some((e) => e.kind === "slag"));
 });
 
 test("co-op runs the new weapons for both robots, shares their visuals and clears a downed robot's", () => {
