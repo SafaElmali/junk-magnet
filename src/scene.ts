@@ -154,7 +154,7 @@ export class YardScene {
     if (!this.partnerRoot) {
       this.partnerRoot = new THREE.Group();
       this.partnerRoot.name = "coop-teammate";
-      for (const id of ["scrap", "scout", "volt"]) {
+      for (const id of ["scrap", "scout", "volt", "magna"]) {
         const model = instance(id === "scrap" ? "robot" : `robot-${id}`);
         this.partnerRigs.set(id, new RobotRig(model));
         const materials = new Map<THREE.Material, THREE.Material>();
@@ -462,6 +462,7 @@ export class YardScene {
       "robot-scout",
       "helper-drone",
       "robot-volt",
+      "robot-magna",
       "discovery-chest",
       "discovery-repair",
       "discovery-salvage",
@@ -544,7 +545,7 @@ export class YardScene {
       this.modelBatches(name, ENTITY_LIMITS.shots * 2),
     );
     this.robot = new THREE.Group();
-    for (const id of ["scrap", "scout", "volt"] as const) {
+    for (const id of ["scrap", "scout", "volt", "magna"] as const) {
       const model = instance(id === "scrap" ? "robot" : `robot-${id}`);
       model.name = `robot-${id}`;
       model.visible = id === "scrap";

@@ -3,7 +3,7 @@ import type { UpgradeId } from "./simulation";
 import type { RunSummary } from "./run-summary";
 
 /** Local, versioned workshop progress. Combat takes an immutable copy per run. */
-export type RobotId = "scrap" | "scout" | "volt";
+export type RobotId = "scrap" | "scout" | "volt" | "magna";
 export type PermanentUpgrade = "hull" | "magnet";
 export type StartingWeapon = "saw" | "lightning" | "turret" | "burst";
 export type StageId = "yard" | "night";
@@ -84,6 +84,18 @@ export const ROBOTS = [
     pickupBonus: 0,
     damageReduction: 0,
     damageMultiplier: 1.15,
+  },
+  {
+    id: "magna",
+    name: "MAGNA",
+    cost: 160,
+    description: "Heavy magnet unit. +2 armor, +0.4 m pickup range, −8% speed.",
+    startingWeapon: "burst",
+    speedMultiplier: 0.92,
+    pickupBonus: 0.4,
+    // Flat contact armor, stacking with Reinforced Hull and Steel Plating.
+    damageReduction: 2,
+    damageMultiplier: 1,
   },
 ] as const;
 export const UPGRADE_PRICES = [25, 60, 110] as const;

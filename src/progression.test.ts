@@ -141,7 +141,7 @@ test("workshop affordability covers locked robots and the next upgrade rank only
   const maxed: typeof base = {
     ...base,
     upgrades: { hull: 3, magnet: 3 },
-    unlockedRobots: ["scrap", "scout", "volt"],
+    unlockedRobots: ["scrap", "scout", "volt", "magna"],
   };
   assert.equal(canAffordWorkshop(base), false);
   assert.equal(canAffordWorkshop({ ...base, parts: 24 }), false);

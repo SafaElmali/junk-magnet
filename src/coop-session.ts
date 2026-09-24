@@ -30,7 +30,9 @@ export function coopConfig(value: unknown): RunConfig {
     startingWeapon: robot.startingWeapon,
     speedMultiplier: robot.speedMultiplier,
     damageMultiplier: robot.damageMultiplier,
-    damageReduction: Math.floor(bounded(v.damageReduction, 3)),
+    damageReduction:
+      robot.damageReduction +
+      Math.floor(bounded((v.damageReduction ?? 0) - robot.damageReduction, 3)),
     pickupBonus:
       robot.pickupBonus +
       Math.round(
