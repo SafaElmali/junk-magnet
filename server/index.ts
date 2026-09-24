@@ -36,7 +36,8 @@ export function createCoopServer(
       }
       const path = resolve(
         root,
-        "." + (pathname === "/" ? "/index.html" : pathname),
+        // Directory URLs (/, /play/, /guide/) serve their index.html.
+        "." + (pathname.endsWith("/") ? `${pathname}index.html` : pathname),
       );
       if (!path.startsWith(root + sep)) {
         res.writeHead(403).end();

@@ -15,7 +15,12 @@ const health = await fetch(new URL("/health", backend), {
 });
 assert.equal(health.status, 200, "Health endpoint must respond");
 assert.deepEqual(await health.json(), { ok: true });
-const page = await request("/");
+const landing = await request("/");
+assert.equal(landing.status, 200, "Landing page must respond");
+const landingHtml = await landing.text();
+assert.match(landingHtml, /href="\/play\/"/, "Landing page must link to the game");
+assert.match(landingHtml, /href="https:\/\/www\.crazygames\.com\/game\/junk-magnet"/, "Landing page must link to CrazyGames");
+const page = await request("/play/");
 assert.equal(page.status, 200, "Game page must respond");
 const html = await page.text();
 assert.match(html, /Junk Magnet/);
@@ -73,7 +78,7 @@ try {
   guest.send({ type: "leave" });
   assert.equal((await host.next("ended")).reason, "left");
   console.log(
-    `PASS ${base.origin}: page, built asset, health, and two-player co-op`,
+    `PASS ${base.origin}: landing page, game page, built asset, health, and two-player co-op`,
   );
 } finally {
   for (const socket of sockets) socket.terminate();

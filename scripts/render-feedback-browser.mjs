@@ -20,7 +20,7 @@ await page.route(`${origin}/`, (route) =>
     body: '<html><body style="margin:0"><div id="scene" style="width:100vw;height:100vh"></div></body></html>',
   }),
 );
-await page.goto(`${origin}/`);
+await page.goto(`${origin}/play/`);
 await page.evaluate(async () => {
   const { YardScene } = await import("/src/scene.ts");
   const { createState } = await import("/src/simulation.ts");

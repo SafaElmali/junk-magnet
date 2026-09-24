@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 
 await fs.mkdir("/tmp/junk-magnet-audio", { recursive: true });
 const browser = await chromium.launch({ channel: "chrome", headless: true });
-const url = process.env.GAME_URL ?? "http://127.0.0.1:5185";
+const url = process.env.GAME_URL ?? "http://127.0.0.1:5185/play/";
 const reports = [];
 try {
   for (const [width, height] of [

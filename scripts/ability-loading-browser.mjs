@@ -2,7 +2,7 @@ import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
-const url = process.env.GAME_URL ?? "http://127.0.0.1:5184";
+const url = process.env.GAME_URL ?? "http://127.0.0.1:5184/play/";
 
 async function clickAndCheckArt(page, selector) {
   const images = await page.evaluate(async (selector) => {

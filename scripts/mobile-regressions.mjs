@@ -2,7 +2,7 @@ import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 
 const browser = await chromium.launch({ channel: "chrome", headless: true });
-const baseURL = process.env.GAME_URL ?? "http://127.0.0.1:5185";
+const baseURL = process.env.GAME_URL ?? "http://127.0.0.1:5185/play/";
 try {
   for (const viewport of [
     { width: 390, height: 844 },

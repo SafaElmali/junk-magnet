@@ -25,7 +25,7 @@ npm ci
 npm run dev
 ```
 
-Open [localhost:5184](http://127.0.0.1:5184) and choose **Play**.
+Open [localhost:5184/play/](http://127.0.0.1:5184/play/) and choose **Play**. The landing page, with Play and CrazyGames links, is at [localhost:5184](http://127.0.0.1:5184).
 
 | Action | Control |
 | --- | --- |
@@ -46,7 +46,7 @@ VITE_COOP_ENABLED=true npm run build
 npm run serve
 ```
 
-Open [localhost:5185](http://127.0.0.1:5185), choose **Play Together**, and share the room code with a friend using the same hosted game. To play over the internet, deploy the Node server with WebSocket support. See [co-op setup and hosting](docs/multiplayer.md).
+Open [localhost:5185/play/](http://127.0.0.1:5185/play/), choose **Play Together**, and share the room code with a friend using the same hosted game. To play over the internet, deploy the Node server with WebSocket support. See [co-op setup and hosting](docs/multiplayer.md).
 
 ## Sound and music
 

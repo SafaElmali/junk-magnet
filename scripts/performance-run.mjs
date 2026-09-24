@@ -6,7 +6,7 @@ import os from 'node:os';
 // Production build: npm run build; npx vite preview --port 5279 --strictPort
 // CPU: 100% is one logical core. RSS includes the isolated browser's processes
 // and may double-count shared pages; it is not JS heap or dedicated GPU memory.
-const url = process.env.GAME_URL ?? 'http://127.0.0.1:5279';
+const url = process.env.GAME_URL ?? 'http://127.0.0.1:5279/play/';
 const output = process.env.PERF_OUTPUT ?? '.impeccable/review/performance';
 await mkdir(output, { recursive: true });
 const report = {

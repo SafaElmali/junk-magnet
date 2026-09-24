@@ -52,7 +52,7 @@ try {
       }),
     );
   });
-  await page.goto(process.env.ANALYTICS_TEST_URL || "http://127.0.0.1:5196/");
+  await page.goto(process.env.ANALYTICS_TEST_URL || "http://127.0.0.1:5196/play/");
   await page.waitForFunction(() => window.__JUNK_MAGNET__, { timeout: 30000 });
   await page.locator("#menu-workshop").click();
   await page.locator('[data-robot-step="1"]').click();

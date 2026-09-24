@@ -104,7 +104,7 @@ try {
           });
       };
       try {
-        await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185");
+        await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185/play/");
         await page.waitForFunction(() => window.__JUNK_MAGNET__);
         await check("home");
         await page.locator("#menu-workshop").click();

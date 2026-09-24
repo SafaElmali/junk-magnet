@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const browser = await chromium.launch({channel:'chrome',headless:true});
-const url=process.env.GAME_URL ?? process.argv[2] ?? 'http://127.0.0.1:5185';
+const url=process.env.GAME_URL ?? process.argv[2] ?? 'http://127.0.0.1:5185/play/';
 const errors=[],reports=[];
 await fs.mkdir('.impeccable/review/field',{recursive:true});
 const read=p=>p.evaluate(()=>window.__JUNK_MAGNET__.snapshot());

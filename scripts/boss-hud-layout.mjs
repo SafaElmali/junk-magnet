@@ -7,7 +7,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
 const report = [];
 try {
   const page = await browser.newPage({ locale: "tr-TR" });
-  await page.goto("http://127.0.0.1:5185");
+  await page.goto("http://127.0.0.1:5185/play/");
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   await page.locator("#start").click();
   await page.locator("#pause").click();

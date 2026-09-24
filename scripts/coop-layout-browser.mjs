@@ -9,7 +9,7 @@ try {
       locale: language,
       viewport: { width: 1440, height: 900 },
     });
-    await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185");
+    await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185/play/");
     await page.locator("#menu-coop").waitFor({ state: "visible" });
     for (const [width, height] of [
       [1440, 900],

@@ -2,7 +2,8 @@
 
 | Service | Address / project |
 | --- | --- |
-| Game website | https://playjunkmagnet.com |
+| Landing page | https://playjunkmagnet.com |
+| Game | https://playjunkmagnet.com/play/ |
 | Website hosting | Netlify project `playjunkmagnet` (`YOUR_NETLIFY_SITE_ID`) |
 | Multiplayer | Cloudflare Worker `junk-magnet-coop`, https://coop.playjunkmagnet.com |
 | Repository | `SafaElmali/junk-magnet`, branch `main` |
@@ -75,7 +76,8 @@ Verify the public deployment with:
 npm run verify:deployment
 ```
 
-The check loads the page, a built asset, backend health, and two real WebSocket
+The check loads the landing page (including its Play and CrazyGames links), the
+game page, a built asset, backend health, and two real WebSocket
 clients; they create and join a room, start a shared simulation, and leave.
 `GAME_URL` and `COOP_URL` can point this same check at a preview or local server.
 Production browser origins are explicitly listed in `wrangler.jsonc`; arbitrary
@@ -94,9 +96,14 @@ VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 
 ## Search and sharing metadata
 
-The game entry page includes static search and social metadata and `VideoGame`
-JSON-LD. `/guide/` is a readable, JavaScript-free gameplay guide, linked from the
-game menu and included in `public/sitemap.xml`. Keep its facts in sync with
+`/` is a static landing page (`index.html`, styled by `src/landing/`) with a
+**Play now** button for `/play/` and a link to the
+[CrazyGames page](https://www.crazygames.com/game/junk-magnet). It carries the
+`VideoGame` JSON-LD. The game itself is `play/index.html`, served at `/play/` with
+its own canonical URL. The web build uses an absolute `/` base so `/play/` loads
+public assets from the site root; the CrazyGames build keeps a relative base.
+`/guide/` is a readable, JavaScript-free gameplay guide, linked from the game menu.
+All three pages are in `public/sitemap.xml`. Keep its facts in sync with
 `docs/gameplay.md`, especially progression costs, controls, and co-op availability.
 
 `public/og-image.png` is an exact copy of `art/cover.png`, the README promotional
@@ -106,7 +113,7 @@ cards use absolute `https://playjunkmagnet.com/og-image.png` URLs; previews need
 the production deployment to contain the image before remote unfurlers can load it.
 
 Metadata and guide changes ship with the normal frontend build. After deploying,
-check the canonical URLs, `/guide/`, `/og-image.png`, `/robots.txt`, and
+check the canonical URLs, `/play/`, `/guide/`, `/og-image.png`, `/robots.txt`, and
 `/sitemap.xml`. Search indexing and cached social previews update independently
 of deployment.
 

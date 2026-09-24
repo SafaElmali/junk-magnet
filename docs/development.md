@@ -27,7 +27,7 @@ node scripts/mobile-regressions.mjs
 node scripts/survival-browser.mjs
 ```
 
-Additional scripts cover menus, abilities, workshop portraits, discovery feedback, and co-op. See [verification notes](../VERIFICATION.md) for measured results and limitations. For co-op checks, use the [Node server](multiplayer.md) instead of Vite preview on 5185.
+The scripts open the game at `/play/`; set `GAME_URL` to a game page URL to test elsewhere. Additional scripts cover menus, abilities, workshop portraits, discovery feedback, and co-op. See [verification notes](../VERIFICATION.md) for measured results and limitations. For co-op checks, use the [Node server](multiplayer.md) instead of Vite preview on 5185.
 
 ### Performance checks
 

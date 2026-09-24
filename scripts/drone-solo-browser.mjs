@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 const browser = await chromium.launch({channel:'chrome',headless:true});
-const url=process.env.GAME_URL ?? process.argv[2] ?? 'http://127.0.0.1:5197';
+const url=process.env.GAME_URL ?? process.argv[2] ?? 'http://127.0.0.1:5197/play/';
 const errors=[],reports=[];
 await fs.mkdir('.impeccable/review/drone',{recursive:true});
 const read=p=>p.evaluate(()=>window.__JUNK_MAGNET__.snapshot());
@@ -11,7 +11,7 @@ try {
   const p=await browser.newPage({viewport,locale:'tr-TR',hasTouch:mobile,isMobile:mobile});
   p.on('pageerror',e=>errors.push(e.message));
   await p.goto(url);
-  const asset = await p.request.get(url + '/models/helper-drone.glb');
+  const asset = await p.request.get(new URL('/models/helper-drone.glb', url).href);
   assert.equal(asset.status(),200); assert.equal((await asset.body()).subarray(0,4).toString(),'glTF');
   await p.locator('#start').click();
   await p.locator('.drone-control').waitFor({state:'visible'});

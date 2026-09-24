@@ -136,7 +136,7 @@ export const menuMarkup = `
     // CrazyGames forbids links out of the game; its build also omits the guide page.
     import.meta.env.MODE === "crazygames"
       ? ""
-      : ' · <a href="./guide/" target="_blank" rel="noopener" aria-label="Gameplay guide (opens in a new tab)">Gameplay guide</a>'
+      : ' · <a href="/guide/" target="_blank" rel="noopener" aria-label="Gameplay guide (opens in a new tab)">Gameplay guide</a>'
   }</span>
 </div>`;
 

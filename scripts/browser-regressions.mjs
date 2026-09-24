@@ -8,7 +8,7 @@ const page = await browser.newPage({
 });
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-await page.goto("http://127.0.0.1:5184");
+await page.goto("http://127.0.0.1:5184/play/");
 await page.waitForFunction(() => window.__JUNK_MAGNET__);
 await page.locator("#menu-help").click();
 await page.locator("#resume").click();
@@ -66,7 +66,7 @@ const mobile = await browser.newPage({
   hasTouch: true,
 });
 mobile.on("pageerror", (e) => errors.push(e.message));
-await mobile.goto("http://127.0.0.1:5184");
+await mobile.goto("http://127.0.0.1:5184/play/");
 await mobile.waitForFunction(() => window.__JUNK_MAGNET__);
 await mobile.locator("#start").tap();
 await mobile.waitForTimeout(150);

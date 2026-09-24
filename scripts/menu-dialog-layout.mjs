@@ -11,7 +11,7 @@ const page = await browser.newPage({
 });
 const report = [];
 try {
-  await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185");
+  await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185/play/");
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   await page.evaluate(() => {
     document.querySelector("#app").classList.remove("in-menu");

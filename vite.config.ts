@@ -1,9 +1,18 @@
 import { defineConfig, type Plugin } from "vite";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { loadingMarkup } from "./src/loading-screen";
+
+const page = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 /** CrazyGames build (`--mode crazygames`): SDK script first, then the SDK-aware entry. */
 const crazyGames = (): Plugin[] => [{
+  // The upload's index.html is the game, not the playjunkmagnet.com landing page.
+  name: "crazygames-game-page",
+  apply: "build",
+  enforce: "pre",
+  load: (id) => (id === page("./index.html") ? readFileSync(page("./play/index.html"), "utf8") : undefined),
+}, {
   name: "crazygames-entry",
   transformIndexHtml: {
     order: "pre",
@@ -13,7 +22,7 @@ const crazyGames = (): Plugin[] => [{
         '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>\n    <script type="module" src="/src/crazygames-entry.ts"></script>',
       )
       // The guide page is not shipped; scripts/build-crazygames.mjs checks no link remains.
-      .replace(/\s*<p><a href="\.\/guide\/">.*?<\/p>/, "")
+      .replace(/\s*<p><a href="\/guide\/">.*?<\/p>/, "")
       .replace(" You can read the gameplay guide without JavaScript.", ""),
   },
 }, {
@@ -33,7 +42,12 @@ const crazyGames = (): Plugin[] => [{
 }];
 
 export default defineConfig(({ mode }) => ({
-  base: "./",
+  // playjunkmagnet.com serves the landing page at / and the game at /play/, so
+  // public assets resolve from the site root. CrazyGames hosts the upload in a subfolder.
+  base: mode === "crazygames" ? "./" : "/",
+  build: mode === "crazygames" ? {} : {
+    rollupOptions: { input: { landing: page("./index.html"), play: page("./play/index.html") } },
+  },
   plugins: [{
     name: "initial-loading-screen",
     transformIndexHtml(html) {

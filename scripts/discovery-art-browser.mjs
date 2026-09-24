@@ -127,7 +127,7 @@ window.fixture={scene,state,updateDiscovery,render,createState};render();</scrip
   ]) {
     const page = await browser.newPage({ viewport: { width, height } });
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto("http://127.0.0.1:5184");
+    await page.goto("http://127.0.0.1:5184/play/");
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
     // Freeze only this explicit DOM fixture, leaving real-gameplay QA untouched.
     await page.evaluate(() => {

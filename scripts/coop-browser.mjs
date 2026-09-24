@@ -1,7 +1,7 @@
 import { chromium } from "@playwright/test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-const url = process.env.GAME_URL ?? "http://127.0.0.1:5185";
+const url = process.env.GAME_URL ?? "http://127.0.0.1:5185/play/";
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const errors = [],
   reports = [];

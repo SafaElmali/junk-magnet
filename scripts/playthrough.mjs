@@ -8,7 +8,7 @@ page.on('pageerror', e => errors.push(e.message));
 const read = () => page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
 const priority = ['turret', 'lightning', 'burst', 'saw', 'armor', 'magnet', 'boots', 'repair'];
 try {
-  await page.goto(process.env.GAME_URL ?? 'http://127.0.0.1:5185');
+  await page.goto(process.env.GAME_URL ?? 'http://127.0.0.1:5185/play/');
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   await page.locator('#start').click();
   let previous = { x: 0, z: 0 }, peakEnemies = 0;

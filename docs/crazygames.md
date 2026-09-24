@@ -26,6 +26,7 @@ Release in batches, once or twice a week. The CrazyGames dashboard refreshes dai
 
 `npm run build:crazygames` (`scripts/build-crazygames.mjs`) runs Vite with `--mode crazygames`:
 
+- Uses the game page (`play/index.html`) as the upload's `index.html`. The playjunkmagnet.com landing page is not included.
 - Loads the [HTML5 SDK v3](https://docs.crazygames.com/sdk/intro/) and starts through `src/crazygames-entry.ts`, which initializes the SDK before the game reads saved data.
 - Saves progress and settings in the SDK [Data Module](https://docs.crazygames.com/sdk/data/), which syncs across devices for signed-in players. Existing `junk-magnet-*` browser saves are copied in on first launch. If Progress Save is not enabled for the version, or an ad blocker removes the SDK, the game falls back to browser storage.
 - Reports `loadingStart`/`loadingStop` around asset loading and `gameplayStart`/`gameplayStop` whenever active play begins or ends (menus, pause, level-up choices and results stop it). The SDK itself throttles calls closer than about one second.

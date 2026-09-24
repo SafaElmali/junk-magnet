@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 const report = [];
-const url = process.env.GAME_URL ?? "http://127.0.0.1:5185";
+const url = process.env.GAME_URL ?? "http://127.0.0.1:5185/play/";
 const directory = ".impeccable/review";
 await fs.mkdir(directory, { recursive: true });
 async function bounds(page, label) {

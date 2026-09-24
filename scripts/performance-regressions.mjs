@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 
 // Build with VITE_COOP_ENABLED=true to exercise the opt-in co-op flow locally.
-const url = process.env.GAME_URL ?? 'http://127.0.0.1:5279';
+const url = process.env.GAME_URL ?? 'http://127.0.0.1:5279/play/';
 const output = process.env.PERF_OUTPUT ?? '.impeccable/review/performance-after';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });

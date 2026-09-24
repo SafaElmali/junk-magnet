@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const baseURL = process.env.GAME_URL ?? 'http://127.0.0.1:5185';
+const baseURL = process.env.GAME_URL ?? 'http://127.0.0.1:5185/play/';
 const out = '.impeccable/review';
 await fs.mkdir(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });

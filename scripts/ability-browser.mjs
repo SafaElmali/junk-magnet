@@ -19,7 +19,7 @@ try {
     });
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185");
+    await page.goto(process.env.GAME_URL ?? "http://127.0.0.1:5185/play/");
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
     const compact = width <= 700 || height <= 550;
     const capacity = !compact ? 10 : height <= 420 ? 4 : width <= 360 ? 4 : 6;

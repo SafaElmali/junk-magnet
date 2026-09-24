@@ -5,7 +5,7 @@ try {
   const page = await browser.newPage({ locale: "en-US" });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(process.env.GAME_URL ?? 'http://127.0.0.1:5186');
+  await page.goto(process.env.GAME_URL ?? 'http://127.0.0.1:5186/play/');
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   await page.locator('#start').click();
   const tile = page.locator('[data-owned-ability]').first();
