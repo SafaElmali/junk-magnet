@@ -21,7 +21,13 @@ const MAX_TILT = 0.16;
 
 type Pose = { position: THREE.Vector3; quaternion: THREE.Quaternion };
 type Belt = { links: Pose[]; left: boolean; offset: number; first: number };
-type Wheel = Pose & { left: boolean; angle: number };
+// Scaled copies of one wheel mesh (MAGNA's idlers and road wheels) each roll at their own radius.
+type Wheel = Pose & {
+  scale: THREE.Vector3;
+  radius: number;
+  left: boolean;
+  angle: number;
+};
 
 const spinAxis = new THREE.Vector3(1, 0, 0);
 const spin = new THREE.Quaternion();
@@ -67,7 +73,6 @@ export class RobotRig {
   private wheels: Wheel[] = [];
   private wheelBatches: THREE.InstancedMesh[] = [];
   private batches: THREE.InstancedMesh[] = [];
-  private wheelRadius = 0.14;
   private linkPitch = 0.09;
   // Signed centre-line offsets of the tracks, used for the pivot-turn speed of each side.
   private trackX = { left: 0.59, right: -0.59 };
@@ -111,13 +116,17 @@ export class RobotRig {
       this.treads = instanced(model, allLinks);
     }
     if (wheels.length) {
-      const bounds = new THREE.Box3().setFromObject(wheels[0], true);
-      this.wheelRadius = (bounds.max.y - bounds.min.y) / 2;
-      this.wheels = wheels.map((o) => ({
-        ...pose(o),
-        left: o.position.x > 0,
-        angle: 0,
-      }));
+      const bounds = new THREE.Box3();
+      this.wheels = wheels.map((o) => {
+        bounds.setFromObject(o, true);
+        return {
+          ...pose(o),
+          scale: o.scale.clone(),
+          radius: (bounds.max.y - bounds.min.y) / 2,
+          left: o.position.x > 0,
+          angle: 0,
+        };
+      });
       this.wheelBatches = instanced(model, wheels);
     }
     this.batches = [...this.treads, ...this.wheelBatches];
@@ -168,10 +177,10 @@ export class RobotRig {
     for (let i = 0; i < this.wheels.length; i++) {
       const wheel = this.wheels[i];
       // Spin about the robot's axle line so mirrored right-hand wheels turn the same way.
-      wheel.angle += (wheel.left ? left : right) / this.wheelRadius;
+      wheel.angle += (wheel.left ? left : right) / wheel.radius;
       spin.setFromAxisAngle(spinAxis, wheel.angle);
       quaternion.multiplyQuaternions(spin, wheel.quaternion);
-      matrix.compose(wheel.position, quaternion, unit);
+      matrix.compose(wheel.position, quaternion, wheel.scale);
       for (const batch of this.wheelBatches) batch.setMatrixAt(i, matrix);
     }
     for (const batch of this.batches) batch.instanceMatrix.needsUpdate = true;

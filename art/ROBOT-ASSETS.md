@@ -1,23 +1,24 @@
 # Playable robot models and workshop portraits
 
-SCOUT and VOLT are original Blender models, built to match SCRAP-01's rounded enamel shell, ivory faceplate, glass eyes and detailed rubber tracks. SCOUT has a compact collector crown, sensor bar, raked aerials and utility pods; VOLT has copper-wound ceramic coils, glass energy terminals and a power backpack.
+SCOUT, VOLT and MAGNA are original Blender models, built to match SCRAP-01's rounded enamel shell, ivory faceplate, glass eyes and detailed rubber tracks. SCOUT has a compact collector crown, sensor bar, raked aerials and utility pods; VOLT has copper-wound ceramic coils, glass energy terminals and a power backpack. MAGNA, the heavy magnet unit, has a broad cobalt shell on longer, deeper tracks with a big idler wheel at each end, a counterweight and a brass-striped bumper; its red horseshoe magnet lies flat over its head, poles forward, so the U reads from the game's high camera. Steel pole shoes sit behind glowing field bands, on a gunmetal mount and two steel struts.
 
-- Builder: `npm run assets:robots` (`scripts/build_robot_assets.py`, Blender).
+- Builder: `npm run assets:robots` (`scripts/build_robot_assets.py`, Blender). Name robots after `--` to rebuild only those, for example `Blender --background --factory-startup --python scripts/build_robot_assets.py -- magna`; only a full build saves the editable kit.
 - Editable scenes: `art/robot-kit.blend`, one scene per robot.
-- Game models: `public/models/robot-scout.glb`, `robot-volt.glb`. SCRAP's `robot.glb` comes from the base builder (`scripts/build_assets.py`).
-- Workshop portraits: `public/robots/{scrap,scout,volt}.png`, 768×768 transparent Cycles renders of the exact matching models. These are rendered 3D images, not a separate live WebGL scene in the menu.
-- Render setup: orthographic three-quarter camera, three area lights, 48 samples with denoising, AgX color transform.
-- GLB meshes are merged by material to keep draw calls bounded, except for the moving parts below. All three models load during the existing asset-loading phase; changing robots toggles model visibility without rebuilding geometry. Damage feedback operates on isolated materials and restores each model's original colors.
+- Game models: `public/models/robot-scout.glb`, `robot-volt.glb`, `robot-magna.glb`. SCRAP's `robot.glb` comes from the base builder (`scripts/build_assets.py`). MAGNA exports only its own scene and no UVs (its materials are untextured), about 550 KB before the CrazyGames build's Draco compression.
+- Workshop portraits: `public/robots/{scrap,scout,volt,magna}.png`, 768×768 transparent Cycles renders of the exact matching models. These are rendered 3D images, not a separate live WebGL scene in the menu.
+- Render setup: orthographic three-quarter camera, three area lights, 48 samples with denoising, AgX color transform. MAGNA is framed slightly lower because it is shorter and wider.
+- GLB meshes are merged by material to keep draw calls bounded, except for the moving parts below. MAGNA draws as many meshes as SCOUT and VOLT. All four models load during the existing asset-loading phase; changing robots toggles model visibility without rebuilding geometry. Damage feedback operates on isolated materials and restores each model's original colors.
+- Rebuilding reproduces the existing GLBs and portraits with only floating-point and render-noise byte differences; keep the committed files when a rebuild targets another robot.
 
 ## Moving parts
 
-All three robots share the rig conventions in `scripts/robot_rig.py`, which [RobotRig](../src/robot-rig.ts) drives from the robot's movement each frame:
+All four robots share the rig conventions in `scripts/robot_rig.py`, which [RobotRig](../src/robot-rig.ts) drives from the robot's movement each frame:
 
 - `body`: an empty at the top of the tracks. The shell, face, magnet and other body meshes are parented to it, so the game can rock the body on its suspension while the tracks stay planted. It rocks back when the robot pulls away, dips when it stops, leans slightly forward while driving and rolls outward in turns.
-- `<robot>_chassis_*`: the rubber tracks (and SCOUT/VOLT fenders), merged by material and fixed.
-- `wheel_<L|R>_<n>`: road wheels with their origin on the axle. The hex nut and four lug bolts make the spin readable.
+- `<robot>_chassis_*`: the rubber tracks (and SCOUT/VOLT/MAGNA fenders), merged by material and fixed.
+- `wheel_<L|R>_<n>`: road wheels with their origin on the axle. The hex nut and four lug bolts make the spin readable. Wheels may be scaled copies of one mesh (`robot_rig.sized_wheels`, MAGNA's 1.2× idlers and 0.92× road wheel); the game keeps each wheel's scale and spins it by its own radius, so every wheel rolls at ground speed.
 - `tread_<L|R>_<nn>`: tread links spaced evenly round each track, numbered in the order the belt moves when driving forward. The game slides every link towards the next one's pose.
 
 `L` is the robot's left (+X). Wheels and links are linked duplicates, so each GLB stores one wheel mesh and one link mesh; the game draws each as an `InstancedMesh`. The tracks run at different speeds when turning, and in opposite directions during a pivot turn. The belt runs at a quarter of ground speed and never moves more than a third of a link per frame, because a true-speed belt strobes backwards at 60 fps. Reduced motion keeps the wheels and tracks moving but turns off the body sway and bob.
 
-Rebuilding regenerates both the two variant GLBs and all three portraits. The SCRAP source GLB is only read for its portrait, so rebuild it first when SCRAP changes. No stock or AI-generated character art is used.
+A full rebuild regenerates the three variant GLBs and all four portraits. The SCRAP source GLB is only read for its portrait, so rebuild it first when SCRAP changes. No stock or AI-generated character art is used.
