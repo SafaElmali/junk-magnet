@@ -2,6 +2,133 @@
 /* Imported rather than linked, so page rules always come after the shared ones. */
 @import "./site.css";
 
+/* Language switcher (src/site/landing.ts): the game's drawn flags and native names. */
+.topbar nav {
+  margin-left: auto;
+}
+.language {
+  position: relative;
+}
+.language-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #3d5f60;
+  border-radius: 6px;
+  background: #1a3a42cc;
+  color: #d9e2d3;
+  font: 700 14px/1 "DM Sans", system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    border-color 150ms,
+    color 150ms;
+}
+.language-toggle:hover,
+.language-toggle[aria-expanded="true"] {
+  border-color: #9db9a8;
+  color: var(--gold);
+}
+.language-toggle:focus-visible,
+.language-option:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 4px;
+}
+.language .language-flag {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 16px;
+  border-radius: 2px;
+}
+.language-chevron {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: rotate 150ms;
+}
+.language-toggle[aria-expanded="true"] .language-chevron {
+  rotate: 180deg;
+}
+.language-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  min-width: 200px;
+  padding: 6px;
+  border: 1px solid #3d5f60;
+  border-radius: 12px;
+  background: #142f37;
+  box-shadow: 0 16px 36px #030f15b3;
+}
+.language-menu[hidden] {
+  display: none;
+}
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #ecedd7;
+  font: 400 16px/1.2 "DM Sans", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.language-option:hover {
+  background: #203e46;
+}
+/* The game's language picker marks the current choice the same way. */
+.language-option[aria-pressed="true"] {
+  background: #4e563f;
+  box-shadow: inset 3px 0 var(--gold);
+  font-weight: 700;
+}
+.language-option:focus-visible {
+  outline-offset: -3px;
+}
+.language-option .language-flag {
+  flex-basis: 30px;
+  width: 30px;
+  height: 20px;
+}
+/* Short landscape screens: two columns, like the game's picker, so all six fit. */
+@media (max-height: 500px) {
+  .language-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* 48px touch targets; the toggle's hit area grows without changing the header height. */
+@media (pointer: coarse) {
+  .language-toggle::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+  .language-option {
+    min-height: 48px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .language-toggle,
+  .language-chevron {
+    transition: none;
+  }
+}
+
 /* Hero */
 .hero {
   position: relative;
@@ -302,6 +429,26 @@
   }
   .features {
     padding-top: 0;
+  }
+}
+/* Phones: the brand, both links and the language toggle no longer share one row. */
+@media (max-width: 480px) {
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  .language {
+    order: 1;
+    margin-left: auto;
+  }
+  .topbar nav {
+    order: 2;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+  /* Clears the two-row topbar, as 76px clears the single row. */
+  .hero {
+    padding-top: 118px;
   }
 }
 @media (max-width: 560px) {

@@ -9,7 +9,7 @@
     "build:crazygames": "tsc --noEmit && node scripts/build-crazygames.mjs",
     "publish:crazygames": "npm run build:crazygames && node scripts/publish-crazygames.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 5184",
-    "test": "tsx --test src/*.test.ts",
+    "test": "tsx --test src/*.test.ts src/site/*.test.ts",
     "assets:abilities": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_ability_assets.py",
     "assets": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_assets.py",
     "assets:robots": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_robot_assets.py",

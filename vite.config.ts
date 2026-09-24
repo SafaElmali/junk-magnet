@@ -61,6 +61,19 @@ export default defineConfig(({ mode }) => ({
         .replace("<!-- loading-styles -->", `<style>${css}</style>`)
         .replace("<!-- loading-screen -->", `<div class="load-state" id="loading" role="status" aria-live="polite">${loadingMarkup}</div>`);
     },
+  }, {
+    // The landing page ships in English and src/site/landing.ts translates it. Vite
+    // drops script attributes, so restore blocking="render": browsers that support it
+    // hold the first paint until the page is in the visitor's language.
+    name: "landing-render-blocking",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler: (html, ctx) =>
+        ctx.chunk?.name === "landing"
+          ? html.replace(`${ctx.chunk.fileName}"`, `${ctx.chunk.fileName}" blocking="render"`)
+          : html,
+    },
   }, ...(mode === "crazygames" ? crazyGames() : [])],
   server: {
     host: "127.0.0.1",

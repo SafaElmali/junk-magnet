@@ -103,6 +103,16 @@ VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 its own canonical URL. The web build uses an absolute `/` base so `/play/` loads
 public assets from the site root; the CrazyGames build keeps a relative base.
 
+The landing page ships in English and `src/site/landing.ts` translates it into the
+game's six languages: the visitor's saved choice, else their device's first
+supported language, else English. The header switcher saves the same
+`junk-magnet-language` preference as the game (`src/languages.ts`), so `/play/`
+opens in that language. Copy lives in `src/site/landing-locales.ts`, keyed by the
+English text in `index.html`. When landing copy changes, update both;
+`src/site/landing-locales.test.ts` fails if a key no longer matches. The build
+marks the landing script `blocking="render"` so supporting browsers never paint
+the English copy first. Without JavaScript the page stays English.
+
 `/guide/` (`guide/index.html`) is a readable, JavaScript-free gameplay guide,
 linked from the game menu. Keep its facts in sync with `docs/gameplay.md` and the
 game's own copy (`src/ability-art.ts`, `src/specialization-ui.ts`,
