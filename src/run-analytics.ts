@@ -1,6 +1,7 @@
 import type { AnalyticsEvent, AnalyticsProperties } from "./analytics";
 import type { State } from "./simulation";
 
+const MILESTONES = [30, 60, 180, 300, 600];
 /** One lifecycle per player/run; observations also work with server snapshots. */
 export function createRunAnalytics(
   capture: (event: AnalyticsEvent, properties: AnalyticsProperties) => void,
@@ -40,9 +41,18 @@ export function createRunAnalytics(
       milestones = new Set();
       emit("run_started", properties);
     },
+    /** A solo run restored after a reload: no second start or passed milestones. */
+    resume(id: string, state: State, properties: AnalyticsProperties = {}) {
+      if (current?.id === id) return;
+      current = { id, mode: "solo", robot: state.config.robotId, ended: false };
+      upgrades = { ...state.upgrades };
+      evolutions = { ...state.evolutions };
+      milestones = new Set(MILESTONES.filter((seconds) => state.time >= seconds));
+      emit("run_resumed", { ...summary(state), ...properties });
+    },
     observe(state: State) {
       if (!current || current.ended) return;
-      for (const seconds of [30, 60, 180, 300, 600]) {
+      for (const seconds of MILESTONES) {
         if (state.time >= seconds && !milestones.has(seconds)) {
           milestones.add(seconds);
           emit("survival_milestone", {

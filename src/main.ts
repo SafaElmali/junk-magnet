@@ -52,6 +52,7 @@ import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { summarizeRun } from "./run-summary";
+import { clearRun, isResumable, loadRun, saveRun } from "./run-save";
 import { helpIllustration } from "./help-art";
 import {
   getGraphicsQuality,
@@ -179,18 +180,57 @@ const analyticsContext = () => ({
   input_type: touch ? "touch" : "keyboard",
 });
 const bootStarted = performance.now();
+// Unfinished solo runs survive a reload or a closed tab (src/run-save.ts).
+const AUTOSAVE_MS = 15_000;
+let savedRun: string | null = null,
+  lastSave = 0,
+  // Save time of a run restored at boot, until the player continues it.
+  restoredFrom: number | null = null;
+function persistRun() {
+  if (!loaded || coop.active) return;
+  lastSave = performance.now();
+  if (isResumable(s)) {
+    if (saveRun(s, runId)) savedRun = runId;
+  } else forgetRun();
+}
+function forgetRun() {
+  clearRun();
+  savedRun = null;
+  restoredFrom = null;
+}
+function restoreRun() {
+  const saved = loadRun();
+  if (!saved) return false;
+  s = saved.state;
+  runId = saved.runId as typeof runId;
+  s.phase = "paused";
+  savedRun = runId;
+  restoredFrom = saved.savedAt;
+  return true;
+}
 function start() {
   if (!loaded || !menu.isHome()) return;
   if (s.time === 0) {
+    forgetRun();
+    lastSave = performance.now();
     s = createState(getRunConfig());
     runId = crypto.randomUUID();
     runReceipt = null;
     scene.clear();
     runAnalytics.start(runId, "solo", s, analyticsContext());
   }
+  if (restoredFrom !== null) {
+    runAnalytics.resume(runId, s, {
+      ...analyticsContext(),
+      away_seconds: Math.max(0, Math.round((Date.now() - restoredFrom) / 1000)),
+    });
+    restoredFrom = null;
+  }
   keys.clear();
   stopStick();
-  s.phase = "playing";
+  // A run saved during a level-up returns to that choice.
+  s.phase =
+    s.choices.length || s.specializationChoices.length ? "upgrade" : "playing";
   app.classList.remove("in-menu");
   app.classList.add("in-run");
   el("yard").classList.add("is-playing");
@@ -232,6 +272,7 @@ function returnToMenu() {
     el(id).classList.add("hidden");
   el("intro").classList.remove("hidden");
   menu.enter(canResume);
+  persistRun();
   requestFrame();
 }
 function restart() {
@@ -240,6 +281,7 @@ function restart() {
     return;
   }
   runAnalytics.abandon(s, "restart");
+  forgetRun();
   s = createState(getRunConfig());
   scene.clear();
   keys.clear();
@@ -301,6 +343,7 @@ function openModal(help = false) {
   el("help-content").classList.toggle("hidden", !help);
   el("modal").classList.remove("hidden");
   el("resume").focus({ preventScroll: true });
+  persistRun();
   requestFrame();
 }
 function closeModal() {
@@ -503,8 +546,11 @@ document.addEventListener("visibilitychange", () => {
     stopStick();
     if (coop.active) coop.stopInput();
     else if (s.phase === "playing") openModal();
+    else persistRun();
   } else requestFrame();
 });
+// Also covers closing the tab and back/forward-cache navigation.
+window.addEventListener("pagehide", persistRun);
 function trapFocus(e: KeyboardEvent) {
   const panel = !el("upgrade").classList.contains("hidden")
     ? el("upgrade")
@@ -925,6 +971,13 @@ function loop(now: number) {
   setCrazyGamesPlaying(
     s.phase === "playing" && !app.classList.contains("in-menu"),
   );
+  // Periodic insurance against crashes; a finished run drops its snapshot at once.
+  if (
+    s.phase === "lost" || s.phase === "won"
+      ? savedRun !== null
+      : s.phase === "playing" && now - lastSave >= AUTOSAVE_MS
+  )
+    persistRun();
   // Static solo scenes need another frame only after an explicit change.
   // Co-op keeps presenting network updates while its local menu is open.
   if (coop.active || s.phase === "playing") requestFrame();
@@ -964,7 +1017,7 @@ async function boot() {
     });
     el("loading").classList.add("hidden");
     el("intro").classList.remove("hidden");
-    menu.enter(false);
+    menu.enter(restoreRun());
     new ResizeObserver(() => {
       scene.resize();
       requestFrame();
@@ -1139,7 +1192,11 @@ const menu = setupMenu({
 const fieldControls = new FieldControls(el("yard"), changeDrone);
 const coop = new CoopClient({
   snapshot(packet, first) {
-    if (first) runAnalytics.abandon(s, "mode_changed");
+    if (first) {
+      runAnalytics.abandon(s, "mode_changed");
+      // Co-op replaces the solo run, so it no longer resumes after a reload.
+      forgetRun();
+    }
     const events = [...s.events, ...packet.events].slice(-160);
     s = packet.state;
     if (s.phase !== "playing") buildInspector.close();
