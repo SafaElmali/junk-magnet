@@ -13,6 +13,7 @@ import { DEFAULT_RUN_CONFIG, type RunConfig } from "./progression";
 import { ENCOUNTER_LIMITS } from "./encounters";
 import { DISCOVERY_LIMITS } from "./discovery";
 import { EVOLUTIONS, type EvolutionId } from "./evolution-core";
+import { ARSENAL_LIMITS } from "./arsenal";
 
 // Deliberate simulation fixtures: no browser hooks, no claim these represent a normal starting run.
 function isolated(config: RunConfig = DEFAULT_RUN_CONFIG) {
@@ -262,9 +263,13 @@ test("late-run deterministic soak keeps all systems bounded with advanced enemie
     lightning: 5,
     turret: 5,
     burst: 5,
+    harpoon: 5,
+    slag: 5,
     boots: 4,
     magnet: 4,
     armor: 4,
+    capacitor: 4,
+    amplifier: 4,
     drone_collector: 3,
     drone_repair: 3,
     drone_guard: 3,
@@ -272,7 +277,7 @@ test("late-run deterministic soak keeps all systems bounded with advanced enemie
     refill: 0,
     overclock: 0,
   };
-  s.evolutions = { vortex: true, storm: true, fortress: true };
+  s.evolutions = { vortex: true, storm: true, fortress: true, reactor: true, meltdown: true, winch: true };
   s.hp = 100;
   s.immunity = 1000; // Explicit durability fixture; does not claim normal play survival.
   // Stress every advanced AI independently of the flight path's kill timing.
@@ -298,6 +303,9 @@ test("late-run deterministic soak keeps all systems bounded with advanced enemie
     assert.ok(s.encounters.projectiles.length <= ENCOUNTER_LIMITS.projectiles);
     assert.ok(s.encounters.zones.length <= ENCOUNTER_LIMITS.zones);
     assert.ok(s.encounters.brains.size <= ENCOUNTER_LIMITS.brains);
+    assert.ok(s.arsenal.harpoons.length <= ARSENAL_LIMITS.harpoons);
+    assert.ok(s.arsenal.shells.length <= ARSENAL_LIMITS.shells);
+    assert.ok(s.arsenal.puddles.length <= ARSENAL_LIMITS.puddles);
     assert.ok(s.discovery.points.length <= DISCOVERY_LIMITS.points);
     assert.ok(s.discovery.consumed.size <= DISCOVERY_LIMITS.sectors);
     assert.ok(Number.isFinite(s.player.x) && Number.isFinite(s.player.z));

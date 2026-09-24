@@ -2,6 +2,7 @@ import { locales } from "./locales";
 import { gameStorage } from "./storage";
 import { droneStats, DRONE_MAX_RANK, DRONE_SPECIAL_DESCRIPTIONS } from "./drone";
 import { droneLocales } from "./drone-locales";
+import { arsenalRankCopy } from "./arsenal";
 import {
   upgradeDescription,
   UPGRADES,
@@ -343,6 +344,18 @@ export function localizedUpgradeDescription(s: State, id: UpgradeId): string {
             { before: 2 + rank * 2, after: 2 + next * 2 },
           )
         : t("Blast and push back nearby enemies every 5 seconds.");
+    case "harpoon":
+    case "slag":
+    case "capacitor":
+    case "amplifier": {
+      const [text, values] = arsenalRankCopy(s, id);
+      return t(
+        text,
+        Object.fromEntries(
+          Object.entries(values).map(([key, value]) => [key, number(value)]),
+        ),
+      );
+    }
     case "boots":
       return t("Movement speed +12% (total +{total}%).", { total: next * 12 });
     case "magnet":
