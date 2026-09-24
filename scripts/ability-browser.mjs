@@ -53,10 +53,10 @@ try {
       path: `.impeccable/review/abilities-${width}.png`,
     });
     for (const [category, count] of [
-      ["Weapons", 4],
-      ["Support", 6],
+      ["Weapons", 6],
+      ["Support", 8],
       ["Supplies", 3],
-      ["All", 13],
+      ["All", 17],
     ]) {
       await page.locator(`[data-filter="${category}"]`).click();
       assert.equal(
@@ -68,9 +68,13 @@ try {
       "lightning",
       "turret",
       "burst",
+      "harpoon",
+      "slag",
       "boots",
       "magnet",
       "armor",
+      "capacitor",
+      "amplifier",
       "repair",
       "refill",
       "overclock",
@@ -86,9 +90,10 @@ try {
           .getAttribute("aria-pressed"),
         "true",
       );
-      assert.equal(
+      // The site build serves from "/", the CrazyGames build from "./".
+      assert.match(
         await page.locator("#ability-detail img").getAttribute("src"),
-        `./abilities/${id}.png`,
+        new RegExp(`^\\.?/abilities/${id}\\.png$`),
       );
       assert.ok(
         (await page.locator("#ability-detail p").innerText()).length > 30,
@@ -171,7 +176,7 @@ try {
       width,
       height,
       mobile,
-      assets: 10,
+      assets: 17,
       filters: true,
       localized: true,
       readOnly: true,
