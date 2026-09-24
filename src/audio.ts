@@ -1,4 +1,5 @@
 import type { GameEvent, State, Vec } from "./simulation";
+import { gameStorage } from "./storage";
 
 const clips = {
   scrap: ["pickup-scrap-1", "pickup-scrap-2"],
@@ -117,6 +118,8 @@ export class GameAudio {
     { source: AudioBufferSourceNode; gain: GainNode }
   >();
   private hidden = false;
+  /** Host platform mute (CrazyGames) overrides the player's own settings. */
+  private platformMuted = false;
   private mode: "menu" | "playing" | "paused" | "upgrade" | "lost" = "menu";
   private cues = new AudioCues();
   private played = 0;
@@ -124,7 +127,7 @@ export class GameAudio {
 
   constructor() {
     try {
-      const saved = JSON.parse(localStorage.getItem(preferenceKey) ?? "null");
+      const saved = JSON.parse(gameStorage()?.getItem(preferenceKey) ?? "null");
       if (typeof saved?.enabled === "boolean") this.enabled = saved.enabled;
       if (typeof saved?.music === "boolean") this.musicEnabled = saved.music;
       for (const key of ["effectsVolume", "musicVolume"] as const) {
@@ -138,7 +141,7 @@ export class GameAudio {
 
   private save() {
     try {
-      localStorage.setItem(
+      gameStorage()?.setItem(
         preferenceKey,
         JSON.stringify({
           enabled: this.enabled,
@@ -241,6 +244,11 @@ export class GameAudio {
     this.updateMix();
   }
 
+  setPlatformMuted(muted: boolean) {
+    this.platformMuted = muted;
+    this.updateMix();
+  }
+
   setHidden(hidden: boolean) {
     this.hidden = hidden;
     this.updateMix();
@@ -267,7 +275,11 @@ export class GameAudio {
     if (!context || !this.master) return;
     const now = context.currentTime;
     this.effects?.gain.setTargetAtTime(this.effectsVolume / 100, now, 0.025);
-    this.master.gain.setTargetAtTime(!this.hidden ? 0.75 : 0, now, 0.025);
+    this.master.gain.setTargetAtTime(
+      !this.hidden && !this.platformMuted ? 0.75 : 0,
+      now,
+      0.025,
+    );
     for (const name of ["menu", "yard"] as const) {
       const buffer = this.buffers.get(name);
       if (

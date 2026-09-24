@@ -1,3 +1,5 @@
+import { gameStorage } from "./storage";
+
 export const GRAPHICS_QUALITIES = [
   "performance",
   "balanced",
@@ -11,7 +13,7 @@ let selectedQuality: GraphicsQuality | undefined;
 export function getGraphicsQuality(): GraphicsQuality {
   if (selectedQuality) return selectedQuality;
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = gameStorage()?.getItem(STORAGE_KEY);
     if (GRAPHICS_QUALITIES.includes(saved as GraphicsQuality))
       return saved as GraphicsQuality;
   } catch {
@@ -23,7 +25,7 @@ export function getGraphicsQuality(): GraphicsQuality {
 export function setGraphicsQuality(quality: GraphicsQuality) {
   selectedQuality = quality;
   try {
-    localStorage.setItem(STORAGE_KEY, quality);
+    gameStorage()?.setItem(STORAGE_KEY, quality);
   } catch {
     /* Keep the live setting usable. */
   }

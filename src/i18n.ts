@@ -1,4 +1,5 @@
 import { locales } from "./locales";
+import { gameStorage } from "./storage";
 import { droneStats, DRONE_MAX_RANK, DRONE_SPECIAL_DESCRIPTIONS } from "./drone";
 import { droneLocales } from "./drone-locales";
 import {
@@ -44,7 +45,7 @@ export function languageFlag(code: Language): string {
 }
 let saved: string | null = null;
 try {
-  saved = localStorage.getItem("junk-magnet-language");
+  saved = gameStorage()?.getItem("junk-magnet-language") ?? null;
 } catch {
   /* Storage is optional. */
 }
@@ -60,7 +61,7 @@ export function getLanguage() {
 export function setLanguage(next: Language) {
   language = next;
   try {
-    localStorage.setItem("junk-magnet-language", next);
+    gameStorage()?.setItem("junk-magnet-language", next);
   } catch {
     /* Private browsing can disable storage. */
   }

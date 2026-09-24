@@ -5,6 +5,7 @@ import { LightningView } from "./lightning-view";
 import { DroneView } from "./drone-view";
 import { createTurretTemplate } from "./turret-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
@@ -466,6 +467,14 @@ export class YardScene {
     ];
     let done = 0;
     const loader = new GLTFLoader();
+    // Only the CrazyGames build ships Draco-compressed models (scripts/build-crazygames.mjs).
+    const draco =
+      import.meta.env.MODE === "crazygames"
+        ? new DRACOLoader()
+            .setDecoderPath(`${base}draco/`)
+            .setDecoderConfig({ type: "wasm" })
+        : undefined;
+    if (draco) loader.setDRACOLoader(draco);
     await Promise.all(
       names.map(async (name) => {
         const g = await loader.loadAsync(`${base}models/${name}.glb`);
@@ -473,6 +482,7 @@ export class YardScene {
         onProgress(++done / (names.length + 1));
       }),
     );
+    draco?.dispose();
     this.drone.setModel(models.get("helper-drone")!);
     this.partnerDrone.setModel(models.get("helper-drone")!);
     const texture = await new THREE.TextureLoader().loadAsync(

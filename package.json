@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5184 --strictPort",
     "build": "tsc --noEmit && vite build",
+    "build:crazygames": "tsc --noEmit && node scripts/build-crazygames.mjs",
+    "publish:crazygames": "npm run build:crazygames && node scripts/publish-crazygames.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 5184",
     "test": "tsx --test src/*.test.ts",
     "assets:abilities": "/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup --python scripts/build_ability_assets.py",
@@ -32,10 +34,14 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260920.1",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.0.0",
     "@types/three": "^0.183.0",
     "@types/ws": "^8.18.1",
+    "draco3dgltf": "^1.5.7",
     "miniflare": "^5.20260918.0-alpha",
     "typescript": "^5.9.3",
     "vite": "^7.1.0",

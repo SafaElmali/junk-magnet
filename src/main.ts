@@ -5,6 +5,11 @@ import type { SpecializationId } from "./specializations";
 import { GameAudio } from "./audio";
 import { CoopClient } from "./coop-client";
 import { initAnalytics, track } from "./analytics";
+import {
+  crazyGamesLoaded,
+  onCrazyGamesMute,
+  setCrazyGamesPlaying,
+} from "./crazygames";
 import { createRunAnalytics } from "./run-analytics";
 import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
@@ -158,6 +163,7 @@ const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
   showedResult = false;
 const gameAudio = new GameAudio();
+onCrazyGamesMute((muted) => gameAudio.setPlatformMuted(muted));
 let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0;
@@ -918,6 +924,9 @@ function loop(now: number) {
     s.phase === "playing" ? dt : 0,
   );
   hud();
+  setCrazyGamesPlaying(
+    s.phase === "playing" && !app.classList.contains("in-menu"),
+  );
   // Static solo scenes need another frame only after an explicit change.
   // Co-op keeps presenting network updates while its local menu is open.
   if (coop.active || s.phase === "playing") requestFrame();
@@ -950,6 +959,7 @@ async function boot() {
     ]);
     updateLoadProgress(1);
     loaded = true;
+    crazyGamesLoaded();
     track("game_loaded", {
       ...analyticsContext(),
       load_duration_ms: Math.round(performance.now() - bootStarted),

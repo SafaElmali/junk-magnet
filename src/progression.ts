@@ -1,3 +1,5 @@
+import { gameStorage, type StorageLike } from "./storage";
+
 /** Local, versioned workshop progress. Combat takes an immutable copy per run. */
 export type RobotId = "scrap" | "scout" | "volt";
 export type PermanentUpgrade = "hull" | "magnet";
@@ -70,7 +72,6 @@ export type RunReceipt = {
   bestTime: number;
   bestKills: number;
 };
-type StorageLike = Pick<Storage, "getItem" | "setItem">;
 export const PROGRESS_KEY = "junk-magnet-workshop-v1";
 const integer = (v: unknown, max = 1_000_000) =>
   typeof v === "number" && Number.isFinite(v)
@@ -88,14 +89,7 @@ const fresh = (): Progress => ({
   completedRuns: 0,
   recentRunIds: [],
 });
-function browserStorage(): StorageLike | undefined {
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return undefined;
-  }
-}
-export function loadProgress(storage = browserStorage()): Progress {
+export function loadProgress(storage = gameStorage()): Progress {
   try {
     const data = JSON.parse(storage?.getItem(PROGRESS_KEY) ?? "null");
     if (!data || data.version !== 1 || typeof data !== "object") return fresh();
@@ -142,7 +136,7 @@ export function loadProgress(storage = browserStorage()): Progress {
 }
 export function saveProgress(
   progress: Progress,
-  storage = browserStorage(),
+  storage = gameStorage(),
 ): boolean {
   try {
     if (!storage) return false;
@@ -167,7 +161,7 @@ export function canAffordWorkshop(progress: Progress): boolean {
   );
 }
 /** Separate instances let tests exercise storage denial without browser globals. */
-export function createProgression(storage = browserStorage()) {
+export function createProgression(storage = gameStorage()) {
   let progress = loadProgress(storage);
   const persist = () => {
     saveProgress(progress, storage);
