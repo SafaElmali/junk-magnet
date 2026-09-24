@@ -8,6 +8,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
 import { NodeIO } from "@gltf-transform/core";
@@ -22,9 +23,22 @@ process.env.VITE_ANALYTICS_DISABLED = "true";
 process.env.VITE_COOP_ENABLED = "false";
 await build({ mode: "crazygames", build: { outDir: out, emptyOutDir: true } });
 
-// Search-engine and social-sharing files for playjunkmagnet.com only.
-for (const file of ["og-image.png", "sitemap.xml", "robots.txt", "guide"])
+// Search-engine and social-sharing files for playjunkmagnet.com only. The game
+// runs in CrazyGames' iframe, so it has no tab icon, and the portal's uploader
+// stalls on favicon.svg, which keeps Save disabled.
+for (const file of [
+  "og-image.png",
+  "sitemap.xml",
+  "robots.txt",
+  "guide",
+  "favicon.svg",
+])
   rmSync(join(out, file), { recursive: true, force: true });
+const html = join(out, "index.html");
+writeFileSync(
+  html,
+  readFileSync(html, "utf8").replace(/\s*<link rel="icon"[^>]*>/, ""),
+);
 
 // Geometry-only models; Draco decodes to float attributes, so batching that
 // transforms geometry at runtime (scene.ts modelBatches) keeps working.

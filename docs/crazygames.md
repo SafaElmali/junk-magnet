@@ -25,9 +25,9 @@ Release in batches, once or twice a week. The CrazyGames dashboard refreshes dai
 - Reports `loadingStart`/`loadingStop` around asset loading and `gameplayStart`/`gameplayStop` whenever active play begins or ends (menus, pause, level-up choices and results stop it). The SDK itself throttles calls closer than about one second.
 - Follows the CrazyGames mute setting over the in-game sound settings.
 - Disables PostHog and co-op. Use the CrazyGames dashboard for metrics.
-- Removes the social image, sitemap, `robots.txt` and the SEO guide page, and Draco-compresses the models (7.7 MB to 1.2 MB). The decoder is copied to `draco/`; the web build keeps uncompressed models and never loads it.
+- Removes the social image, sitemap, `robots.txt`, the SEO guide page and the favicon (the portal's uploader stalls on `favicon.svg`, and an embedded game shows no tab icon), and Draco-compresses the models (7.7 MB to 1.2 MB). The decoder is copied to `draco/`; the web build keeps uncompressed models and never loads it.
 
-The result is about 13.5 MB in 100 files, within the 50 MB, 1500-file and 20 MB benchmark sizes. The build fails if it exceeds a hard limit, lacks `index.html` or still links to the guide page (the menu's guide link is omitted in this build, since CrazyGames forbids links out of the game).
+The result is about 13.5 MB in 99 files, within the 50 MB, 1500-file and 20 MB benchmark sizes. The build fails if it exceeds a hard limit, lacks `index.html` or still links to the guide page (the menu's guide link is omitted in this build, since CrazyGames forbids links out of the game).
 
 ## Check the build
 
