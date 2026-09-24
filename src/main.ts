@@ -31,7 +31,9 @@ import "./opening-guide.css";
 import "./result-menu.css";
 import "./expansion.css";
 import "./level-up.css";
-import { upgradeChoicesMarkup } from "./level-up";
+import "./run-rules.css";
+import { upgradeChoicesMarkup, levelUpToolsMarkup } from "./level-up";
+import { CLEAR_TIME } from "./stages";
 import { abilityLoadoutMarkup } from "./ability-loadout";
 import { preloadAbilityArt } from "./ability-art";
 import { setupBuildInspector } from "./build-inspector";
@@ -39,7 +41,9 @@ import {
   getRunConfig,
   recordRun,
   ROBOTS,
+  type RunConfig,
   type RunReceipt,
+  type StageId,
 } from "./progression";
 import { EVOLUTIONS } from "./evolution-core";
 import { getDiscoveryHint } from "./discovery";
@@ -75,6 +79,9 @@ import {
   UPGRADES,
   chooseUpgrade,
   chooseSpecialization,
+  rerollChoices,
+  banishChoice,
+  canBanish,
   type UpgradeId,
   type Vec,
 } from "./simulation";
@@ -117,7 +124,8 @@ app.innerHTML = `
  <div class="top-progress" role="progressbar" aria-label="Experience toward next level" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><i id="xp-progress"></i><span class="xp-meter-copy" aria-hidden="true"><strong id="xp-current-level"></strong><span id="xp-meter-count"></span><strong id="xp-next-level"></strong></span></div>
  <section class="hud" aria-label="Game status">
   <div class="health-panel"><div class="robot-badge">${svg("magnet")}</div><div class="health-copy"><div class="health-heading"><strong id="level">LV. 1</strong><span id="health-value">100 / 100</span></div></div></div>
-  <div class="timer-panel"><strong id="timer">00:00</strong><span id="wave">PRESSURE 1</span></div>
+  <div class="timer-panel"><strong id="timer">00:00</strong><span id="wave">PRESSURE 1</span><small id="timer-goal" class="timer-goal hidden" role="img"></small></div>
+  <div id="revive-chip" class="revive-chip hidden" role="img">${svg("repair")}<strong id="revives">0</strong></div>
   <div class="salvage-panel">${svg("nut")}<div><strong id="kills">0</strong><span class="hud-label">JUNK RECYCLED</span></div></div>
  </section>
  <div class="health-track" role="progressbar" aria-label="Robot health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="health-fill"></i></div>
@@ -126,11 +134,12 @@ app.innerHTML = `
  <div id="ability-loadout" class="ability-loadout" aria-label="Current abilities"></div>
  <div id="boss-hud" class="boss-hud hidden"><span id="boss-name"></span><div role="progressbar" id="boss-health" aria-valuemin="0"><i id="boss-fill"></i></div></div>
  <div id="world-hint" class="world-hint hidden" role="status"></div>
+ <div id="run-cue" class="run-cue hidden" role="status" aria-live="assertive" aria-atomic="true"><strong id="run-cue-title"></strong><span id="run-cue-copy"></span></div>
  <div class="load-state" id="loading" role="status" aria-live="polite">${loadingMarkup}</div>
  <div class="intro hidden" id="intro">${menuMarkup}</div>
  <div class="touch-stick hidden" id="touch-stick" aria-label="Movement joystick"><div></div></div>
  <div class="modal-backdrop hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-card"><div class="pause-heading pause-only"><span class="pause-location">${svg("magnet")}<span>THE SCRAPYARD</span></span><span class="pause-badge">${svg("pause")}</span></div><h2 id="modal-title">Taking a breather.</h2><p id="modal-copy"></p><div class="pause-summary pause-only"><div><span>SHIFT TIME</span><strong id="pause-time">00:00</strong></div><div><span>LEVEL REACHED</span><strong id="pause-level">1</strong></div><div><span>JUNK RECYCLED</span><strong id="pause-kills">0</strong></div></div><div id="help-content" class="hidden"><dl><div><dt>Move</dt><dd>WASD / arrow keys, or drag anywhere in the yard.</dd></div><div><dt>Collect</dt><dd>Get near silver scrap. It joins your orbit and attacks automatically.</dd></div><div><dt>Attack</dt><dd>Scrap fires at the nearest enemy automatically. Collect wreckage to reload.</dd></div><div><dt>Upgrade</dt><dd>Collect blue energy. Each level pauses the yard: choose one of three abilities with a tap or keys 1–3.</dd></div><div><dt>Recover</dt><dd>Your automatic pulse keeps firing when the orbit is empty. Collect wreckage to rebuild.</dd></div></dl><nav class="help-pages" aria-label="Help pages"><button id="help-previous" class="menu-back" aria-label="Previous step">${svg("arrow")}</button><span id="help-page"></span><button id="help-next" class="menu-back" aria-label="Next step">${svg("arrow")}</button></nav></div><div class="pause-actions"><button class="primary-btn" id="resume"><span id="resume-label">CONTINUE</span><span id="resume-icon">${svg("play")}</span></button><button class="text-btn" id="restart">${svg("reset")}<span>NEW RUN</span></button><button id="pause-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div></div></div>
- <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><header class="upgrade-heading"><span class="upgrade-emblem" aria-hidden="true">${svg("bolt")}</span><div><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy">Level 2 · Pick one upgrade. The yard is paused.</p></div></header><div id="upgrade-choices" class="upgrade-choices"></div><p class="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
+ <div class="upgrade hidden" id="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title"><div class="upgrade-sheet"><header class="upgrade-heading"><span class="upgrade-emblem" aria-hidden="true">${svg("bolt")}</span><div><h2 id="upgrade-title">Level up</h2><p id="upgrade-copy" aria-live="polite">Level 2 · Pick one upgrade. The yard is paused.</p></div></header><div id="upgrade-choices" class="upgrade-choices"></div><div id="upgrade-tools" class="upgrade-tools hidden" role="group" aria-label="Level-up tools"></div><p class="upgrade-note" id="upgrade-note">Choose with 1, 2, or 3 · Your other abilities keep their upgrades.</p></div></div>
  <div class="result hidden" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="modal-card">
  <header class="result-heading"><div class="result-stamp">${svg("magnet")}<span id="result-stamp">BACK TO THE WORKSHOP</span></div><span class="result-unit">SCRAP-01</span></header>
  <h2 id="result-title">SHIFT COMPLETE</h2><p id="result-copy"></p>
@@ -169,7 +178,10 @@ const gameAudio = new GameAudio();
 onCrazyGamesMute((muted) => gameAudio.setPlatformMuted(muted));
 let shownUpgrade = "",
   shownLoadout = "",
-  upgradeReadyAt = 0;
+  upgradeReadyAt = 0,
+  // Armed banish: the next card pick removes that upgrade instead of choosing it.
+  banishArmed = false,
+  focusChoice = 0;
 const touch = window.matchMedia("(pointer: coarse)").matches;
 initAnalytics();
 const runAnalytics = createRunAnalytics(track);
@@ -217,7 +229,7 @@ function returnToMenu() {
     el<HTMLButtonElement>("again").disabled = false;
     el("again").querySelector("span")!.textContent = t("ONE MORE SHIFT");
   }
-  const canResume = s.phase !== "lost" && s.time > 0;
+  const canResume = !runOver() && s.time > 0;
   keys.clear();
   stopStick();
   if (canResume) s.phase = "paused";
@@ -285,7 +297,7 @@ function openModal(help = false) {
     coop.openMenu();
     return;
   }
-  if (!loaded || s.phase === "upgrade" || s.phase === "lost") return;
+  if (!loaded || s.phase === "upgrade" || runOver()) return;
   if (s.phase !== "paused" || app.classList.contains("in-menu")) {
     modalBefore = app.classList.contains("in-menu") ? "ready" : "playing";
     lastFocus = document.activeElement as HTMLElement;
@@ -429,7 +441,8 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (e.key === "Escape") {
-    if (s.phase === "paused") closeModal();
+    if (s.phase === "upgrade" && banishArmed) setBanish(false);
+    else if (s.phase === "paused") closeModal();
     else if (s.phase === "playing") openModal();
     return;
   }
@@ -439,6 +452,15 @@ window.addEventListener("keydown", (e) => {
       (e.repeat || performance.now() < upgradeReadyAt)
     )
       e.preventDefault();
+    // Letters follow the printed key; modified presses stay browser shortcuts (Cmd+R).
+    const letter = e.key.toLowerCase();
+    const tool =
+      letter === "r" ? "reroll" : letter === "x" ? "banish" : undefined;
+    if (tool && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      if (!e.repeat) useTool(tool);
+      return;
+    }
     if (["ArrowUp", "ArrowDown"].includes(e.code)) {
       e.preventDefault();
       const choices = [
@@ -603,6 +625,10 @@ const format = (t: number) =>
     .padStart(2, "0")}:${Math.floor(t % 60)
     .toString()
     .padStart(2, "0")}`;
+/** Defeat or a cleared stage: the run is over and only its result remains. */
+function runOver() {
+  return s.phase === "lost" || s.phase === "won";
+}
 function ownedAbilities() {
   return (Object.keys(s.upgrades) as UpgradeId[]).filter(
     (id) => Number.isFinite(UPGRADES[id].maxRank) && s.upgrades[id] > 0,
@@ -620,6 +646,16 @@ function pickUpgrade(id: UpgradeId | SpecializationId | undefined, specializatio
     performance.now() < upgradeReadyAt
   )
     return;
+  if (banishArmed && !specialization) {
+    const slot = s.choices.indexOf(id as UpgradeId);
+    if (!banishChoice(s, id as UpgradeId)) return;
+    banishArmed = false;
+    // The refilled card keeps its slot, so focus stays where the player was.
+    focusChoice = slot;
+    renderUpgrades();
+    requestFrame();
+    return;
+  }
   if (!(specialization ? chooseSpecialization(s, id as SpecializationId) : chooseUpgrade(s, id as UpgradeId))) return;
   runAnalytics.observe(s);
   keys.clear();
@@ -641,24 +677,75 @@ function renderUpgrades() {
     shownLoadout = loadout;
     el("ability-loadout").innerHTML = abilityLoadoutMarkup(s);
   }
+  const specializing = s.specializationChoices.length > 0;
+  if (coop.active || s.phase !== "upgrade" || specializing) banishArmed = false;
   if (coop.active || s.phase !== "upgrade") return;
-  const signature = `${s.level}:${s.choices.join(",")}:${s.specializationChoices.join(",")}:${loadout}`;
+  const sheet = `${s.level}:${s.choices.join(",")}:${s.specializationChoices.join(",")}:${loadout}`;
+  const signature = `${sheet}|${s.rerolls}:${s.banishes}:${banishArmed}`;
   if (signature === shownUpgrade) return;
+  // New cards get the accidental-input guard; arming or cancelling a banish does not.
+  if (!shownUpgrade.startsWith(`${sheet}|`)) upgradeReadyAt = performance.now() + 250;
   shownUpgrade = signature;
-  upgradeReadyAt = performance.now() + 250;
   keys.clear();
   stopStick();
   el("yard").classList.remove("is-playing");
   el("modal").classList.add("hidden");
-  const specializing = s.specializationChoices.length > 0;
   el("upgrade-title").textContent = specializing ? specializationHeading()[0] : t("Level up");
-  el("upgrade-copy").textContent = specializing ? specializationHeading()[1] : t("Level {level} · Choose one upgrade.", { level: s.level });
-  el("upgrade-choices").innerHTML = upgradeChoicesMarkup(s);
+  el("upgrade-copy").textContent = specializing
+    ? specializationHeading()[1]
+    : banishArmed
+      ? t("Banish: pick an upgrade to remove from this run.")
+      : t("Level {level} · Choose one upgrade.", { level: s.level });
+  el("upgrade-choices").innerHTML = upgradeChoicesMarkup(s, banishArmed);
+  // Solo only (co-op returned above); a specialization is a free pick, not a level-up draw.
+  el("upgrade-tools").classList.toggle("hidden", specializing);
+  el("upgrade-tools").innerHTML = specializing ? "" : levelUpToolsMarkup(s, banishArmed);
+  el("upgrade-note").textContent = t(
+    specializing
+      ? "Choose with 1, 2, or 3 · Your other abilities keep their upgrades."
+      : banishArmed
+        ? "Banish with 1, 2, or 3 · X or Esc cancels"
+        : "Choose with 1, 2, or 3 · R rerolls · X banishes",
+  );
+  el("upgrade").classList.toggle("is-banishing", banishArmed);
   el("upgrade").classList.remove("hidden");
-  el("upgrade-choices")
-    .querySelector<HTMLButtonElement>("button")
-    ?.focus({ preventScroll: true });
+  const cards = el("upgrade-choices").querySelectorAll<HTMLButtonElement>("button");
+  (banishArmed
+    ? el("upgrade-choices").querySelector<HTMLButtonElement>('[data-banish="target"]')
+    : cards[Math.min(focusChoice, cards.length - 1)]
+  )?.focus({ preventScroll: true });
+  focusChoice = 0;
 }
+/** Reroll and banish share the sheet's 250 ms accidental-input guard. */
+function useTool(tool: "reroll" | "banish") {
+  if (
+    coop.active ||
+    s.phase !== "upgrade" ||
+    s.specializationChoices.length ||
+    document.hidden ||
+    performance.now() < upgradeReadyAt
+  )
+    return;
+  if (tool === "banish") {
+    if (banishArmed || (s.banishes > 0 && s.choices.some(canBanish)))
+      setBanish(!banishArmed);
+    return;
+  }
+  if (banishArmed || !rerollChoices(s)) return;
+  renderUpgrades();
+  requestFrame();
+}
+function setBanish(armed: boolean) {
+  banishArmed = armed;
+  renderUpgrades();
+  requestFrame();
+}
+el("upgrade-tools").addEventListener("click", (e) => {
+  const tool = (e.target as Element).closest<HTMLButtonElement>(
+    "button[data-tool]",
+  )?.dataset.tool;
+  if (tool === "reroll" || tool === "banish") useTool(tool);
+});
 el("upgrade-choices").addEventListener("click", (e) => {
   const button = (e.target as Element).closest<HTMLButtonElement>(
     "button[data-upgrade], button[data-specialization]",
@@ -705,15 +792,17 @@ function renderExpansionHUD() {
     s.enemies.find((e) => e.id === s.encounters.active!.id && e.hp > 0);
   el("boss-hud").classList.toggle("hidden", !playing || !boss);
   if (boss && s.encounters.active) {
-    el("boss-name").textContent = t(
-      boss.type === "boss" ? "Yard Titan" : "Crusher",
+    const final = s.encounters.active.final === true;
+    const name = t(
+      final ? "Scrap Colossus" : boss.type === "boss" ? "Yard Titan" : "Crusher",
     );
+    el("boss-hud").classList.toggle("is-final", final);
+    el("boss-name").textContent = final
+      ? t("FINAL BOSS · {name}", { name })
+      : name;
     el("boss-fill").style.transform =
       `scaleX(${Math.max(0, boss.hp / s.encounters.active.maxHp)})`;
-    el("boss-health").setAttribute(
-      "aria-label",
-      t(boss.type === "boss" ? "Yard Titan" : "Crusher"),
-    );
+    el("boss-health").setAttribute("aria-label", el("boss-name").textContent!);
     el("boss-health").setAttribute(
       "aria-valuemax",
       String(s.encounters.active.maxHp),
@@ -806,11 +895,80 @@ function changeDrone(mode: DroneMode) {
   if (coop.active) coop.droneMode(mode);
   else setDroneMode(s, mode);
 }
+let shownGoal = "",
+  shownRevives = "",
+  shownCue = "",
+  cueRun = "",
+  cueKind: "revive" | "final" = "revive",
+  cueUntil = 0,
+  seenRevives = 0,
+  seenFinal = 0;
+/** Stage look, the 15:00 goal, spare revives and the revive/final boss cues. */
+function renderRunRules() {
+  if (app.dataset.stage !== s.config.stage) app.dataset.stage = s.config.stage;
+  const goal = !coop.active && s.time < CLEAR_TIME ? format(CLEAR_TIME) : "";
+  if (goal !== shownGoal) {
+    shownGoal = goal;
+    el("timer-goal").innerHTML = goal
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4h11l-2.5 4L17 12H6"/></svg>${goal}`
+      : "";
+    el("timer-goal").setAttribute("aria-label", t("Final boss at {time}", { time: goal }));
+    el("timer-goal").classList.toggle("hidden", !goal);
+  }
+  const revives = coop.active ? 0 : s.revives;
+  const reviveCopy = `${revives}:${getLanguage()}`;
+  if (reviveCopy !== shownRevives) {
+    shownRevives = reviveCopy;
+    el("revive-chip").classList.toggle("hidden", revives <= 0);
+    el("revives").textContent = String(revives);
+    el("revive-chip").setAttribute("aria-label", revivesLeft(revives));
+  }
+  // Cues use simulation time, so pausing holds them and a new run clears them.
+  if (cueRun !== runId) {
+    cueRun = runId;
+    seenRevives = seenFinal = cueUntil = 0;
+  }
+  const revivesUsed = s.stats?.revivesUsed ?? 0;
+  if (revivesUsed > seenRevives) {
+    seenRevives = revivesUsed;
+    cueKind = "revive";
+    cueUntil = s.time + 2.2;
+  }
+  const final = s.encounters.active?.final ? s.encounters.active.id : 0;
+  if (final && final !== seenFinal) {
+    seenFinal = final;
+    cueKind = "final";
+    cueUntil = s.time + 2.8;
+  }
+  const visible =
+    s.phase === "playing" && !app.classList.contains("in-menu") && s.time < cueUntil;
+  const cue = visible ? `${cueKind}:${s.revives}:${getLanguage()}` : "";
+  if (cue === shownCue) return;
+  shownCue = cue;
+  app.classList.toggle("has-run-cue", visible);
+  el("run-cue").classList.toggle("hidden", !visible);
+  el("run-cue").dataset.kind = cueKind;
+  el("run-cue-title").textContent = visible
+    ? t(cueKind === "revive" ? "REVIVED" : "FINAL BOSS")
+    : "";
+  el("run-cue-copy").textContent = visible
+    ? cueKind === "revive"
+      ? revivesLeft(s.revives)
+      : t("Scrap Colossus")
+    : "";
+}
+const revivesLeft = (count: number) =>
+  count === 1
+    ? t("1 revive left")
+    : count > 1
+      ? t("{count} revives left", { count })
+      : t("No revives left");
 let shownVitals = "";
 function hud() {
   fieldControls.update(s, s.phase === "playing" && !app.classList.contains("in-menu") && !coop.controlsBlocked);
   renderOpeningGuide();
   renderExpansionHUD();
+  renderRunRules();
   if (app.dataset.phase !== s.phase) app.dataset.phase = s.phase;
   const vitals = [
     getLanguage(),
@@ -862,36 +1020,56 @@ function hud() {
   el<HTMLButtonElement>("pause").disabled =
     s.phase !== "playing" && s.phase !== "paused";
   el<HTMLButtonElement>("help").disabled =
-    s.phase === "upgrade" || s.phase === "lost";
-  if (s.phase === "lost" && !showedResult) {
-    showedResult = true;
-    const summary = summarizeRun(s, runId);
-    runReceipt ??= summary && recordRun(summary);
-    runAnalytics.complete(s, runReceipt?.earned ?? 0);
-    el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
-      parts: runReceipt?.earned ?? 0,
-      total: runReceipt?.parts ?? 0,
-    });
-    document.querySelector(".result-unit")!.textContent = ROBOTS.find(
-      (r) => r.id === s.config.robotId,
-    )!.name;
-    el("yard").classList.remove("is-playing");
-    keys.clear();
-    stopStick();
-    el("upgrade").classList.add("hidden");
-    el("result").classList.remove("hidden");
-    el("result-stamp").textContent = t("BACK TO THE WORKSHOP");
-    el("result-title").textContent = t("SHIFT COMPLETE");
-    el("result-copy").textContent = t(
-      "The swarm got this shift. {launches} scrap launches made it count.",
-      { launches: s.launched },
-    );
-    el("result-kills").textContent = String(s.kills);
-    el("result-time").textContent = format(s.time);
-    el("result-level").textContent = String(s.level);
-    el("result-build").innerHTML = resultBuildMarkup(s);
-    el("again").focus({ preventScroll: true });
-  }
+    s.phase === "upgrade" || runOver();
+  if (runOver() && !showedResult) finishRun();
+}
+/**
+ * The run just ended in defeat or a stage clear: record it once, then show the result.
+ * Anything that must happen before the run is banked belongs here, ahead of recordRun.
+ */
+function finishRun() {
+  showedResult = true;
+  buildInspector.close();
+  const summary = summarizeRun(s, runId);
+  runReceipt ??= summary && recordRun(summary);
+  runAnalytics.complete(s, runReceipt?.earned ?? 0);
+  renderResult();
+}
+const CLEARED_STAMPS: Record<StageId, string> = {
+  yard: "YARD CLEARED",
+  night: "NIGHT SHIFT CLEARED",
+};
+/** Draws the finished run; language changes redraw it without recording again. */
+function renderResult() {
+  const won = s.phase === "won";
+  el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
+    parts: runReceipt?.earned ?? 0,
+    total: runReceipt?.parts ?? 0,
+  });
+  document.querySelector(".result-unit")!.textContent = ROBOTS.find(
+    (r) => r.id === s.config.robotId,
+  )!.name;
+  el("yard").classList.remove("is-playing");
+  keys.clear();
+  stopStick();
+  el("upgrade").classList.add("hidden");
+  el("result").classList.remove("hidden");
+  el("result").classList.toggle("is-cleared", won);
+  // The stamp names the cleared stage; the headline stays as short as the defeat one.
+  el("result-stamp").textContent = t(
+    won ? (CLEARED_STAMPS[s.config.stage] ?? "YARD CLEARED") : "BACK TO THE WORKSHOP",
+  );
+  el("result-title").textContent = t(won ? "SHIFT CLEARED" : "SHIFT COMPLETE");
+  el("result-copy").textContent = won
+    ? t("The Scrap Colossus is down. The yard is quiet, for now.")
+    : t("The swarm got this shift. {launches} scrap launches made it count.", {
+        launches: s.launched,
+      });
+  el("result-kills").textContent = String(s.kills);
+  el("result-time").textContent = format(s.time);
+  el("result-level").textContent = String(s.level);
+  el("result-build").innerHTML = resultBuildMarkup(s);
+  el("again").focus({ preventScroll: true });
 }
 function loop(now: number) {
   frameRequest = undefined;
@@ -1046,6 +1224,27 @@ async function boot() {
         }),
       },
     });
+    // Dev-only QA hook, compiled out of production: reach late-run states without a 15-minute wait.
+    if (import.meta.env.DEV)
+      Object.defineProperty(window, "__JUNK_MAGNET_DEV__", {
+        value: {
+          state: () => s,
+          frame: requestFrame,
+          /** Restarts the solo run with config overrides, e.g. { stage: "night", revives: 1 }. */
+          rerun(overrides: Partial<RunConfig> = {}) {
+            if (app.classList.contains("in-menu")) start();
+            runAnalytics.abandon(s, "restart");
+            s = createState({ ...getRunConfig(), ...overrides });
+            runId = crypto.randomUUID();
+            runReceipt = null;
+            showedResult = false;
+            scene.clear();
+            s.phase = "playing";
+            runAnalytics.start(runId, "solo", s, analyticsContext());
+            requestFrame();
+          },
+        },
+      });
   } catch (error) {
     loadFailed = true;
     track("game_load_failed", {
@@ -1096,7 +1295,8 @@ function applyLanguage() {
   }
   shownLoadout = "";
   shownUpgrade = "";
-  if (s.phase === "lost") showedResult = false;
+  shownGoal = "";
+  if (showedResult && runOver()) renderResult();
   hud();
 }
 function chooseLanguage(next: Language) {

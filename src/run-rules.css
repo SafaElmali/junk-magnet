@@ -1,0 +1,159 @@
+/* Run rules HUD: the stage-clear goal, spare revives, revive and final boss cues. */
+.timer-goal,
+.revive-chip {
+  display: none;
+}
+.in-run .timer-panel {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 7px;
+}
+.in-run .timer-goal:not(.hidden) {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #3f5c61;
+  font:
+    700 14px/1 "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.in-run .timer-goal svg {
+  width: 12px;
+  height: 12px;
+  color: #b94330;
+}
+.in-run .revive-chip:not(.hidden) {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  margin: 0 12px 0 auto;
+  color: #173342;
+  filter: drop-shadow(0 1px 1px #fff6e3);
+}
+.in-run .revive-chip svg {
+  width: 15px;
+  height: 15px;
+  color: #bc432e;
+  fill: #cc594433;
+}
+.in-run .revive-chip strong {
+  font-size: 15px;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums;
+}
+/* Cues sit above the robot; short frames move them under it, clear of the HUD. */
+.run-cue {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: calc(50% - 150px);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  max-width: calc(100% - 32px);
+  padding: 8px 18px 9px;
+  border: 1px solid #edbd58;
+  border-radius: 6px;
+  background: #142f37eb;
+  color: #fff0c9;
+  text-align: center;
+  pointer-events: none;
+  animation: run-cue-in 0.28s ease-out;
+}
+.run-cue strong {
+  font:
+    800 26px/1 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: #edc366;
+}
+.run-cue span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #c9d6c8;
+}
+.run-cue[data-kind="final"] {
+  border-color: #e0664f;
+}
+.run-cue[data-kind="final"] strong {
+  color: #ff8a70;
+}
+@keyframes run-cue-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.96);
+  }
+}
+@media (max-height: 500px) {
+  .run-cue {
+    top: calc(50% + 40px);
+    padding: 5px 12px 6px;
+  }
+  .run-cue strong {
+    font-size: 20px;
+  }
+  .run-cue span {
+    font-size: 10px;
+  }
+  /* Both sit under the robot here; the brief cue wins. */
+  .has-run-cue #world-hint {
+    visibility: hidden;
+  }
+}
+/* The final boss bar reads as the stage's last fight. */
+#boss-hud.is-final {
+  color: #ffd9c7;
+}
+#boss-hud.is-final #boss-health {
+  height: 9px;
+  border-color: #ff8a7099;
+}
+#boss-hud.is-final #boss-fill {
+  background: linear-gradient(90deg, #d9553e, #f2a14a);
+}
+/* A cleared stage keeps the result layout and turns its heading gold. */
+#result.is-cleared .modal-card {
+  border-top-color: #f4d67b;
+}
+#result.is-cleared .result-stamp,
+#result.is-cleared .modal-card h2 {
+  color: #f4d67b;
+}
+.in-run[data-phase="won"] #help,
+.in-run[data-phase="won"] #pause {
+  display: none;
+}
+/* Night Shift: cream HUD text with dark halos stays readable over the dark yard. */
+.in-run[data-stage="night"] .health-panel,
+.in-run[data-stage="night"] .timer-panel,
+.in-run[data-stage="night"] .salvage-panel,
+.in-run[data-stage="night"] .revive-chip:not(.hidden) {
+  color: #fff1d3;
+  filter: drop-shadow(0 1px 1px #07131a) drop-shadow(0 0 2px #07131a);
+}
+.in-run[data-stage="night"] .timer-goal:not(.hidden) {
+  color: #cddbd2;
+}
+.in-run[data-stage="night"] .timer-goal svg,
+.in-run[data-stage="night"] .revive-chip svg {
+  color: #ff8a70;
+}
+.in-run[data-stage="night"] #yard > .health-track {
+  background: #0b1a22d9;
+  outline: 1px solid #fff6e359;
+}
+.in-run[data-stage="night"] .touch-stick {
+  border-color: #fff6e380;
+  background: #fff6e31f;
+}
+@media (prefers-reduced-motion: reduce) {
+  .run-cue {
+    animation: none;
+  }
+}

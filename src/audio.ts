@@ -70,6 +70,7 @@ export class AudioCues {
       defeated: s.encounters.defeated,
       reward: s.discovery.lastReward?.until,
       evolution: Object.values(s.evolutions).filter(Boolean).length,
+      revives: s.stats?.revivesUsed ?? 0,
     };
   }
   update(s: State): Cue[] {
@@ -79,6 +80,9 @@ export class AudioCues {
     if (!old || next.time < old.time) return [];
     const cues: Cue[] = [];
     if (next.phase === "lost" && old.phase !== "lost") return ["defeat"];
+    // A stage clear layers two bright cues and outranks the boss reward that caused it.
+    if (next.phase === "won" && old.phase !== "won") return ["evolve", "reward"];
+    if (next.revives > old.revives) cues.push("repair");
     if (next.evolution > old.evolution) cues.push("evolve");
     else if (next.ranks > old.ranks) cues.push("upgrade");
     if (next.level > old.level) cues.push("level");

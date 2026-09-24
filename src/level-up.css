@@ -509,10 +509,10 @@
   }
 }
 /* Pause/results already have a run summary; keep their established control spacing. */
-.in-run:is([data-phase="paused"], [data-phase="lost"]) .top-progress {
+.in-run:is([data-phase="paused"], [data-phase="lost"], [data-phase="won"]) .top-progress {
   display: none;
 }
-.in-run:is([data-phase="paused"], [data-phase="lost"]) .masthead {
+.in-run:is([data-phase="paused"], [data-phase="lost"], [data-phase="won"]) .masthead {
   top: max(10px, env(safe-area-inset-top));
 }
 .in-run[data-phase="upgrade"] .top-progress {
@@ -526,5 +526,243 @@
   }
   .in-run .boss-hud {
     top: calc(max(14px, env(safe-area-inset-top)) + 140px);
+  }
+}
+
+/* Reroll and banish: compact secondary tools under the cards, beside the title when short. */
+#upgrade .upgrade-tools {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+#upgrade .upgrade-tool {
+  position: relative;
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 156px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid #748f83;
+  border-radius: 5px;
+  background: #112e37;
+  color: #f3dfad;
+  font:
+    700 17px/1 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.04em;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+#upgrade .upgrade-tool > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#upgrade .upgrade-tool svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #edbd58;
+}
+/* The count sits on the corner, so long labels keep the button's full width. */
+#upgrade .upgrade-tool b {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #edbd58;
+  color: #17343b;
+  box-shadow: 0 0 0 2px #173740;
+  font:
+    800 13px/1 "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+#upgrade .upgrade-tool kbd {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 22px;
+  border: 1px solid #7d998260;
+  border-radius: 3px;
+  background: #0d2730;
+  color: #a9beb0;
+  font:
+    700 11px/1 "DM Sans",
+    sans-serif;
+}
+#upgrade .upgrade-tool:hover:not(:disabled),
+#upgrade .upgrade-tool:focus-visible {
+  border-color: #edc264;
+  background: #1d3d45;
+}
+#upgrade .upgrade-tool:focus-visible {
+  outline: 2px solid #edc264;
+  outline-offset: 1px;
+}
+#upgrade .upgrade-tool:disabled {
+  opacity: 0.45;
+}
+#upgrade .upgrade-tool:disabled b {
+  background: #5d7470;
+  color: #e3e8dc;
+}
+/* Armed banish: coral replaces gold on the sheet, the active tool and every target card. */
+#upgrade.is-banishing .upgrade-sheet {
+  border-top-color: #e0664f;
+}
+#upgrade.is-banishing .upgrade-emblem {
+  border-color: #c86a55;
+  color: #ff8a70;
+}
+#upgrade .upgrade-tool[aria-pressed="true"]:not(:disabled) {
+  border-color: #e0664f;
+  background: #4a2a26;
+  color: #ffe0d6;
+}
+#upgrade .upgrade-tool[aria-pressed="true"]:not(:disabled):hover {
+  background: #5a312b;
+}
+#upgrade .upgrade-tool[aria-pressed="true"] svg {
+  color: #ff8a70;
+}
+#upgrade .upgrade-choice[data-banish="target"] {
+  border-color: #c86a55;
+  box-shadow: inset 0 0 0 3px #4a2a2666;
+}
+#upgrade .upgrade-choice[data-banish="target"]:hover,
+#upgrade .upgrade-choice[data-banish="target"]:focus {
+  border-color: #ff8a70;
+  outline-color: #ff8a70;
+  background: #4a3431;
+}
+#upgrade .upgrade-choice[data-banish="locked"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+#upgrade .upgrade-choice[data-banish="locked"]:hover,
+#upgrade .upgrade-choice[data-banish="locked"]:focus {
+  border-color: #748f83;
+  outline-color: #9eb3a8;
+  background: #26434a;
+}
+#upgrade .upgrade-banish-tag {
+  position: absolute;
+  top: -9px;
+  right: 12px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #e0664f;
+  color: #1c100e;
+  font:
+    800 11px/1.3 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+@media (max-width: 520px) {
+  #upgrade .upgrade-tools {
+    gap: 8px;
+    margin-top: 12px;
+  }
+  #upgrade .upgrade-tool {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 16px;
+  }
+  #upgrade .upgrade-tool kbd {
+    display: none;
+  }
+}
+@media (max-width: 520px) and (max-height: 650px) {
+  #upgrade .upgrade-tools {
+    margin-top: 10px;
+  }
+  #upgrade .upgrade-tool {
+    min-height: 40px;
+    gap: 6px;
+  }
+}
+@media (max-width: 360px) {
+  #upgrade .upgrade-tool {
+    padding: 8px 6px;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+  #upgrade .upgrade-tool svg {
+    display: none;
+  }
+}
+/* Short frames keep the cards' height by moving the tools into the heading row;
+   a heading that needs the room pushes them onto their own line instead. */
+@media (min-width: 521px) and (max-height: 699px) {
+  #upgrade .upgrade-sheet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    column-gap: 12px;
+    row-gap: 14px;
+  }
+  #upgrade .upgrade-heading {
+    flex: 1 1 220px;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+  #upgrade .upgrade-tools {
+    order: 1;
+    flex: 0 0 auto;
+    margin: 8px 6px 0 auto;
+    gap: 12px;
+  }
+  #upgrade .upgrade-choices,
+  #upgrade .upgrade-note {
+    order: 2;
+    flex: 1 0 100%;
+  }
+  #upgrade .upgrade-note {
+    margin-top: -2px;
+  }
+  #upgrade .upgrade-tool {
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 12px;
+    font-size: 16px;
+  }
+}
+@media (min-width: 521px) and (max-height: 500px),
+  (min-width: 521px) and (max-width: 759px) and (max-height: 699px) {
+  #upgrade .upgrade-sheet {
+    row-gap: 8px;
+  }
+  #upgrade .upgrade-tool {
+    min-height: 36px;
+    padding: 5px 10px;
+    font-size: 15px;
+  }
+  #upgrade .upgrade-tool kbd {
+    display: none;
+  }
+}
+@media (min-width: 521px) and (max-width: 759px) and (max-height: 699px) {
+  #upgrade .upgrade-tool svg {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #upgrade .upgrade-tool {
+    transition: none;
   }
 }

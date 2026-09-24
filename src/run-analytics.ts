@@ -6,7 +6,8 @@ export function createRunAnalytics(
   capture: (event: AnalyticsEvent, properties: AnalyticsProperties) => void,
 ) {
   let current:
-    { id: string; mode: string; robot: string; ended: boolean } | undefined;
+    | { id: string; mode: string; robot: string; stage: string; ended: boolean }
+    | undefined;
   let upgrades: State["upgrades"];
   let evolutions: State["evolutions"];
   let milestones = new Set<number>();
@@ -16,6 +17,7 @@ export function createRunAnalytics(
       run_id: current.id,
       mode: current.mode,
       robot_id: current.robot,
+      stage: current.stage,
       ...properties,
     });
   };
@@ -25,6 +27,10 @@ export function createRunAnalytics(
     level: state.level,
     wave: state.wave,
     scrap_launched: state.launched,
+    boss_kills: state.stats?.bossKills ?? 0,
+    revives_used: state.stats?.revivesUsed ?? 0,
+    rerolls_used: state.stats?.rerollsUsed ?? 0,
+    banishes_used: state.stats?.banishesUsed ?? 0,
   });
   return {
     start(
@@ -34,7 +40,13 @@ export function createRunAnalytics(
       properties: AnalyticsProperties = {},
     ) {
       if (current?.id === id) return;
-      current = { id, mode, robot: state.config.robotId, ended: false };
+      current = {
+        id,
+        mode,
+        robot: state.config.robotId,
+        stage: state.config.stage ?? "yard",
+        ended: false,
+      };
       upgrades = { ...state.upgrades };
       evolutions = { ...state.evolutions };
       milestones = new Set();
@@ -42,7 +54,8 @@ export function createRunAnalytics(
     },
     observe(state: State) {
       if (!current || current.ended) return;
-      for (const seconds of [30, 60, 180, 300, 600]) {
+      // 900 s is the final boss: the share of runs that reach the stage clear.
+      for (const seconds of [30, 60, 180, 300, 600, 900]) {
         if (state.time >= seconds && !milestones.has(seconds)) {
           milestones.add(seconds);
           emit("survival_milestone", {
@@ -72,12 +85,17 @@ export function createRunAnalytics(
       evolutions = { ...state.evolutions };
     },
     complete(state: State, partsEarned: number) {
-      if (!current || current.ended || state.phase !== "lost") return;
+      if (
+        !current ||
+        current.ended ||
+        (state.phase !== "lost" && state.phase !== "won")
+      )
+        return;
       current.ended = true;
       emit("run_completed", {
         ...summary(state),
         parts_earned: partsEarned,
-        outcome: "defeated",
+        outcome: state.phase === "won" ? "cleared" : "defeated",
       });
     },
     abandon(state: State, reason: "restart" | "coop_left" | "mode_changed") {
