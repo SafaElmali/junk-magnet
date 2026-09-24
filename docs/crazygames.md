@@ -10,9 +10,15 @@ Junk Magnet is in CrazyGames **Basic Launch** (started 23 September 2026, ends 1
 npm run publish:crazygames
 ```
 
-This builds `dist-crazygames/`, opens Chrome on the game's portal page, clicks **Submit new version**, uploads the folder and sets the form: Data Module progress save, mobile support, not multiplayer, SDK muting. It then asks before saving; when the terminal is not interactive, it waits for you to click **Save** in the browser. The first run asks you to log in (Google, or email if Google rejects the automated browser); the session is kept in `.crazygames-session/`, which is gitignored along with the portal screenshot it writes there. If the portal changes its form, the script fails at the missing control; update the selector in `scripts/publish-crazygames.mjs`.
+This builds `dist-crazygames/`, opens Chrome on the game's portal page, clicks **Submit new version**, uploads the folder and sets the form: Data Module progress save, mobile support, not multiplayer, SDK muting. The game dashboard sometimes stays on its loading spinner, so the script reloads it after 20 seconds without the button, up to three times. The portal uploads each file separately and keeps **Save** disabled until all are done; the script waits for Save to enable, logging progress, for up to 10 minutes. It then asks before saving; when the terminal is not interactive, it waits for you to click **Save** in the browser. To save without the prompt, for example when an agent runs the release, pass `--save` (or set `CRAZYGAMES_SAVE=1`):
 
-Saving creates a **Draft** in Game Versions. To publish it, click **Submit update** on the draft: the QA tool opens the draft on crazygames.com/preview. Play it (press Play promptly, since its load time runs until the first gameplay start), check its Log and Warnings tabs, then press **Continue**. The QA checklist that follows is self-attested: answer each requirement, scan **Show QR** to test on a phone, add update notes and confirm. During Basic Launch the update is then approved automatically and goes live. Discard drafts you won't submit.
+```sh
+npm run publish:crazygames -- --save
+```
+
+With `--save` the script clicks Save as soon as it is enabled, prints the QA tool URL and closes the browser, which frees the session for another browser to open that URL. The first run asks you to log in (Google, or email if Google rejects the automated browser); the session is kept in `.crazygames-session/`, which is gitignored along with the screenshots the script writes there: the filled form, and the page at any failure. If the portal changes its form, the script fails at the missing control; update the selector in `scripts/publish-crazygames.mjs`.
+
+Saving creates a **Draft** in Game Versions and opens it in the QA tool on crazygames.com/preview; the script prints that URL. Play it (press Play promptly, since its load time runs until the first gameplay start), check its Log and Warnings tabs, then press **Continue**, which opens the QA checklist in a new tab. The checklist is self-attested: answer each requirement, scan **Show QR** to test on a phone, add update notes and confirm. During Basic Launch the update is then approved automatically and goes live. To finish a draft later, click **Submit update** on it in Game Versions. Discard drafts you won't submit.
 
 Release in batches, once or twice a week. The CrazyGames dashboard refreshes daily, so more frequent uploads do not give faster feedback, and each batch is easier to connect to a change in the metrics.
 

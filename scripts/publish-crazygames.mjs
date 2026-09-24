@@ -1,9 +1,10 @@
 // Uploads dist-crazygames/ as a new version in the CrazyGames developer portal
 // (`npm run publish:crazygames` builds first). The first run asks you to log in
 // in the opened browser; the session stays in .crazygames-session/ (gitignored).
-// Nothing is saved without confirmation: answer the terminal prompt, or click
-// Save in the browser yourself when the terminal is not interactive.
-import { chromium } from "@playwright/test";
+// Nothing is saved without confirmation: answer the terminal prompt, click Save
+// in the browser yourself, or pass --save (or set CRAZYGAMES_SAVE=1) to save as
+// soon as the upload finishes, print the QA tool URL and close the browser.
+import { chromium, expect } from "@playwright/test";
 import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -13,6 +14,8 @@ const GAME =
 const build = resolve("dist-crazygames");
 if (!existsSync(`${build}/index.html`))
   throw new Error("Missing dist-crazygames/. Run npm run build:crazygames.");
+const autoSave =
+  process.argv.includes("--save") || process.env.CRAZYGAMES_SAVE === "1";
 
 const context = await chromium.launchPersistentContext(".crazygames-session", {
   channel: "chrome",
@@ -20,7 +23,17 @@ const context = await chromium.launchPersistentContext(".crazygames-session", {
   viewport: null,
 });
 const page = context.pages()[0] ?? (await context.newPage());
+const seconds = (n) => n * 1000;
 const minutes = (n) => n * 60_000;
+// Portal screenshots show account details; keep them with the ignored session.
+const screenshot = async (name) => {
+  const path = `.crazygames-session/${name}.png`;
+  await page.screenshot({ path, fullPage: true });
+  return path;
+};
+const fail = async (name, message) => {
+  throw new Error(`${message} Screenshot: ${await screenshot(name)}`);
+};
 
 await page.goto(GAME);
 if (new URL(page.url()).pathname.startsWith("/login")) {
@@ -30,24 +43,42 @@ if (new URL(page.url()).pathname.startsWith("/login")) {
   });
   await page.goto(GAME);
 }
-await page.getByRole("button", { name: "Submit new version" }).first().click();
+// The dashboard sometimes stays on its loading spinner; a reload fixes it.
+const submit = page.getByRole("button", { name: "Submit new version" }).first();
+for (let reloads = 0; ; reloads++) {
+  const shown = await submit.waitFor({ timeout: seconds(20) }).then(
+    () => true,
+    () => false,
+  );
+  if (shown) break;
+  if (reloads === 3)
+    await fail("dashboard", "The game dashboard did not load after 3 reloads.");
+  console.log(`Dashboard still loading; reloading (${reloads + 1}/3)…`);
+  await page.reload();
+}
+await submit.click();
 
-// The portal uploads each file separately; wait until the network is quiet.
 const input = page.locator('input[type="file"]');
 await input.waitFor({ state: "attached" });
-let inFlight = 0;
-const track = (delta) => () => (inFlight += delta);
-page.on("request", track(1));
-page.on("requestfinished", track(-1));
-page.on("requestfailed", track(-1));
+const save = page.getByRole("button", { name: /^Save/ });
+let requests = 0;
+page.on("requestfinished", () => requests++);
 const files = readdirSync(build, { recursive: true, withFileTypes: true });
 console.log(`Uploading ${files.filter((f) => f.isFile()).length} files…`);
 await input.setInputFiles(build);
-for (let quiet = 0, waited = 0; quiet < 3; waited++) {
-  if (waited > 600) throw new Error("Upload did not finish in 10 minutes.");
+// The portal uploads each file separately and keeps Save disabled until all
+// are done. In case Save starts out enabled, give it a moment to disable.
+await expect(save)
+  .toBeDisabled({ timeout: seconds(10) })
+  .catch(() => {});
+for (let waited = 0; !(await save.isEnabled()); waited++) {
+  if (waited === 600)
+    await fail("upload-timeout", "Upload did not finish in 10 minutes.");
+  if (waited && waited % 15 === 0)
+    console.log(`Still uploading after ${waited} s (${requests} requests)…`);
   await page.waitForTimeout(1000);
-  quiet = inFlight <= 0 ? quiet + 1 : 0;
 }
+console.log("Upload finished.");
 
 // Current integration: Data Module saves, SDK muting, mobile, single-player.
 await page.locator('input[type="radio"][value="SDKPS"]').check();
@@ -58,19 +89,46 @@ await page
 await page
   .getByLabel("The game supports CrazyGames muting audio through SDK")
   .setChecked(true);
-// Portal screenshots show account details; keep them with the ignored session.
-const shot = ".crazygames-session/upload.png";
-await page.screenshot({ path: shot, fullPage: true });
-console.log(`Form filled. Screenshot: ${shot}`);
+console.log(`Form filled. Screenshot: ${await screenshot("upload")}`);
 
-if (process.stdin.isTTY) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await rl.question("Save this version on CrazyGames? [y/N] ");
-  rl.close();
-  if (answer.trim().toLowerCase() === "y") {
-    await page.getByRole("button", { name: "Save", exact: true }).click();
-    console.log("Saved. Check the portal for any remaining step.");
-  } else console.log("Not saved.");
-} else console.log("Review the form, then click Save in the browser window.");
-console.log("Close the browser window when you are done.");
-await new Promise((done) => context.on("close", done));
+// Saving creates a draft and opens it in the QA tool on crazygames.com/preview.
+const saveVersion = async () => {
+  await save.click();
+  const opened = await page
+    .waitForURL((url) => url.pathname.startsWith("/preview/"), {
+      timeout: minutes(2),
+      waitUntil: "commit",
+    })
+    .then(
+      () => true,
+      () => false,
+    );
+  if (opened) console.log(`Saved. QA tool: ${page.url()}`);
+  else {
+    process.exitCode = 1;
+    console.error(
+      "Clicked Save, but the QA tool did not open within 2 minutes; check " +
+        `Game Versions for the draft. Screenshot: ${await screenshot("save")}`,
+    );
+  }
+};
+
+if (autoSave) {
+  await saveVersion();
+  // Free the session profile so another browser can open the QA tool with it.
+  await context.close();
+} else {
+  if (process.stdin.isTTY) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await rl.question("Save this version on CrazyGames? [y/N] ");
+    rl.close();
+    if (answer.trim().toLowerCase() === "y") await saveVersion();
+    else console.log("Not saved.");
+  } else
+    console.log(
+      "Review the form, then click Save in the browser window " +
+        "(or rerun with --save to save automatically).",
+    );
+  console.log("Close the browser window when you are done.");
+  await new Promise((done) => context.on("close", done));
+}
