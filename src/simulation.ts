@@ -6,10 +6,17 @@ import {
   updateEncounters,
   updateEnemyBehavior,
   onEncounterKill,
+  FINAL_BOSS,
   type EncounterHooks,
 } from "./encounters";
 import { createDiscoveryState, updateDiscovery } from "./discovery";
 import { DEFAULT_RUN_CONFIG, type RunConfig } from "./progression";
+import {
+  bannedUpgrades,
+  enemyHealthScale,
+  enemySpeedScale,
+  spawnRateScale,
+} from "./stage-rules";
 import {
   createEvolutions,
   unlockEvolutions,
@@ -34,6 +41,8 @@ export type Enemy = Vec & {
   hp: number;
   hit: number;
   seed: number;
+  /** The stage's last boss; defeating it clears the stage. */
+  final?: boolean;
   /** Guard shots halve movement until this simulation timestamp. */
   slowUntil?: number;
   /** Tougher, glowing variant of an ordinary enemy with better drops. */
@@ -115,6 +124,8 @@ export type State = {
   hp: number;
   scrap: number;
   xp: number;
+  /** XP multiplier remainder, banked once it adds up to a whole point. */
+  xpFraction: number;
   level: number;
   xpNeeded: number;
   choices: UpgradeId[];
@@ -229,6 +240,8 @@ export const UPGRADES: Record<
     maxRank: Infinity,
   },
 };
+/** Repeatable level-up supplies: they fill short pools and cannot be banished. */
+export const SUPPLIES: readonly UpgradeId[] = ["repair", "refill", "overclock"];
 export function upgradeDescription(s: State, id: UpgradeId): string {
   const rank = s.upgrades[id],
     next = rank + 1;
@@ -308,8 +321,9 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     aim: { x: 0, z: 1 },
     facing: { x: 0, z: 1 },
     hp: 100,
-    scrap: 0,
+    scrap: Math.min(MAX_SCRAP, Math.max(0, Math.floor(config.startingScrap || 0))),
     xp: 0,
+    xpFraction: 0,
     level: 1,
     xpNeeded: 5,
     choices: [],
@@ -359,6 +373,10 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     launched: 0,
     overclockTimer: 0,
   };
+  // Challenge ranks stack on the starting weapon; repeatable supplies are not build ranks.
+  for (const [id, ranks] of Object.entries(config.modifiers?.startingUpgrades ?? {}) as [UpgradeId, number][])
+    if (Object.hasOwn(UPGRADES, id) && !SUPPLIES.includes(id) && Number.isFinite(ranks) && ranks > 0)
+      s.upgrades[id] = Math.min(UPGRADES[id].maxRank, s.upgrades[id] + Math.floor(ranks));
   // Real ground scrap is gathered before combat, so the first ammunition has a visible source.
   for (let i = 0; i < 6; i++) {
     const angle = (i * Math.PI * 2) / 6;
@@ -410,7 +428,8 @@ function spawn(
               : type === "runner"
                 ? 3
                 : 4) *
-      (1 + s.time / 180),
+      (1 + s.time / 180) *
+      enemyHealthScale(s.config),
     hit: 0,
     seed: random(s) * 10,
     type,
@@ -419,25 +438,70 @@ function spawn(
   s.enemies.push(e);
   s.spawned++;
 }
+/**
+ * Level-up candidates: unmaxed permanent upgrades the run allows, repair when hurt, then
+ * supplies until there are three. `exclude` lets a redraw avoid the cards on screen.
+ */
+function upgradePool(s: State, exclude: readonly UpgradeId[] = []) {
+  const banned = bannedUpgrades(s.config);
+  const allowed = (id: UpgradeId) =>
+    !exclude.includes(id) && !s.banished.includes(id) && !banned.includes(id);
+  const pool = (Object.keys(UPGRADES) as UpgradeId[]).filter(
+    (id) =>
+      !SUPPLIES.includes(id) &&
+      s.upgrades[id] < UPGRADES[id].maxRank &&
+      allowed(id),
+  );
+  if (s.hp < 80 && allowed("repair")) pool.push("repair");
+  for (const fallback of SUPPLIES)
+    if (pool.length < 3 && !pool.includes(fallback) && allowed(fallback))
+      pool.push(fallback);
+  return pool;
+}
+function shuffle(s: State, pool: UpgradeId[]) {
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(random(s) * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
 export function offerUpgrade(s: State) {
   if (s.choices.length || s.specializationChoices.length || s.hp <= 0 || s.xp < s.xpNeeded) return;
   s.xp -= s.xpNeeded;
   s.level++;
   s.xpNeeded = 5 + (s.level - 1) * 4;
-  const pool = (Object.keys(UPGRADES) as UpgradeId[]).filter(
-    (id) =>
-      !(["repair", "refill", "overclock"] as string[]).includes(id) &&
-      s.upgrades[id] < UPGRADES[id].maxRank,
-  );
-  if (s.hp < 80) pool.push("repair");
-  for (const fallback of ["repair", "refill", "overclock"] as const)
-    if (pool.length < 3 && !pool.includes(fallback)) pool.push(fallback);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(random(s) * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  s.choices = pool.slice(0, 3);
+  const pool = upgradePool(s);
+  // Only a challenge that bans every supply can empty the pool; never leave the sheet blank.
+  s.choices = shuffle(s, pool.length ? pool : [...SUPPLIES]).slice(0, 3);
   s.phase = "upgrade";
+}
+const toolsOpen = (s: State) =>
+  s.phase === "upgrade" && !s.specializationChoices.length && s.choices.length > 0;
+/** Supplies are the fallback that keeps level-ups full, so only build upgrades can be banished. */
+export const canBanish = (id: UpgradeId) => !SUPPLIES.includes(id);
+/** Redraws every level-up card, avoiding the current ones while the pool allows it. */
+export function rerollChoices(s: State): boolean {
+  if (!toolsOpen(s) || s.rerolls <= 0) return false;
+  // Fresh cards (supplies included) come first; the current ones only fill what is left.
+  const fresh = shuffle(s, upgradePool(s, s.choices));
+  s.choices = [...fresh, ...shuffle(s, [...s.choices])].slice(0, 3);
+  s.rerolls--;
+  s.stats.rerollsUsed++;
+  return true;
+}
+/** Removes an offered build upgrade from every later pool this run and refills its card. */
+export function banishChoice(s: State, id: UpgradeId): boolean {
+  const slot = s.choices.indexOf(id);
+  if (!toolsOpen(s) || s.banishes <= 0 || slot < 0 || !canBanish(id)) return false;
+  s.banishes--;
+  s.stats.banishesUsed++;
+  s.banished.push(id);
+  const replacement = shuffle(s, upgradePool(s, s.choices))[0];
+  s.choices = replacement
+    ? s.choices.map((choice, i) => (i === slot ? replacement : choice))
+    : s.choices.filter((choice) => choice !== id);
+  if (!s.choices.length) s.choices = ["refill"];
+  return true;
 }
 export function chooseUpgrade(s: State, id: UpgradeId): boolean {
   if (
@@ -709,6 +773,14 @@ function abilities(s: State, dt: number) {
   }
   s.turrets = s.turrets.filter((t) => t.life > 0);
 }
+/** Applies the run's XP multiplier; fractions carry over so the displayed XP stays whole. */
+function gainXp(s: State, amount: number) {
+  const multiplier = s.config.xpMultiplier > 0 ? s.config.xpMultiplier : 1;
+  const total = amount * multiplier + (s.xpFraction || 0);
+  const whole = Math.floor(total + 1e-9);
+  s.xp += whole;
+  s.xpFraction = Math.max(0, total - whole);
+}
 function collectPickups(s: State, dt: number, players: State[] = [s]) {
   // Keep the first scraps still briefly; then pull them slowly enough to read the magnet effect.
   if (s.openingRemaining > OPENING_DURATION - 0.7) return;
@@ -740,7 +812,7 @@ function collectPickups(s: State, dt: number, players: State[] = [s]) {
         s.scrap += take;
         p.value = value - take;
       } else {
-        s.xp += value;
+        gainXp(s, value);
         p.value = 0;
       }
       emit(s, { kind: "collect", pickupKind: p.kind, x: p.x, z: p.z });
@@ -790,10 +862,7 @@ export function update(
   }
   const encounter = encounterHooks(s);
   if (world) updateEncounters(s, dt, encounter, players);
-  if (s.hp <= 0) {
-    s.phase = "lost";
-    return;
-  }
+  if (!survive(s)) return;
   if (world) {
     s.spawnTimer -= dt;
     if (s.spawnTimer <= 0) {
@@ -807,9 +876,10 @@ export function update(
         );
       s.spawnTimer =
         Math.max(0.22, 1.35 / (1 + s.time / 80)) /
-        (options.spawnMultiplier ?? 1);
+        ((options.spawnMultiplier ?? 1) * spawnRateScale(s.config));
     }
   }
+  const enemySpeed = enemySpeedScale(s.config);
   // Local buckets bound separation work in a dense horde.
   const buckets = new Map<string, Enemy[]>();
   for (const e of s.enemies) {
@@ -846,13 +916,11 @@ export function update(
         dt,
         encounterHooks(target),
       );
-      if (s.hp <= 0) {
-        s.phase = "lost";
-        return;
-      }
+      if (!survive(s)) return;
       const speed =
         (e.type === "runner" ? 2.5 : e.type === "brute" ? 0.95 : 1.25) *
-        (1 + Math.min(0.85, s.time / 600)) * ((e.slowUntil ?? 0) > s.time ? 0.5 : 1);
+        (1 + Math.min(0.85, s.time / 600)) * ((e.slowUntil ?? 0) > s.time ? 0.5 : 1) *
+        enemySpeed;
       if (!customMovement && d > 0.01) {
         e.x += ((target.player.x - e.x) / d) * speed * dt;
         e.z += ((target.player.z - e.z) / d) * speed * dt;
@@ -887,10 +955,7 @@ export function update(
             : 9) + Math.floor(s.time / 90),
       );
     }
-    if (s.hp <= 0) {
-      s.phase = "lost";
-      return;
-    }
+    if (!survive(s)) return;
     if (!e.hit)
       for (let i = 0; i < s.scrap; i++)
         if (distance(e, orbitPosition(s, i)) < enemyRadius(e) + 0.25) {
@@ -898,10 +963,7 @@ export function update(
           break;
         }
   }
-  if (s.hp <= 0) {
-    s.phase = "lost";
-    return;
-  }
+  if (!survive(s)) return;
   s.pulseTimer -= dt;
   if (s.pulseTimer <= 0) {
     s.pulseTimer = s.scrap ? 1.8 : 0.65;
@@ -980,6 +1042,11 @@ export function update(
   });
   s.enemies = s.enemies.filter((e) => e.hp > 0);
   s.shots = s.shots.filter((p) => p.life > 0);
+  // The final boss fell this frame: the run ends as a win before any level-up can open.
+  if (s.encounters.cleared) {
+    s.phase = "won";
+    return;
+  }
   collectPickups(s, dt, players);
   if (!options.deferDiscovery) updateDiscovery(s, dt);
   if (!options.deferUpgrade) offerUpgrade(s);
@@ -987,7 +1054,9 @@ export function update(
 
 export function enemyRadius(e: Enemy): number {
   return e.type === "boss"
-    ? 1.3
+    ? e.final
+      ? 1.3 * FINAL_BOSS.scale
+      : 1.3
     : e.type === "miniboss"
       ? 0.95
       : e.type === "brute"
@@ -1003,6 +1072,50 @@ function damagePlayer(s: State, amount: number) {
   );
   s.immunity = 0.85;
   emit(s, { kind: "hurt", ...s.player });
+}
+export const REVIVE_HEALTH = 50;
+export const REVIVE_IMMUNITY = 2.5;
+export const REVIVE_RADIUS = 5;
+/** True when lethal damage will spend one of the run's automatic revives. */
+export function canRevive(s: State): boolean {
+  return s.revives > 0 && s.hp <= 0 && s.phase === "playing";
+}
+/**
+ * Brings a downed robot back at half health with brief immunity and a clearing shockwave.
+ * "auto" spends one of `s.revives` at the moment of lethal damage. "external" (for example a
+ * rewarded ad on the defeat screen) is free and also reopens a run that just reached "lost".
+ */
+export function revive(s: State, source: "auto" | "external" = "auto"): boolean {
+  if (source === "auto" ? !canRevive(s) : s.hp > 0 || (s.phase !== "playing" && s.phase !== "lost"))
+    return false;
+  if (source === "auto") s.revives--;
+  s.stats.revivesUsed++;
+  s.hp = REVIVE_HEALTH;
+  s.immunity = REVIVE_IMMUNITY;
+  s.phase = "playing";
+  emit(s, { kind: "burst", ...s.player, radius: REVIVE_RADIUS });
+  const damage = 20 + s.time / 10;
+  for (const e of s.enemies) {
+    const d = distance(s.player, e);
+    if (e.hp <= 0 || d > REVIVE_RADIUS + enemyRadius(e)) continue;
+    hurt(s, e, damage);
+    // Closer enemies fly farther, so the robot always gets room to move.
+    const push = 2 + 3 * (1 - d / (REVIVE_RADIUS + enemyRadius(e)));
+    e.x += ((e.x - s.player.x) / (d || 1)) * push;
+    e.z += ((e.z - s.player.z) / (d || 1)) * push;
+    resolveObstacles(e, enemyRadius(e));
+  }
+  const c = s.encounters;
+  c.projectiles = c.projectiles.filter((p) => distance(p, s.player) > 9);
+  c.zones = c.zones.filter((z) => distance(z, s.player) > z.radius + REVIVE_RADIUS);
+  return true;
+}
+/** Lethal damage spends a revive; otherwise the run ends and the frame stops. */
+function survive(s: State): boolean {
+  if (s.hp > 0 || revive(s)) return true;
+  // A final boss that fell earlier in the same frame still clears the stage.
+  s.phase = s.encounters.cleared ? "won" : "lost";
+  return false;
 }
 function encounterHooks(s: State): EncounterHooks {
   return {

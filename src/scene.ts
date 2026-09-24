@@ -29,6 +29,62 @@ import {
   graphicsProfile,
   type GraphicsQuality,
 } from "./graphics";
+import { FINAL_BOSS } from "./encounters";
+import type { StageId } from "./progression";
+
+/**
+ * Stage lighting. The Night Shift turns the sun into cool moonlight, so shadows keep their
+ * single caster on every preset; the warm lamp around the robot never casts shadows.
+ */
+const LOOKS: Record<
+  StageId,
+  {
+    background: number;
+    fog: [near: number, far: number];
+    sky: number;
+    ground: number;
+    fill: number;
+    sun: number;
+    sunIntensity: number;
+    environment: number;
+    exposure: number;
+    floor: number;
+    lamp: number;
+    xpGlow: [color: number, intensity: number];
+    markings: number;
+  }
+> = {
+  yard: {
+    background: 0xdcb394,
+    fog: [58, 90],
+    sky: 0xf5f8ed,
+    ground: 0x806247,
+    fill: 0.85,
+    sun: 0xffe0ae,
+    sunIntensity: 3.1,
+    environment: 0.32,
+    exposure: 1,
+    floor: 0xe9c4a9,
+    lamp: 0,
+    xpGlow: [0x0a3952, 0.15],
+    markings: 1,
+  },
+  night: {
+    background: 0x0b1626,
+    fog: [27, 60],
+    sky: 0x6a82bb,
+    ground: 0x111a29,
+    fill: 0.8,
+    sun: 0xa7bfff,
+    sunIntensity: 1.05,
+    environment: 0.12,
+    exposure: 1,
+    floor: 0x7589c2,
+    lamp: 48,
+    xpGlow: [0x2d9cf0, 1.3],
+    markings: 0.4,
+  },
+};
 
 const base = import.meta.env.BASE_URL;
 const C = {
@@ -108,11 +164,21 @@ export class YardScene {
   private expansion?: ExpansionView;
   floor!: THREE.Mesh;
   sun!: THREE.DirectionalLight;
+  private fill!: THREE.HemisphereLight;
+  /** Created on the first Night Shift; hidden lights leave day shaders untouched. */
+  private lamp?: THREE.PointLight;
+  stage: StageId = "yard";
+  private dimmed: { material: THREE.Material; opacity: number }[] = [];
   enemyBatches: THREE.InstancedMesh[] = [];
   bossBatches: Record<"boss" | "miniboss", THREE.InstancedMesh[]> = {
     boss: [],
     miniboss: [],
   };
+  /** The Scrap Colossus: the Titan mesh with its own recolored materials. */
+  finalBatches: THREE.InstancedMesh[] = [];
+  private colossusHeat?: THREE.MeshStandardMaterial;
+  private seenRevives = 0;
+  private reviveUntil = -Infinity;
   pickupBatches: THREE.InstancedMesh[][] = [];
   shotBatches: THREE.InstancedMesh[][] = [];
   renderedEnemies = 0;
@@ -393,7 +459,8 @@ export class YardScene {
     this.camera.lookAt(0, 0, 0);
     this.camera.near = 0.1;
     this.camera.far = 100;
-    this.scene.add(new THREE.HemisphereLight(0xf5f8ed, 0x806247, 0.85));
+    this.fill = new THREE.HemisphereLight(0xf5f8ed, 0x806247, 0.85);
+    this.scene.add(this.fill);
     this.sun = new THREE.DirectionalLight(0xffe0ae, 3.1);
     this.sun.position.set(-12, 22, -8);
     this.sun.castShadow = true;
@@ -454,6 +521,35 @@ export class YardScene {
     }
     this.composer?.setPixelRatio(profile.pixelRatio);
     this.resize();
+  }
+  /** Relights the same yard for a stage; render() calls it when the run's stage changes. */
+  setStage(stage: StageId) {
+    const look = LOOKS[stage] ?? LOOKS.yard;
+    this.stage = stage;
+    (this.scene.background as THREE.Color).setHex(look.background);
+    const fog = this.scene.fog as THREE.Fog;
+    fog.color.setHex(look.background);
+    [fog.near, fog.far] = look.fog;
+    this.fill.color.setHex(look.sky);
+    this.fill.groundColor.setHex(look.ground);
+    this.fill.intensity = look.fill;
+    this.sun.color.setHex(look.sun);
+    this.sun.intensity = look.sunIntensity;
+    this.scene.environmentIntensity = look.environment;
+    this.renderer.toneMappingExposure = look.exposure;
+    (this.floor?.material as THREE.MeshStandardMaterial | undefined)?.color.setHex(look.floor);
+    this.xpMat.emissive.setHex(look.xpGlow[0]);
+    this.xpMat.emissiveIntensity = look.xpGlow[1];
+    // Unlit floor paint would glow at night; keep it a faint mark.
+    for (const { material, opacity } of this.dimmed)
+      material.opacity = opacity * look.markings;
+    if (look.lamp) {
+      this.lamp ??= new THREE.PointLight(0xffb86b, look.lamp, 13, 2);
+      this.lamp.intensity = look.lamp;
+      this.lamp.castShadow = false;
+      if (!this.lamp.parent) this.scene.add(this.lamp);
+      this.lamp.visible = true;
+    } else if (this.lamp) this.lamp.visible = false;
   }
 
   async load(onProgress: (n: number) => void) {
@@ -529,6 +625,7 @@ export class YardScene {
         `enemy-${kind}`,
         ENTITY_LIMITS.enemies,
       );
+    this.finalBatches = this.colossusBatches();
     this.pickupBatches = [
       this.modelBatches(
         this.mobile ? "bolt-mobile" : "scrap-bolt",
@@ -870,6 +967,28 @@ export class YardScene {
       return batch;
     });
   }
+  /** Oxblood armor, blackened steel and a white-hot furnace set the Colossus apart from the Titan. */
+  private colossusBatches() {
+    const colors: Record<string, number> = {
+      "Boss ochre enamel": 0x9a2d22,
+      "Boss graphite": 0x15171b,
+      "Boss furnace vermilion": 0x4a1410,
+      "Boss machined steel": 0x6b7278,
+    };
+    const batches = this.modelBatches("enemy-boss", 2);
+    for (const batch of batches) {
+      const material = (batch.material as THREE.MeshStandardMaterial).clone();
+      if (Object.hasOwn(colors, material.name))
+        material.color.setHex(colors[material.name]);
+      if (material.name === "Boss furnace heat") {
+        material.color.setHex(0xfff2c4);
+        material.emissive.setHex(0xffc24d);
+        this.colossusHeat = material;
+      }
+      batch.material = material;
+    }
+    return batches;
+  }
   private finishBatch(batches: THREE.InstancedMesh[], count: number) {
     for (const batch of batches) {
       batch.count = count;
@@ -949,6 +1068,11 @@ export class YardScene {
     label.rotation.x = -Math.PI / 2;
     label.position.set(-3, 0.012, 2);
     this.scene.add(label);
+    for (const material of [
+      this.markingBatch.material,
+      label.material,
+    ] as THREE.MeshBasicMaterial[])
+      this.dimmed.push({ material, opacity: material.opacity });
     this.turretTemplate = createTurretTemplate();
     this.updateWorld(0, 0);
   }
@@ -1198,6 +1322,9 @@ export class YardScene {
     this.frustum.setFromProjectionMatrix(this.projection);
     this.sun.position.set(s.player.x - 12, 22, s.player.z - 8);
     this.sun.target.position.set(s.player.x, 0, s.player.z);
+    const stage = s.config.stage ?? "yard";
+    if (stage !== this.stage) this.setStage(stage);
+    if (this.lamp?.visible) this.lamp.position.set(s.player.x, 3.4, s.player.z);
     this.updateWorld(s.player.x, s.player.z);
     this.droneVisible = s.hp > 0 && s.phase !== "ready" && s.phase !== "lost";
     if (this.droneVisible) this.drone.update(s, this.reduced);
@@ -1241,9 +1368,17 @@ export class YardScene {
         o.rotation.set(i % 3 === 1 ? 0.7 : 0, s.time * 4 + i, 0.15);
       }
     }
+    // A revive's protection glows gold, so it never reads as a fresh hit.
+    const revives = s.stats?.revivesUsed ?? 0;
+    if (revives > this.seenRevives) this.reviveUntil = s.time + s.immunity;
+    this.seenRevives = revives;
     this.ring.visible = s.scrap > 0 || s.immunity > 0;
     (this.ring.material as THREE.MeshBasicMaterial).color.setHex(
-      s.immunity > 0 ? 0xe55235 : 0x7cd9d0,
+      s.immunity > 0
+        ? s.time < this.reviveUntil
+          ? 0xf2c14e
+          : 0xe55235
+        : 0x7cd9d0,
     );
     this.ring.position.set(s.player.x, 0.04, s.player.z);
     const orbitPoint = orbitPosition(s, 0);
@@ -1251,7 +1386,8 @@ export class YardScene {
       Math.hypot(orbitPoint.x - s.player.x, orbitPoint.z - s.player.z) / 1.85,
     );
     this.renderedEnemies = 0;
-    let regularCount = 0;
+    let regularCount = 0,
+      finalCount = 0;
     const bossCounts = { boss: 0, miniboss: 0 };
     const transform = this.transform;
     for (let i = 0; i < s.enemies.length; i++) {
@@ -1261,7 +1397,9 @@ export class YardScene {
           e.x,
           e.z,
           e.type === "boss"
-            ? 5
+            ? e.final
+              ? 7
+              : 5
             : e.type === "miniboss"
               ? 4
               : e.type === "brute"
@@ -1289,16 +1427,21 @@ export class YardScene {
           ? 1 - Math.max(0, warning.remaining) / warning.duration
           : 0;
         transform.position.y = 0;
-        transform.rotation.x = e.type === "miniboss" ? charge * 0.1 : 0;
+        // The Colossus leans into its charges like the crusher.
+        transform.rotation.x =
+          e.type === "miniboss" || (e.final && warning?.kind === "charge")
+            ? charge * 0.1
+            : 0;
         transform.rotation.z = 0;
-        transform.scale.setScalar(k);
+        transform.scale.setScalar(k * (e.final ? FINAL_BOSS.scale : 1));
         transform.updateMatrix();
         this.instanceColor.setHex(e.hit > 0 ? 0xffd4ba : 0xffffff);
-        for (const batch of this.bossBatches[e.type]) {
-          batch.setMatrixAt(bossCounts[e.type], transform.matrix);
-          batch.setColorAt(bossCounts[e.type], this.instanceColor);
+        const batches = e.final ? this.finalBatches : this.bossBatches[e.type];
+        const index = e.final ? finalCount++ : bossCounts[e.type]++;
+        for (const batch of batches) {
+          batch.setMatrixAt(index, transform.matrix);
+          batch.setColorAt(index, this.instanceColor);
         }
-        bossCounts[e.type]++;
         this.renderedEnemies++;
         continue;
       }
@@ -1334,6 +1477,12 @@ export class YardScene {
     this.finishBatch(this.enemyBatches, regularCount);
     for (const kind of ["boss", "miniboss"] as const)
       this.finishBatch(this.bossBatches[kind], bossCounts[kind]);
+    // More than two would exceed the pool; only one final boss is ever alive.
+    this.finishBatch(this.finalBatches, Math.min(finalCount, 2));
+    if (finalCount && this.colossusHeat)
+      this.colossusHeat.emissiveIntensity = this.reduced
+        ? 2
+        : 2 + Math.sin(s.time * 5) * 0.6;
     const pickupCounts = [0, 0];
     for (const p of s.pickups) {
       if (!this.visible(p.x, p.z, 0.5)) continue;
@@ -1537,12 +1686,15 @@ export class YardScene {
     this.renderPartner(null, 0);
     this.lightning.clear();
     this.hurtAt = -Infinity;
+    this.seenRevives = 0;
+    this.reviveUntil = -Infinity;
     if (this.robot) this.renderRobotHurt(0);
     this.renderedEnemies = 0;
     for (const batch of [
       ...this.enemyBatches,
       ...this.bossBatches.boss,
       ...this.bossBatches.miniboss,
+      ...this.finalBatches,
       ...this.pickupBatches.flat(),
       ...this.shotBatches.flat(),
     ])

@@ -1,5 +1,20 @@
 import type { Enemy, State, Vec } from "./simulation";
+import { CLEAR_TIME } from "./stages";
+import { bossHealthScale, enemySpeedScale } from "./stage-rules";
 
+/** The Scrap Colossus: a larger Yard Titan that closes the stage at CLEAR_TIME. */
+export const FINAL_BOSS = {
+  scale: 1.45,
+  health: 3200,
+  parts: 100,
+  /** Attack cycle; each windup is shorter than the Yard Titan's 1.5 s zone. */
+  pattern: ["charge", "bolt", "zone"] as const,
+  windup: { charge: 1, bolt: 0.8, zone: 1.1 },
+  cooldown: 1.1,
+  /** Below half health the pause between attacks shrinks. */
+  enragedCooldown: 0.75,
+  fan: [-0.24, 0, 0.24],
+};
 export type EncounterEnemyType =
   | "charger"
   | "spitter"
@@ -36,6 +51,8 @@ type Brain = {
   dash: number;
   dx: number;
   dz: number;
+  /** Position in the final boss's attack cycle. */
+  step?: number;
 };
 export type EncounterHooks = {
   spawnEnemy(
@@ -59,8 +76,11 @@ export function createEncounterState() {
       id: number;
       type: "miniboss" | "boss";
       maxHp: number;
+      final?: boolean;
     } | null,
     defeated: 0,
+    /** The final boss fell: the simulation ends the run as a stage clear. */
+    cleared: false,
     brains: new Map<number, Brain>(),
     warnings: [] as Warning[],
     projectiles: [] as EnemyProjectile[],
@@ -85,12 +105,18 @@ export function updateEncounters(
   for (const id of c.brains.keys()) if (!living.has(id)) c.brains.delete(id);
   c.warnings = c.warnings.filter((w) => living.has(w.owner));
   if (c.active && !living.has(c.active.id)) c.active = null;
-  if (s.time >= c.nextAt) {
+  // Co-op keeps the endless yard: its shared session has no stage-clear result.
+  const stageClear = players.length === 1;
+  if (s.time >= c.nextAt && !c.cleared) {
     const slot = Math.floor(c.nextAt / 90);
+    const final = stageClear && c.nextAt >= CLEAR_TIME;
     if (!c.active) {
-      const type = slot % 2 === 0 ? "boss" : "miniboss";
+      const type = final || slot % 2 === 0 ? "boss" : "miniboss";
       const hp =
-        (type === "boss" ? 220 : 85) * (1 + Math.max(0, slot - 1) * 0.35);
+        (final
+          ? FINAL_BOSS.health
+          : (type === "boss" ? 220 : 85) * (1 + Math.max(0, slot - 1) * 0.35)) *
+        bossHealthScale(s.config);
       const angle = slot * 2.4;
       const enemy = hooks.spawnEnemy(
         type,
@@ -101,13 +127,21 @@ export function updateEncounters(
         hp,
       );
       if (enemy) {
-        c.active = { id: enemy.id, type, maxHp: hp };
+        if (final) enemy.final = true;
+        c.active = final
+          ? { id: enemy.id, type, maxHp: hp, final }
+          : { id: enemy.id, type, maxHp: hp };
         c.sequence++;
       }
       // A saturated enemy pool retries rather than silently losing its boss.
       else return;
     }
-    c.nextAt = (Math.floor(s.time / 90) + 1) * 90;
+    // A living boss holds the final boss back; it arrives as soon as that fight ends.
+    if (!final || c.active?.final) {
+      const next = (Math.floor(s.time / 90) + 1) * 90;
+      c.nextAt =
+        stageClear && c.nextAt < CLEAR_TIME ? Math.min(next, CLEAR_TIME) : next;
+    }
   }
   c.projectiles = c.projectiles.filter((p) => {
     const old = { x: p.x, z: p.z };
@@ -167,13 +201,14 @@ export function updateEnemyBehavior(
     b = { cooldown: 1.1 + (e.seed % 1), dash: 0, dx: 0, dz: 1 };
     c.brains.set(e.id, b);
   }
+  const final = e.final === true;
   if (b.dash > 0) {
     const step = Math.min(dt, b.dash) * (e.type === "miniboss" ? 10 : 12) * movementScale;
     e.x += b.dx * step;
     e.z += b.dz * step;
     b.dash = Math.max(0, b.dash - dt);
-    if (dist(e, s.player) < (e.type === "miniboss" ? 1.15 : 0.8))
-      hooks.damagePlayer(e.type === "miniboss" ? 22 : 14, e);
+    if (dist(e, s.player) < (final ? 2.1 : e.type === "miniboss" ? 1.15 : 0.8))
+      hooks.damagePlayer(final ? 28 : e.type === "miniboss" ? 22 : 14, e);
     return true;
   }
   if (b.warning !== undefined) {
@@ -190,27 +225,41 @@ export function updateEnemyBehavior(
       b.dz = warning.dz;
       b.dash = warning.length / (e.type === "miniboss" ? 10 : 12);
     } else if (warning.kind === "bolt") {
-      if (c.projectiles.length < ENCOUNTER_LIMITS.projectiles)
+      // The final boss fires a fan along its widened, telegraphed lane.
+      for (const spread of final ? FINAL_BOSS.fan : [0]) {
+        if (c.projectiles.length >= ENCOUNTER_LIMITS.projectiles) break;
+        const cos = Math.cos(spread),
+          sin = Math.sin(spread),
+          speed = final ? 8 : 7;
         c.projectiles.push({
           x: e.x,
           z: e.z,
-          vx: warning.dx * 7,
-          vz: warning.dz * 7,
+          vx: (warning.dx * cos - warning.dz * sin) * speed,
+          vz: (warning.dx * sin + warning.dz * cos) * speed,
           life: 3.5,
-          damage: 12,
+          damage: final ? 14 : 12,
         });
+      }
     } else if (c.zones.length < ENCOUNTER_LIMITS.zones) {
       c.zones.push({
         x: warning.x,
         z: warning.z,
         radius: warning.radius,
-        life: e.type === "boss" ? 3.2 : 2.4,
-        damage: e.type === "boss" ? 20 : 10,
+        life: final ? 3 : e.type === "boss" ? 3.2 : 2.4,
+        damage: final ? 18 : e.type === "boss" ? 20 : 10,
       });
     }
     c.warnings = c.warnings.filter((w) => w.id !== b!.warning);
     b.warning = undefined;
-    b.cooldown = e.type === "boss" ? 2 : e.type === "miniboss" ? 2.2 : 3;
+    b.cooldown = final
+      ? c.active?.id === e.id && e.hp < c.active.maxHp / 2
+        ? FINAL_BOSS.enragedCooldown
+        : FINAL_BOSS.cooldown
+      : e.type === "boss"
+        ? 2
+        : e.type === "miniboss"
+          ? 2.2
+          : 3;
     return true;
   }
   const d = dist(e, s.player),
@@ -220,16 +269,32 @@ export function updateEnemyBehavior(
   b.cooldown -= dt;
   const desired = charging ? 1.6 : e.type === "boss" ? 5 : 6;
   const direction = d > desired + 1 ? 1 : !charging && d < desired - 1 ? -1 : 0;
-  const speed = (e.type === "boss" ? 0.9 : charging ? 2 : 1.3) * movementScale;
+  // Stage speed only scales walking; dashes keep to the lane they telegraphed.
+  const speed =
+    (final ? 1.25 : e.type === "boss" ? 0.9 : charging ? 2 : 1.3) *
+    movementScale *
+    enemySpeedScale(s.config);
   e.x += dx * speed * direction * dt;
   e.z += dz * speed * direction * dt;
   if (
     b.cooldown <= 0 &&
-    d < 12 &&
+    d < (final ? 15 : 12) &&
     c.warnings.length < ENCOUNTER_LIMITS.warnings
   ) {
-    const kind = charging ? "charge" : e.type === "spitter" ? "bolt" : "zone";
-    const duration = e.type === "boss" ? 1.5 : charging ? 1.05 : 0.95;
+    const kind = final
+      ? FINAL_BOSS.pattern[(b.step = ((b.step ?? -1) + 1) % FINAL_BOSS.pattern.length)]
+      : charging
+        ? "charge"
+        : e.type === "spitter"
+          ? "bolt"
+          : "zone";
+    const duration = final
+      ? FINAL_BOSS.windup[kind]
+      : e.type === "boss"
+        ? 1.5
+        : charging
+          ? 1.05
+          : 0.95;
     const w: Warning = {
       id: c.nextWarningId++,
       owner: e.id,
@@ -238,15 +303,21 @@ export function updateEnemyBehavior(
       z: kind === "zone" ? s.player.z : e.z,
       dx,
       dz,
-      radius:
-        e.type === "boss"
+      radius: final
+        ? kind === "zone"
+          ? 3.4
+          : kind === "charge"
+            ? 1.9
+            : 1.2
+        : e.type === "boss"
           ? 3.2
           : e.type === "miniboss"
             ? 1
             : kind === "zone"
               ? 1.8
               : 0.55,
-      length: kind === "charge" ? Math.min(12, d + 2) : 14,
+      length:
+        kind === "charge" ? Math.min(final ? 15 : 12, d + (final ? 3 : 2)) : 14,
       remaining: duration,
       duration,
     };
@@ -262,9 +333,11 @@ export function onEncounterKill(s: State, e: Enemy, hooks: EncounterHooks) {
   c.brains.delete(e.id);
   c.warnings = c.warnings.filter((w) => w.owner !== e.id);
   if (e.hp > 0 || c.active?.id !== e.id) return;
-  const boss = c.active.type === "boss";
+  const boss = c.active.type === "boss",
+    final = c.active.final === true;
   c.active = null;
   c.defeated++;
+  if (final) c.cleared = true;
   if (boss) s.stats.bossKills++;
   else s.stats.minibossKills++;
   hooks.reward(
@@ -272,7 +345,7 @@ export function onEncounterKill(s: State, e: Enemy, hooks: EncounterHooks) {
       xp: boss ? 30 : 12,
       scrap: boss ? 12 : 6,
       healing: boss ? 20 : 10,
-      parts: boss ? 40 : 15,
+      parts: final ? FINAL_BOSS.parts : boss ? 40 : 15,
     },
     e,
   );
