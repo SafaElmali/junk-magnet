@@ -390,7 +390,7 @@ test("starting upgrades and scrap apply at the start within their caps", () => {
       },
     }),
   );
-  assert.equal(s.upgrades.saw, 3, "on top of the starting weapon");
+  assert.equal(s.upgrades.saw, 2, "a minimum rank, not added to the starting weapon");
   assert.equal(s.upgrades.lightning, UPGRADES.lightning.maxRank);
   assert.equal(s.upgrades.armor, 1);
   assert.equal(s.upgrades.repair, 0, "supplies are not build ranks");

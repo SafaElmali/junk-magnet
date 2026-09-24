@@ -1,0 +1,286 @@
+/* Daily Shift: a gold-edged home entry and a single-screen page for today's rule. */
+.menu-actions .menu-daily {
+  border-color: #b99a52;
+  background: linear-gradient(100deg, #3b4b3c, #2c484e 70%);
+}
+.menu-actions .menu-daily:hover {
+  border-color: #f4d58d;
+  background: linear-gradient(100deg, #4b5a45, #3d6062 70%);
+}
+.menu-actions .menu-daily > svg {
+  color: #efbd56;
+}
+.menu-daily-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1;
+}
+.menu-daily-copy small {
+  overflow: hidden;
+  color: #d9d2b4;
+  font:
+    700 11px/1.2 "DM Sans",
+    sans-serif;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-streak {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 3px 8px 3px 6px;
+  border-radius: 999px;
+  background: #0f262e;
+  color: #efcd82;
+  font:
+    700 15px "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.menu-actions .menu-button .menu-streak > svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+.menu-streak.is-done {
+  background: #efbd56;
+  color: #172f38;
+}
+.menu-streak span:empty {
+  display: none;
+}
+
+.menu-shell.is-daily {
+  width: min(640px, 100%);
+}
+.is-daily .menu-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: none;
+}
+#menu-daily-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+#menu-daily-content.hidden {
+  display: none;
+}
+.daily-rule {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #54756d;
+  border-radius: 8px;
+  background: radial-gradient(ellipse at 20% 40%, #315451, #102c37);
+}
+.daily-art {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 1px solid #56756a;
+  border-radius: 8px;
+  background: radial-gradient(circle at 50% 30%, #3a5d60, #1b353e 75%);
+}
+.daily-art .ability-art {
+  width: 88%;
+  height: 88%;
+}
+.daily-copy {
+  min-width: 0;
+}
+.daily-date {
+  color: #9abdb1;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+#intro .daily-rule h4 {
+  margin: 5px 0;
+  color: #fff1ce;
+  font:
+    800 30px/1 "Barlow Condensed",
+    sans-serif;
+}
+#intro .daily-rule p {
+  margin: 0;
+  color: #c6d9c9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.daily-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.daily-stats > div {
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid #6c8b743f;
+  border-radius: 6px;
+  background: #0e293333;
+}
+.daily-stats dt {
+  color: #b9c6b5;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.daily-stats dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 4px 0 0;
+  color: #f8edcd;
+  font:
+    700 26px/1.1 "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.daily-stats dd svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  color: #efbd56;
+}
+.daily-streak.is-live dd {
+  color: #efbd56;
+}
+.daily-collected {
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-button.daily-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+.daily-start svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+#intro .daily-note {
+  margin: 0;
+  color: #aac6b8;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+@media (max-width: 520px) {
+  .daily-rule {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .daily-art {
+    width: 64px;
+    height: 64px;
+  }
+  #intro .daily-rule h4 {
+    font-size: 25px;
+  }
+  #intro .daily-rule p {
+    font-size: 12px;
+  }
+  .daily-stats > div {
+    padding: 8px;
+  }
+  .daily-stats dt {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+  }
+  .daily-stats dd {
+    font-size: 22px;
+  }
+  .daily-collected {
+    font-size: 15px;
+  }
+  .menu-button.daily-start {
+    font-size: 22px;
+    letter-spacing: 0.04em;
+  }
+}
+@media (max-height: 500px) {
+  .is-daily .menu-panel {
+    gap: 8px;
+    padding: 10px 16px;
+  }
+  .is-daily .menu-panel > header {
+    padding-bottom: 6px;
+  }
+  .is-daily .menu-panel h3 {
+    font-size: 25px;
+  }
+  #menu-daily-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas: "rule stats" "rule start" "note note";
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .daily-rule {
+    grid-area: rule;
+    align-self: stretch;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  .daily-art {
+    width: 56px;
+    height: 56px;
+  }
+  #intro .daily-rule h4 {
+    font-size: 23px;
+  }
+  #intro .daily-rule p {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .daily-stats {
+    grid-area: stats;
+    gap: 5px;
+  }
+  .daily-stats > div {
+    padding: 6px;
+  }
+  .daily-stats dt {
+    font-size: 7px;
+    letter-spacing: 0.04em;
+  }
+  .daily-stats dd {
+    font-size: 20px;
+  }
+  .daily-stats dd svg {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+  .daily-collected {
+    font-size: 13px;
+  }
+  .menu-button.daily-start {
+    grid-area: start;
+    min-height: 48px;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+  }
+  #intro .daily-note {
+    grid-area: note;
+    font-size: 10px;
+  }
+}

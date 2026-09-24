@@ -57,6 +57,8 @@ import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
 import { summarizeRun } from "./run-summary";
 import { clearRun, isResumable, loadRun, saveRun } from "./run-save";
+import { dailyRunConfig, trackDailyStart } from "./daily-shift-view";
+import { renderResultOrders } from "./result-orders";
 import { helpIllustration } from "./help-art";
 import {
   getGraphicsQuality,
@@ -172,6 +174,8 @@ function requestFrame() {
   frameRequest = requestAnimationFrame(loop);
 }
 let runReceipt: RunReceipt | null = null;
+/** The next fresh run is today's Daily Shift. */
+let nextDaily = false;
 const keys = new Set<string>();
 let stick: Vec = { x: 0, z: 0 },
   showedResult = false;
@@ -225,11 +229,13 @@ function start() {
   if (s.time === 0) {
     forgetRun();
     lastSave = performance.now();
-    s = createState(getRunConfig());
+    s = createState(nextDaily ? dailyRunConfig() : getRunConfig());
+    nextDaily = false;
     runId = crypto.randomUUID();
     runReceipt = null;
     scene.clear();
     runAnalytics.start(runId, "solo", s, analyticsContext());
+    trackDailyStart(s.config);
   }
   if (restoredFrom !== null) {
     runAnalytics.resume(runId, s, {
@@ -287,7 +293,8 @@ function returnToMenu() {
   persistRun();
   requestFrame();
 }
-function restart() {
+/** A retry repeats the current mode, so ONE MORE SHIFT after a Daily Shift is another attempt. */
+function restart(daily = s.config.daily !== null) {
   if (coop.active) {
     coop.again();
     return;
@@ -295,6 +302,7 @@ function restart() {
   runAnalytics.abandon(s, "restart");
   forgetRun();
   s = createState(getRunConfig());
+  nextDaily = daily;
   scene.clear();
   keys.clear();
   stopStick();
@@ -367,10 +375,19 @@ function closeModal() {
   lastFocus?.focus({ preventScroll: true });
   requestFrame();
 }
+/** Today's Daily Shift from its menu page; a paused run ends as with NEW RUN. */
+function startDaily() {
+  if (!loaded || coop.active || !menu.isHome()) return;
+  if (s.time > 0) restart(true);
+  else {
+    nextDaily = true;
+    start();
+  }
+}
 el("pause-menu").addEventListener("click", returnToMenu);
 el("result-menu").addEventListener("click", returnToMenu);
-el("again").addEventListener("click", restart);
-el("restart").addEventListener("click", restart);
+el("again").addEventListener("click", () => restart());
+el("restart").addEventListener("click", () => restart());
 el("resume").addEventListener("click", closeModal);
 el("pause").addEventListener("click", () =>
   s.phase === "paused" ? closeModal() : openModal(),
@@ -457,7 +474,9 @@ window.addEventListener("keydown", (e) => {
   ) {
     e.preventDefault();
     const buttons = [
-      ...el("menu-home").querySelectorAll<HTMLButtonElement>("button"),
+      ...document.querySelectorAll<HTMLButtonElement>(
+        "#menu-home button, #menu-stage button",
+      ),
     ].filter((button) => button.getClientRects().length > 0);
     const current = buttons.indexOf(
       document.activeElement as HTMLButtonElement,
@@ -1092,6 +1111,7 @@ function renderResult() {
     parts: runReceipt?.earned ?? 0,
     total: runReceipt?.parts ?? 0,
   });
+  renderResultOrders(el("result-orders"), runReceipt);
   document.querySelector(".result-unit")!.textContent = ROBOTS.find(
     (r) => r.id === s.config.robotId,
   )!.name;
@@ -1371,7 +1391,9 @@ function chooseQuality(next: GraphicsQuality) {
 el("language").addEventListener("click", toggleLanguage);
 const menu = setupMenu({
   start,
-  restart,
+  daily: startDaily,
+  // The home NEW RUN starts a normal run; the Daily Shift has its own entry.
+  restart: () => restart(false),
   help: () => openModal(true),
   language: chooseLanguage,
   quality: chooseQuality,

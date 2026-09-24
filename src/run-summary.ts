@@ -24,6 +24,8 @@ export type RunSummary = {
   revivesUsed: number;
   rerollsUsed: number;
   banishesUsed: number;
+  /** The run's Salvage License bonus, applied when parts are banked. */
+  partsMultiplier: number;
 };
 
 /** Null while the run is still in progress. */
@@ -51,5 +53,6 @@ export function summarizeRun(s: State, runId: string): RunSummary | null {
     revivesUsed: s.stats.revivesUsed,
     rerollsUsed: s.stats.rerollsUsed,
     banishesUsed: s.stats.banishesUsed,
+    partsMultiplier: s.config.partsMultiplier,
   };
 }

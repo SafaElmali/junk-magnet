@@ -427,10 +427,12 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     launched: 0,
     overclockTimer: 0,
   };
-  // Challenge ranks stack on the starting weapon; repeatable supplies are not build ranks.
+  // Challenge ranks are minimums ("starts at rank 2"), so a matching starting weapon
+  // isn't pushed to rank 3, where its specialization prompt would be skipped.
+  // Repeatable supplies are not build ranks.
   for (const [id, ranks] of Object.entries(config.modifiers?.startingUpgrades ?? {}) as [UpgradeId, number][])
     if (Object.hasOwn(UPGRADES, id) && !SUPPLIES.includes(id) && Number.isFinite(ranks) && ranks > 0)
-      s.upgrades[id] = Math.min(UPGRADES[id].maxRank, s.upgrades[id] + Math.floor(ranks));
+      s.upgrades[id] = Math.min(UPGRADES[id].maxRank, Math.max(s.upgrades[id], Math.floor(ranks)));
   // Real ground scrap is gathered before combat, so the first ammunition has a visible source.
   for (let i = 0; i < 6; i++) {
     const angle = (i * Math.PI * 2) / 6;

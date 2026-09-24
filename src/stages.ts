@@ -23,7 +23,7 @@ export const STAGES: Record<
 > = {
   yard: {
     name: "THE SCRAPYARD",
-    description: "Endless survival · Increasing difficulty",
+    description: "Final boss at 15:00 · Rising pressure",
     unlockedBy: null,
     enemyHealth: 1,
     enemySpeed: 1,

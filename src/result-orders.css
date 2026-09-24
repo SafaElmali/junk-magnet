@@ -1,0 +1,196 @@
+/* End-of-run work orders and reasons to come back: compact lines above the actions. */
+#result .result-orders {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+#result .result-orders.hidden {
+  display: none;
+}
+.result-orders ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.result-line {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  color: #d3ddc9;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.result-line-icon {
+  display: flex;
+  color: #a8c6b7;
+}
+.result-line-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.result-line-text {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.result-line-reward {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #edc366;
+  font:
+    700 15px "Barlow Condensed",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.result-line-reward svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+}
+/* Completed orders read as earned: gold check on a warm strip. */
+.result-done .result-line {
+  border: 1px solid #c7a65355;
+  background: #edbd5814;
+  color: #fff1d0;
+}
+.result-done .result-line-icon {
+  color: #edbd58;
+}
+.result-done .is-summary {
+  display: none;
+}
+.result-goals .result-line {
+  background: #0e293333;
+}
+.result-goals .is-stage {
+  border: 1px solid #99c6a9;
+  color: #fff1d0;
+}
+.result-goals .is-daily .result-line-icon {
+  color: #edbd58;
+}
+@media (max-height: 650px) {
+  /* Compact screens fold several completed orders into one summary row. */
+  .result-done.has-summary .is-done {
+    display: none;
+  }
+  .result-done.has-summary .is-summary {
+    display: grid;
+  }
+  #result .result-orders {
+    margin-bottom: 12px;
+  }
+}
+@media (max-width: 520px) and (max-height: 650px) {
+  /* Small portrait phones drop flavor rows and keep one goal under the summary. */
+  #result .result-heading {
+    display: none;
+  }
+  #result .result-loadout h3 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #result .result-loadout {
+    padding-top: 10px;
+    margin-bottom: 4px;
+  }
+  #result .result-stats {
+    margin: 8px 0;
+  }
+  #result .result-stats > div > span {
+    min-height: 24px;
+  }
+  #result .result-stats strong {
+    font-size: 26px;
+  }
+  .result-module {
+    padding: 4px 2px;
+  }
+  .result-module-art,
+  .result-module .ability-art {
+    width: 26px;
+    height: 26px;
+  }
+  .result-module-art {
+    margin-bottom: 3px;
+  }
+  .result-goals li:nth-child(n + 2) {
+    display: none;
+  }
+  #result .result-orders {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .result-line {
+    min-height: 24px;
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+}
+@media (min-width: 521px) and (max-height: 500px) {
+  /* Short landscape: the lines share the reward row, beside the bank total. */
+  #result .result-reward {
+    grid-column: 1;
+    grid-row: 4;
+    align-self: start;
+    margin: 2px 0 6px;
+    text-align: left;
+  }
+  #result .result-orders {
+    grid-column: 2;
+    grid-row: 4;
+    gap: 3px;
+    margin: 0 0 6px;
+  }
+  .result-orders ul {
+    gap: 3px;
+  }
+  .result-line {
+    grid-template-columns: 14px minmax(0, 1fr) auto;
+    gap: 6px;
+    min-height: 22px;
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+  .result-line-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .result-line-text {
+    -webkit-line-clamp: 1;
+  }
+  .result-line-reward {
+    font-size: 13px;
+  }
+  .result-done + .result-goals li:nth-child(n + 3),
+  .result-goals li:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 521px) and (max-height: 379px) {
+  /* Three lines fit a landscape phone; shorter screens keep two, then one. */
+  .result-done + .result-goals li:nth-child(n + 2),
+  .result-goals li:nth-child(n + 3) {
+    display: none;
+  }
+}
+@media (min-width: 521px) and (max-height: 340px) {
+  .result-done + .result-goals,
+  .result-goals li:nth-child(n + 2) {
+    display: none;
+  }
+}
