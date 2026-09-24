@@ -55,6 +55,11 @@
         <a href="/guide/">Guide</a>
         <a href="https://www.crazygames.com/game/junk-magnet">CrazyGames</a>
       </nav>
+      <!-- src/site/landing.ts fills in and reveals the language switcher. -->
+      <div class="language" hidden>
+        <button class="language-toggle" type="button" aria-expanded="false" aria-controls="language-menu"></button>
+        <div class="language-menu" id="language-menu" role="group" aria-label="Choose language" hidden></div>
+      </div>
     </header>
 
     <main>
@@ -182,5 +187,6 @@
       </nav>
       <p>Built with Three.js and original Blender models. English, Türkçe, Deutsch, Français, Español and Português.</p>
     </footer>
+    <script type="module" src="/src/site/landing.ts"></script>
   </body>
 </html>

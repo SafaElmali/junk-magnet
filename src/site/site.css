@@ -1,9 +1,11 @@
 /* Shared styles for the playjunkmagnet.com landing page and guide. Tokens and
    button bevels follow DESIGN.md and src/menu.css. */
-@import "@fontsource/barlow-condensed/latin-700.css";
-@import "@fontsource/barlow-condensed/latin-800.css";
-@import "@fontsource/dm-sans/latin-400.css";
-@import "@fontsource/dm-sans/latin-700.css";
+/* Whole-weight files declare each subset with a unicode-range, so browsers fetch
+   latin-ext (Turkish ğ, ş, İ) only when the page shows those letters. */
+@import "@fontsource/barlow-condensed/700.css";
+@import "@fontsource/barlow-condensed/800.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/700.css";
 
 :root {
   --ink: #173342;
