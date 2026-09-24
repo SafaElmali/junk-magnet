@@ -87,13 +87,14 @@ const copy: Record<Language, Copy> = {
     slag_pool: ["Poça derretida", "Um só projétil. A poça fica 25% maior, dura 30% mais e deixa inimigos 50% mais lentos. Dano −30%."],
   },
 };
+// Soft hyphens (­) let long single words wrap on phones instead of overflowing.
 const headings: Record<Language, [string, string]> = {
   en: ["WEAPON SPECIALIZATION", "Choose one permanent branch for this run."],
   tr: ["SİLAH UZMANLAŞMASI", "Bu tur için kalıcı bir dal seç."],
-  de: ["WAFFENSPEZIALISIERUNG", "Wähle einen dauerhaften Zweig für diesen Lauf."],
+  de: ["SPEZIALI­SIERUNG", "Wähle einen dauerhaften Waffenzweig für diesen Lauf."],
   fr: ["SPÉCIALISATION D’ARME", "Choisissez une branche permanente pour cette partie."],
-  es: ["ESPECIALIZACIÓN DE ARMA", "Elige una rama permanente para esta partida."],
-  pt: ["ESPECIALIZAÇÃO DE ARMA", "Escolha um ramo permanente para esta partida."],
+  es: ["ESPECIALI­ZACIÓN DE ARMA", "Elige una rama permanente para esta partida."],
+  pt: ["ESPECIALI­ZAÇÃO DE ARMA", "Escolha um ramo permanente para esta partida."],
 };
 export function specializationCopy(id: SpecializationId) { return copy[getLanguage()][id]; }
 export function specializationHeading() { return headings[getLanguage()]; }
