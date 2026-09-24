@@ -12,7 +12,7 @@ import {
   type GameEvent,
 } from "./simulation";
 import { updateDiscovery } from "./discovery";
-import { ROBOTS, type RunConfig } from "./progression";
+import { DEFAULT_RUN_CONFIG, ROBOTS, type RunConfig } from "./progression";
 
 /** Workshop saves are local. Accept only known robots and bounded earned bonuses. */
 export function coopConfig(value: unknown): RunConfig {
@@ -23,7 +23,9 @@ export function coopConfig(value: unknown): RunConfig {
     typeof n === "number" && Number.isFinite(n)
       ? Math.max(0, Math.min(max, n))
       : 0;
+  // Co-op runs the base yard: no stage, challenge or level-up tools from solo saves.
   return {
+    ...DEFAULT_RUN_CONFIG,
     robotId: robot.id,
     startingWeapon: robot.startingWeapon,
     speedMultiplier: robot.speedMultiplier,

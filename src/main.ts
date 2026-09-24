@@ -51,6 +51,7 @@ import {
 import "./discovery-feedback.css";
 import { loadingMarkup } from "./loading-screen";
 import { resultBuildMarkup } from "./result-summary";
+import { summarizeRun } from "./run-summary";
 import { helpIllustration } from "./help-art";
 import {
   getGraphicsQuality,
@@ -135,7 +136,9 @@ app.innerHTML = `
  <h2 id="result-title">SHIFT COMPLETE</h2><p id="result-copy"></p>
  <div class="result-stats"><div class="result-stat-time"><span>${svg("clock")}<span>SHIFT TIME</span></span><strong id="result-time"></strong></div><div><span>${svg("nut")}<span>RECYCLED ENEMIES</span></span><strong id="result-kills"></strong></div><div><span>${svg("bolt")}<span>LEVEL REACHED</span></span><strong id="result-level"></strong></div></div>
  <section class="result-loadout" aria-labelledby="result-build-label"><h3 id="result-build-label">YOUR BUILD</h3><ul class="result-build" id="result-build"></ul></section>
- <p id="result-reward" class="result-reward"></p><div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
+ <p id="result-reward" class="result-reward"></p>
+ <div id="result-orders" class="result-orders hidden"></div>
+ <div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
  </div></div>
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
@@ -862,13 +865,8 @@ function hud() {
     s.phase === "upgrade" || s.phase === "lost";
   if (s.phase === "lost" && !showedResult) {
     showedResult = true;
-    runReceipt ??= recordRun({
-      runId,
-      phase: s.phase,
-      time: s.time,
-      kills: s.kills,
-      earnedParts: s.earnedParts,
-    });
+    const summary = summarizeRun(s, runId);
+    runReceipt ??= summary && recordRun(summary);
     runAnalytics.complete(s, runReceipt?.earned ?? 0);
     el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
       parts: runReceipt?.earned ?? 0,

@@ -265,6 +265,8 @@ export function onEncounterKill(s: State, e: Enemy, hooks: EncounterHooks) {
   const boss = c.active.type === "boss";
   c.active = null;
   c.defeated++;
+  if (boss) s.stats.bossKills++;
+  else s.stats.minibossKills++;
   hooks.reward(
     {
       xp: boss ? 30 : 12,

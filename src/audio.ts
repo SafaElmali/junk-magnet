@@ -120,7 +120,8 @@ export class GameAudio {
   private hidden = false;
   /** Host platform mute (CrazyGames) overrides the player's own settings. */
   private platformMuted = false;
-  private mode: "menu" | "playing" | "paused" | "upgrade" | "lost" = "menu";
+  private mode: "menu" | "playing" | "paused" | "upgrade" | "lost" | "won" =
+    "menu";
   private cues = new AudioCues();
   private played = 0;
   private failures = new Set<string>();
@@ -263,7 +264,12 @@ export class GameAudio {
     const mode = inMenu ? "menu" : s.phase === "ready" ? "menu" : s.phase;
     if (mode !== this.mode) {
       this.mode = mode;
-      if (mode === "paused" || mode === "menu" || mode === "lost")
+      if (
+        mode === "paused" ||
+        mode === "menu" ||
+        mode === "lost" ||
+        mode === "won"
+      )
         this.stopEffects();
       this.updateMix();
     }
@@ -304,7 +310,7 @@ export class GameAudio {
           : name === "menu"
             ? this.mode === "menu"
               ? 0.18
-              : this.mode === "lost"
+              : this.mode === "lost" || this.mode === "won"
                 ? 0.08
                 : 0
             : this.mode === "playing"

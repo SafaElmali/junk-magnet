@@ -36,6 +36,8 @@ export type Enemy = Vec & {
   seed: number;
   /** Guard shots halve movement until this simulation timestamp. */
   slowUntil?: number;
+  /** Tougher, glowing variant of an ordinary enemy with better drops. */
+  elite?: boolean;
   type:
     | "can"
     | "runner"
@@ -84,6 +86,15 @@ export type GameEvent = Vec & {
   fromZ?: number;
   radius?: number;
 };
+/** Per-run counters for results, work orders and analytics. */
+export type RunStats = {
+  bossKills: number;
+  minibossKills: number;
+  eliteKills: number;
+  revivesUsed: number;
+  rerollsUsed: number;
+  banishesUsed: number;
+};
 export type State = {
   config: RunConfig;
   drone: DroneState;
@@ -108,12 +119,22 @@ export type State = {
   xpNeeded: number;
   choices: UpgradeId[];
   upgrades: Record<UpgradeId, number>;
+  /** Level-up redraws left this run. */
+  rerolls: number;
+  /** Level-up removals left this run. */
+  banishes: number;
+  /** Removed from every later level-up pool this run. */
+  banished: UpgradeId[];
+  /** Automatic revives left this run. */
+  revives: number;
+  stats: RunStats;
   kills: number;
   spawned: number;
   wave: number;
   cooldown: number;
   immunity: number;
-  phase: "ready" | "playing" | "paused" | "upgrade" | "lost";
+  /** "won" means the stage was cleared; like "lost", the run is over. */
+  phase: "ready" | "playing" | "paused" | "upgrade" | "lost" | "won";
   enemies: Enemy[];
   pickups: Pickup[];
   shots: Shot[];
@@ -295,8 +316,8 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     upgrades: {
       saw: config.startingWeapon === "saw" ? 1 : 0,
       lightning: config.startingWeapon === "lightning" ? 1 : 0,
-      turret: 0,
-      burst: 0,
+      turret: config.startingWeapon === "turret" ? 1 : 0,
+      burst: config.startingWeapon === "burst" ? 1 : 0,
       boots: 0,
       magnet: 0,
       armor: 0,
@@ -306,6 +327,18 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
       repair: 0,
       refill: 0,
       overclock: 0,
+    },
+    rerolls: config.rerolls,
+    banishes: config.banishes,
+    banished: [],
+    revives: config.revives,
+    stats: {
+      bossKills: 0,
+      minibossKills: 0,
+      eliteKills: 0,
+      revivesUsed: 0,
+      rerollsUsed: 0,
+      banishesUsed: 0,
     },
     kills: 0,
     spawned: 0,
@@ -322,7 +355,7 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     pulseTimer: 1,
     abilityTimers: { lightning: 0, turret: 0, burst: 0 },
     nextId: 1,
-    rng: 41,
+    rng: Number.isFinite(config.seed) ? config.seed >>> 0 : 41,
     launched: 0,
     overclockTimer: 0,
   };

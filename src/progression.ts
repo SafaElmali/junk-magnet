@@ -1,15 +1,55 @@
 import { gameStorage, type StorageLike } from "./storage";
+import type { UpgradeId } from "./simulation";
+import type { RunSummary } from "./run-summary";
 
 /** Local, versioned workshop progress. Combat takes an immutable copy per run. */
 export type RobotId = "scrap" | "scout" | "volt";
 export type PermanentUpgrade = "hull" | "magnet";
+export type StartingWeapon = "saw" | "lightning" | "turret" | "burst";
+export type StageId = "yard" | "night";
+/** Challenge rules layered on a run, such as a Daily Shift. Neutral values change nothing. */
+export type RunModifiers = {
+  enemyHealth: number;
+  enemySpeed: number;
+  spawnRate: number;
+  /** Added to the normal elite spawn chance. */
+  eliteChance: number;
+  /** Never offered at level-up during this run. */
+  bannedUpgrades: UpgradeId[];
+  /** Ranks granted when the run starts, on top of the starting weapon. */
+  startingUpgrades: Partial<Record<UpgradeId, number>>;
+};
+export const NO_MODIFIERS: RunModifiers = {
+  enemyHealth: 1,
+  enemySpeed: 1,
+  spawnRate: 1,
+  eliteChance: 0,
+  bannedUpgrades: [],
+  startingUpgrades: {},
+};
 export type RunConfig = {
   robotId: RobotId;
-  startingWeapon: "saw" | "lightning";
+  startingWeapon: StartingWeapon;
   speedMultiplier: number;
   pickupBonus: number;
   damageReduction: number;
   damageMultiplier: number;
+  stage: StageId;
+  /** Initial simulation RNG state. Daily Shifts share one seed per date. */
+  seed: number;
+  /** Level-up redraws available this run. */
+  rerolls: number;
+  /** Level-up choices the player can remove from the pool this run. */
+  banishes: number;
+  /** Automatic revives at half health this run. */
+  revives: number;
+  xpMultiplier: number;
+  /** Applied to parts banked at the end of the run. */
+  partsMultiplier: number;
+  startingScrap: number;
+  modifiers: RunModifiers;
+  /** Local date key (YYYY-MM-DD) when this run is that day's Daily Shift. */
+  daily: string | null;
 };
 export const ROBOTS = [
   {
@@ -47,6 +87,9 @@ export const ROBOTS = [
   },
 ] as const;
 export const UPGRADE_PRICES = [25, 60, 110] as const;
+/** Every solo run starts with these level-up tools before workshop bonuses. */
+export const BASE_REROLLS = 1;
+export const BASE_BANISHES = 1;
 export const DEFAULT_RUN_CONFIG: RunConfig = {
   robotId: "scrap",
   startingWeapon: "saw",
@@ -54,7 +97,22 @@ export const DEFAULT_RUN_CONFIG: RunConfig = {
   pickupBonus: 0,
   damageReduction: 0,
   damageMultiplier: 1.1,
+  stage: "yard",
+  seed: 41,
+  rerolls: 0,
+  banishes: 0,
+  revives: 0,
+  xpMultiplier: 1,
+  partsMultiplier: 1,
+  startingScrap: 0,
+  modifiers: NO_MODIFIERS,
+  daily: null,
 };
+/** The fields recordRun needs; summarizeRun supplies the rest for goals and stats. */
+export type RunRecord = Pick<
+  RunSummary,
+  "runId" | "time" | "kills" | "earnedParts"
+> & { phase: string } & Partial<Omit<RunSummary, "phase">>;
 export type Progress = {
   version: 1;
   parts: number;
@@ -200,23 +258,20 @@ export function createProgression(storage = gameStorage()) {
     getRunConfig(): RunConfig {
       const robot = ROBOTS.find((r) => r.id === progress.selectedRobot)!;
       return {
+        ...DEFAULT_RUN_CONFIG,
         robotId: robot.id,
         startingWeapon: robot.startingWeapon,
         speedMultiplier: robot.speedMultiplier,
         damageMultiplier: robot.damageMultiplier,
         pickupBonus: robot.pickupBonus + progress.upgrades.magnet * 0.35,
         damageReduction: robot.damageReduction + progress.upgrades.hull,
+        rerolls: BASE_REROLLS,
+        banishes: BASE_BANISHES,
       };
     },
-    recordRun(run: {
-      runId: string;
-      phase: string;
-      time: number;
-      kills: number;
-      earnedParts: number;
-    }): RunReceipt | null {
+    recordRun(run: RunRecord): RunReceipt | null {
       if (
-        run.phase !== "lost" ||
+        (run.phase !== "lost" && run.phase !== "won") ||
         typeof run.runId !== "string" ||
         !run.runId.length ||
         run.runId.length > 128 ||

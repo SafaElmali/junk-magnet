@@ -1,6 +1,10 @@
 import { expansionLocales } from "./expansion-locales";
 import { discoveryLocales } from "./discovery-locales";
 import { workshopLocales } from "./workshop-locales";
+import { arsenalLocales } from "./arsenal-locales";
+import { runRulesLocales } from "./run-rules-locales";
+import { metaLocales } from "./meta-locales";
+import { robotLocales } from "./robot-locales";
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
@@ -1067,4 +1071,8 @@ for (const language of ["tr", "de", "fr", "es", "pt"])
     expansionLocales[language],
     workshopLocales[language],
     discoveryLocales[language],
+    arsenalLocales[language],
+    runRulesLocales[language],
+    metaLocales[language],
+    robotLocales[language],
   );
