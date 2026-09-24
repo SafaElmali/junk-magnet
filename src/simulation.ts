@@ -22,6 +22,18 @@ import {
   unlockEvolutions,
   type EvolutionId,
 } from "./evolution-core";
+import {
+  areaScale,
+  arsenalRankCopy,
+  cooldownScale,
+  createArsenalState,
+  eliteChance,
+  updateArsenal,
+  ELITE,
+  REACTOR,
+  type ArsenalHooks,
+  type ArsenalState,
+} from "./arsenal";
 
 export type Vec = { x: number; z: number };
 export type UpgradeId =
@@ -29,9 +41,13 @@ export type UpgradeId =
   | "lightning"
   | "turret"
   | "burst"
+  | "harpoon"
+  | "slag"
   | "boots"
   | "magnet"
   | "armor"
+  | "capacitor"
+  | "amplifier"
   | DroneUpgradeId
   | "repair"
   | "refill"
@@ -89,11 +105,15 @@ export type GameEvent = Vec & {
     | "pulse"
     | "lightning"
     | "burst"
-    | "turret";
+    | "turret"
+    | "harpoon"
+    | "slag";
   pickupKind?: "scrap" | "xp";
   fromX?: number;
   fromZ?: number;
   radius?: number;
+  /** A kill that pays elite rewards. */
+  elite?: boolean;
 };
 /** Per-run counters for results, work orders and analytics. */
 export type RunStats = {
@@ -115,6 +135,8 @@ export type State = {
   evolutions: Record<EvolutionId, boolean>;
   evolutionNotice: { id: EvolutionId; until: number } | null;
   vortexTimer: number;
+  /** Harpoons, slag shells and puddles, and their weapon timers. */
+  arsenal: ArsenalState;
   time: number;
   /** Non-blocking pickup/guide animation timer; never gates combat. */
   openingRemaining: number;
@@ -193,6 +215,16 @@ export const UPGRADES: Record<
     description: "A magnetic shockwave damages and pushes enemies away.",
     maxRank: 5,
   },
+  harpoon: {
+    name: "Magnet Harpoon",
+    description: "A piercing hook flies out along your heading and reels back.",
+    maxRank: 5,
+  },
+  slag: {
+    name: "Slag Mortar",
+    description: "Molten slag lands on enemy groups and leaves burning puddles.",
+    maxRank: 5,
+  },
   boots: {
     name: "Turbo Treads",
     description: "Move faster through the scrapyard.",
@@ -206,6 +238,16 @@ export const UPGRADES: Record<
   armor: {
     name: "Steel Plating",
     description: "Reduce damage from enemy contact.",
+    maxRank: 4,
+  },
+  capacitor: {
+    name: "Capacitor Bank",
+    description: "Shorter cooldowns for weapon abilities.",
+    maxRank: 4,
+  },
+  amplifier: {
+    name: "Field Amplifier",
+    description: "Larger blasts, cyclones and slag puddles.",
     maxRank: 4,
   },
   drone_collector: {
@@ -266,6 +308,13 @@ export function upgradeDescription(s: State, id: UpgradeId): string {
       return rank
         ? `Blast damage ${2 + rank * 2} → ${2 + next * 2}; larger radius and shorter cooldown.`
         : "Blast and push back nearby enemies every 5 seconds.";
+    case "harpoon":
+    case "slag":
+    case "capacitor":
+    case "amplifier": {
+      const [text, values] = arsenalRankCopy(s, id);
+      return text.replace(/\{(\w+)\}/g, (_, key) => String(values[key]));
+    }
     case "boots":
       return `Movement speed +12% (total +${next * 12}%).`;
     case "magnet":
@@ -315,6 +364,7 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
     evolutions: createEvolutions(),
     evolutionNotice: null,
     vortexTimer: 0,
+    arsenal: createArsenalState(),
     time: 0,
     openingRemaining: OPENING_DURATION,
     player: { x: 0, z: 0 },
@@ -332,9 +382,13 @@ export function createState(config: RunConfig = DEFAULT_RUN_CONFIG): State {
       lightning: config.startingWeapon === "lightning" ? 1 : 0,
       turret: config.startingWeapon === "turret" ? 1 : 0,
       burst: config.startingWeapon === "burst" ? 1 : 0,
+      harpoon: 0,
+      slag: 0,
       boots: 0,
       magnet: 0,
       armor: 0,
+      capacitor: 0,
+      amplifier: 0,
       drone_collector: 0,
       drone_repair: 0,
       drone_guard: 0,
@@ -435,6 +489,11 @@ function spawn(
     type,
   };
   resolveObstacles(e, type === "brute" ? 0.65 : 0.35);
+  // Rolled only from 4:00, so earlier spawns keep their seeded sequence.
+  if (s.time >= ELITE.start && random(s) < eliteChance(s)) {
+    e.elite = true;
+    e.hp *= ELITE.health;
+  }
   s.enemies.push(e);
   s.spawned++;
 }
@@ -648,21 +707,26 @@ function hurt(s: State, e: Enemy, damage: number) {
   emit(s, { kind: "hit", x: e.x, z: e.z });
   if (e.hp > 0) return;
   s.kills++;
-  emit(s, { kind: "kill", x: e.x, z: e.z });
+  emit(s, { kind: "kill", x: e.x, z: e.z, elite: e.elite });
   onEncounterKill(s, e, encounterHooks(s));
+  if (e.elite) {
+    s.stats.eliteKills++;
+    s.earnedParts += ELITE.parts;
+  }
   addPickup(s, {
     id: s.nextId++,
     x: e.x,
     z: e.z,
     kind: "xp",
     born: s.time,
-    value: e.type === "brute" ? 4 : 1,
+    value: (e.type === "brute" ? 4 : 1) * (e.elite ? ELITE.xp : 1),
   });
-  for (let i = 0; i < 2; i++)
+  const spill = e.elite ? 1.8 : 0.6;
+  for (let i = 0; i < (e.elite ? ELITE.scrap : 2); i++)
     addPickup(s, {
       id: s.nextId++,
-      x: e.x + (random(s) - 0.5) * 0.6,
-      z: e.z + (random(s) - 0.5) * 0.6,
+      x: e.x + (random(s) - 0.5) * spill,
+      z: e.z + (random(s) - 0.5) * spill,
       kind: "scrap",
       born: s.time,
     });
@@ -680,9 +744,32 @@ function nearestEnemy(s: State, p: Vec, range: number, excluded?: Set<number>) {
     }
   return target;
 }
+function blast(s: State, radius: number, damage: number, knockback: number) {
+  emit(s, { kind: "burst", ...s.player, radius });
+  for (const e of s.enemies) {
+    const d = distance(s.player, e);
+    if (d < radius && e.hp > 0) {
+      hurt(s, e, damage);
+      e.x += ((e.x - s.player.x) / (d || 1)) * knockback;
+      e.z += ((e.z - s.player.z) / (d || 1)) * knockback;
+      resolveObstacles(e, enemyRadius(e));
+    }
+  }
+}
+function arsenalHooks(s: State): ArsenalHooks {
+  return {
+    damage: (enemy, amount) => hurt(s, enemy, amount),
+    emit: (event) => emit(s, event),
+    settle: (enemy) => resolveObstacles(enemy, enemyRadius(enemy)),
+    radius: enemyRadius,
+  };
+}
 function abilities(s: State, dt: number) {
   for (const id of ["lightning", "turret", "burst"] as const)
     s.abilityTimers[id] -= dt;
+  // States saved or sent before the arsenal existed start with an empty one.
+  s.arsenal ??= createArsenalState();
+  const cooldown = cooldownScale(s);
   const lightning = s.upgrades.lightning;
   if (lightning && s.abilityTimers.lightning <= 0) {
     let origin = s.player;
@@ -710,25 +797,30 @@ function abilities(s: State, dt: number) {
       origin = e;
     }
     s.abilityTimers.lightning =
-      (3 - lightning * 0.2) * (s.evolutions.storm ? 0.5 : 1);
+      (3 - lightning * 0.2) * (s.evolutions.storm ? 0.5 : 1) * cooldown;
   }
   const burst = s.upgrades.burst;
-  if (burst && s.abilityTimers.burst <= 0) {
+  if (burst) {
     const wave = s.specializations.burst === "burst_wave";
     const crush = s.specializations.burst === "burst_crush";
-    const radius = (2.8 + burst * 0.4) * (wave ? 1.5 : crush ? 0.75 : 1);
+    const radius = (2.8 + burst * 0.4) * (wave ? 1.5 : crush ? 0.75 : 1) * areaScale(s);
+    const damage = (2 + burst * 2) * (crush ? 2.2 : wave ? 0.75 : 1);
     const knockback = wave ? 3 : crush ? 0.5 : 1.5;
-    emit(s, { kind: "burst", ...s.player, radius });
-    for (const e of s.enemies) {
-      const d = distance(s.player, e);
-      if (d < radius && e.hp > 0) {
-        hurt(s, e, (2 + burst * 2) * (crush ? 2.2 : wave ? 0.75 : 1));
-        e.x += ((e.x - s.player.x) / (d || 1)) * knockback;
-        e.z += ((e.z - s.player.z) / (d || 1)) * knockback;
-        resolveObstacles(e, enemyRadius(e));
+    // Pulse Reactor: a wider second pulse that sweeps pickups again.
+    if (s.arsenal.echo > 0 && (s.arsenal.echo -= dt) <= 1e-9) {
+      s.arsenal.echo = 0;
+      blast(s, radius * REACTOR.reach, damage * REACTOR.damage, knockback * 0.5);
+      s.arsenal.sweep = REACTOR.sweepTime;
+    }
+    if (s.abilityTimers.burst <= 0) {
+      blast(s, radius, damage, knockback);
+      s.abilityTimers.burst =
+        (5.3 - burst * 0.3) * (s.evolutions.reactor ? REACTOR.cooldown : 1) * cooldown;
+      if (s.evolutions.reactor) {
+        s.arsenal.echo = REACTOR.delay;
+        s.arsenal.sweep = REACTOR.sweepTime;
       }
     }
-    s.abilityTimers.burst = 5.3 - burst * 0.3;
   }
   const rank = s.upgrades.turret;
   if (
@@ -743,7 +835,7 @@ function abilities(s: State, dt: number) {
       fireTimer: 0,
       rank,
     });
-    s.abilityTimers.turret = 8;
+    s.abilityTimers.turret = 8 * cooldown;
   }
   const rapid = s.specializations.turret === "turret_rapid";
   const sniper = s.specializations.turret === "turret_sniper";
@@ -772,6 +864,7 @@ function abilities(s: State, dt: number) {
     }
   }
   s.turrets = s.turrets.filter((t) => t.life > 0);
+  updateArsenal(s, dt, arsenalHooks(s));
 }
 /** Applies the run's XP multiplier; fractions carry over so the displayed XP stays whole. */
 function gainXp(s: State, amount: number) {
@@ -983,10 +1076,11 @@ export function update(
   s.vortexTimer -= dt;
   if (s.evolutions.vortex && s.vortexTimer <= 0) {
     s.vortexTimer = 0.6;
-    emit(s, { kind: "burst", ...s.player, radius: 3.8 });
+    const radius = 3.8 * areaScale(s);
+    emit(s, { kind: "burst", ...s.player, radius });
     for (const enemy of s.enemies) {
       const d = distance(enemy, s.player);
-      if (d < 3.8 && enemy.hp > 0) {
+      if (d < radius && enemy.hp > 0) {
         hurt(s, enemy, 8);
         if (d > 1.3) {
           enemy.x += ((s.player.x - enemy.x) / (d || 1)) * 0.5;
@@ -1053,15 +1147,17 @@ export function update(
 }
 
 export function enemyRadius(e: Enemy): number {
-  return e.type === "boss"
-    ? e.final
-      ? 1.3 * FINAL_BOSS.scale
-      : 1.3
-    : e.type === "miniboss"
-      ? 0.95
-      : e.type === "brute"
-        ? 0.65
-        : 0.35;
+  return (
+    (e.type === "boss"
+      ? e.final
+        ? 1.3 * FINAL_BOSS.scale
+        : 1.3
+      : e.type === "miniboss"
+        ? 0.95
+        : e.type === "brute"
+          ? 0.65
+          : 0.35) * (e.elite ? ELITE.radius : 1)
+  );
 }
 function damagePlayer(s: State, amount: number) {
   if (s.immunity > 0 || s.hp <= 0) return;

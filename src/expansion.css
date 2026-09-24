@@ -192,6 +192,12 @@
     font-size: 9px;
     margin: 4px 0;
   }
+  .evolution-pagination {
+    margin-top: 4px;
+  }
+  .evolution-pagination button {
+    height: 36px;
+  }
   #result .result-reward {
     grid-column: 1 / -1;
     grid-row: 4;
@@ -209,6 +215,14 @@
 }
 #intro .menu-shell.is-evolutions {
   width: min(1000px, 100%);
+}
+.evolution-pagination {
+  margin-top: 10px;
+}
+@media (max-height: 430px) and (min-width: 521px) and (max-width: 700px) {
+  .evolution-recipes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .is-evolutions .menu-panel {
   max-width: none;

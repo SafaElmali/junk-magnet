@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { RobotRig } from "./robot-rig";
 import { ExpansionView } from "./expansion-view";
 import { LightningView } from "./lightning-view";
+import { ArsenalView } from "./arsenal-view";
+import { ELITE } from "./arsenal";
 import { DroneView } from "./drone-view";
 import { createTurretTemplate } from "./turret-view";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -412,6 +414,23 @@ export class YardScene {
     depthWrite: false,
   });
   private lightning = new LightningView(this.scene);
+  private arsenal = new ArsenalView(this.scene);
+  private eliteRing = new THREE.MeshBasicMaterial({
+    color: 0xffc444,
+    transparent: true,
+    opacity: 0.85,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  private slagRing = new THREE.MeshBasicMaterial({
+    color: 0xff7a26,
+    transparent: true,
+    opacity: 0.75,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    toneMapped: false,
+  });
   particles = new THREE.IcosahedronGeometry(0.065, 0);
   sparkMat = mat(0xffd56d, 0.35);
   xpMat = new THREE.MeshStandardMaterial({
@@ -1174,6 +1193,7 @@ export class YardScene {
         shotTrails: this.shotTrails?.count ?? 0,
         impacts: this.impacts.length,
         impactLimit: 24,
+        arsenal: this.arsenal.diagnostics(),
       },
       barrels: this.barrelAppearances.map((prop) => ({ ...prop })),
       geometries: this.renderer.info.memory.geometries,
@@ -1286,8 +1306,26 @@ export class YardScene {
       }
       if (ev.kind === "hit" && this.impacts.length < 24)
         this.impacts.push({ x: ev.x, z: ev.z, life: 0.26 });
-      if (ev.kind === "collect" || ev.kind === "turret") continue;
-      const count = ev.kind === "kill" ? 12 : ev.kind === "launch" ? 10 : 4;
+      // Slag impacts and elite kills flash a coloured ring; the hook itself shows a throw.
+      if ((ev.kind === "slag" || (ev.kind === "kill" && ev.elite)) && this.abilityFx.length < 40) {
+        const ring = new THREE.Mesh(this.burstGeometry, ev.kind === "slag" ? this.slagRing : this.eliteRing);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(ev.x, 0.09, ev.z);
+        this.scene.add(ring);
+        const radius = ev.kind === "slag" ? (ev.radius ?? 1.2) : 1.7;
+        this.abilityFx.push({ o: ring, life: 0.34, max: 0.34, radius, dispose: false });
+      }
+      if (ev.kind === "collect" || ev.kind === "turret" || ev.kind === "harpoon") continue;
+      const count =
+        ev.kind === "kill"
+          ? ev.elite
+            ? 24
+            : 12
+          : ev.kind === "launch"
+            ? 10
+            : ev.kind === "slag"
+              ? 8
+              : 4;
       for (let i = 0; i < count && this.fx.length < 160; i++) {
         const o = new THREE.Mesh(this.particles, this.sparkMat);
         o.position.set(ev.x, 0.5, ev.z);
@@ -1419,7 +1457,9 @@ export class YardScene {
         Math.atan2(s.player.x - e.x, s.player.z - e.z),
         Math.sin(s.time * 8 + e.seed) * 0.06,
       );
-      const k = e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1;
+      const k =
+        (e.hit > 0 ? 1 + Math.sin(e.hit * 20) * 0.08 : 1) *
+        (e.elite ? ELITE.scale : 1);
       if (e.type === "boss" || e.type === "miniboss") {
         // Purpose-built silhouettes are authored at gameplay scale. Heavy tracks
         // stay planted; the crusher leans into its actual charge telegraph.
@@ -1461,14 +1501,19 @@ export class YardScene {
         const metal = /Brushed steel/i.test(
           (batch.material as THREE.Material).name,
         );
+        // Elites wear rust-gold plating with warm trim, readable on every preset.
         this.instanceColor.setHex(
-          metal && e.type !== "can"
-            ? e.type === "runner" || e.type === "charger"
-              ? 0xff8a55
-              : e.type === "warden"
-                ? 0x8b9dc5
-                : 0x62bec6
-            : 0xffffff,
+          e.elite
+            ? metal
+              ? 0xf5b13a
+              : 0xffd49a
+            : metal && e.type !== "can"
+              ? e.type === "runner" || e.type === "charger"
+                ? 0xff8a55
+                : e.type === "warden"
+                  ? 0x8b9dc5
+                  : 0x62bec6
+              : 0xffffff,
         );
         batch.setColorAt(regularCount, this.instanceColor);
       }
@@ -1575,6 +1620,7 @@ export class YardScene {
       model.scale.setScalar(turret.life < 1 ? Math.max(0.1, turret.life) : 1);
     }
     this.lightning.update(dt, this.reduced);
+    this.arsenal.update(s, this.reduced);
     for (const f of this.abilityFx) {
       f.life -= dt;
       if (f.radius)
@@ -1686,6 +1732,7 @@ export class YardScene {
     this.droneVisible = false;
     this.renderPartner(null, 0);
     this.lightning.clear();
+    this.arsenal.clear();
     this.hurtAt = -Infinity;
     this.seenRevives = 0;
     this.reviveUntil = -Infinity;

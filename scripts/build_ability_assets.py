@@ -1,4 +1,4 @@
-"""Original toy-machined ability kit. Thirteen editable Blender scenes and transparent UI renders.
+"""Original toy-machined ability kit. Seventeen editable Blender scenes and transparent UI renders.
 
 Pass ability ids after `--` to re-render only those icons; every scene is still rebuilt and saved."""
 import bpy, math, os, sys
@@ -19,7 +19,8 @@ def material(name, color, metal=0.25, emission=0):
 M={k:material(k,c,metal,em) for k,c,metal,em in [
  ('gold',(.92,.53,.075),.5,0),('cream',(.93,.85,.64),.2,0),('navy',(.025,.066,.085),.45,0),
  ('teal',(.065,.38,.38),.4,0),('red',(.7,.075,.035),.3,0),('steel',(.49,.58,.56),.75,0),
- ('rubber',(.026,.038,.041),.1,0),('cyan',(.13,.85,1),.25,1.4) ]}
+ ('rubber',(.026,.038,.041),.1,0),('cyan',(.13,.85,1),.25,1.4),
+ ('molten',(.86,.17,.008),.1,.12),('crust',(.13,.055,.03),.2,0) ]}
 
 def finish(o,name,mat,bevel=0):
     o.name=name; o.data.materials.append(M[mat])
@@ -51,6 +52,22 @@ def poly(name,points,depth,mat,y=0):
     mesh=bpy.data.meshes.new(name);mesh.from_pydata(vs,[],faces);mesh.update()
     o=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(o)
     return finish(o,name,mat,.035)
+
+def rod(name,a,b,r,mat,vertices=24):
+    a,b=Vector(a),Vector(b)
+    bpy.ops.mesh.primitive_cylinder_add(vertices=vertices,radius=r,depth=(b-a).length,location=(a+b)/2);o=bpy.context.object
+    o.rotation_euler=(b-a).to_track_quat('Z','Y').to_euler()
+    return finish(o,name,mat,.02)
+
+def cone(name,p,r1,r2,d,mat,rot=(0,0,0),vertices=40):
+    bpy.ops.mesh.primitive_cone_add(vertices=vertices,radius1=r1,radius2=r2,depth=d,location=p,rotation=rot)
+    return finish(bpy.context.object,name,mat,.02)
+
+def blob(name,p,r,mat,squash=1):
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3,radius=r,location=p);o=bpy.context.object
+    o.scale=(1,1,squash)
+    for face in o.data.polygons: face.use_smooth=True
+    return finish(o,name,mat)
 
 def bolt(x,y,z,scale=1,mat='gold'):
     pts=[(-.04,.8),(-.5,.05),(-.12,.05),(-.27,-.7),(.5,.23),(.12,.23),(.3,.8)]
@@ -115,6 +132,47 @@ def build(id):
         cyl('Emitter',(0,0,.82),.6,.48,'teal','Y');cyl('Core',(0,-.3,.82),.3,.2,'gold','Y')
         for r in [.72,1.04]:ring('Expanding field',(0,-.34,.82),r,.055,'cyan')
         for x,z in [(-1.14,.82),(1.14,.82),(0,1.96),(0,-.32)]:box('Pulse spark',(x,-.34,z),(.14,.13,.2),'cream',.03)
+    elif id=='harpoon':
+        # A magnet-tipped hook on a steel shaft, its cable spooled on a reel.
+        tail,tip=Vector((-.5,0,.72)),Vector((.72,0,1.66))
+        axis=(tip-tail).normalized();side=Vector((-axis.z,0,axis.x))
+        rod('Harpoon shaft',tail,tip,.1,'steel')
+        for t in [.3,.42]:ring('Magnet collar',tail+(tip-tail)*t,.15,.05,'gold',(tip-tail).to_track_quat('Z','Y').to_euler())
+        poly('Hook head',[(p.x,p.z) for p in [tip+axis*.62,tip-axis*.05+side*.36,tip+axis*.08,tip-axis*.05-side*.36]],.26,'red')
+        poly('Hook tip',[(p.x,p.z) for p in [tip+axis*.66,tip+axis*.36+side*.12,tip+axis*.36-side*.12]],.3,'cream')
+        for s in [-1,1]:
+            base=tip-axis*.18
+            poly('Hook barb',[(p.x,p.z) for p in [base+side*s*.08,base-axis*.42+side*s*.42,base-axis*.2+side*s*.08]],.16,'gold')
+        cyl('Cable reel',(-.68,.05,.66),.48,.26,'navy','Y');cyl('Reel hub',(-.68,-.12,.66),.16,.1,'gold','Y',6)
+        for r in [.27,.36]:ring('Spooled cable',(-.68,-.1,.66),r,.04,'rubber')
+        rod('Taut cable',(-.68,-.14,1.02),tail,.03,'rubber',8)
+    elif id=='slag':
+        # A stubby salvage mortar lobbing molten slag over a burning puddle.
+        cyl('Mortar base',(-.25,0,.2),.62,.26,'navy');box('Base plate',(-.25,0,.36),(.9,.8,.1),'steel',.03)
+        rod('Mortar tube',(-.35,0,.42),(.2,0,1.45),.3,'teal')
+        for t in [.35,.75]:ring('Tube band',Vector((-.35,0,.42)).lerp(Vector((.2,0,1.45)),t),.31,.05,'gold',(Vector((.55,0,1.03))).to_track_quat('Z','Y').to_euler())
+        ring('Muzzle',(.2,0,1.45),.29,.06,'rubber',(Vector((.55,0,1.03))).to_track_quat('Z','Y').to_euler())
+        blob('Slag shell',(.62,-.05,1.95),.2,'molten');blob('Slag drip',(.44,-.05,1.72),.07,'molten')
+        cyl('Crust',(.72,-.35,.06),.62,.06,'crust',vertices=40);blob('Molten puddle',(.72,-.35,.11),.5,'molten',.14)
+        for x,y in [(.32,-.72),(1.12,-.52)]:blob('Splash',(x,y,.14),.07,'molten')
+    elif id=='capacitor':
+        # Three charged cells on a bus bar: shorter weapon cooldowns.
+        box('Bus base',(0,0,.22),(1.75,.8,.3),'navy',.06);box('Bus bar',(0,-.42,.3),(1.55,.06,.12),'gold',.02)
+        for x in [-.55,0,.55]:
+            cyl('Cell casing',(x,0,.95),.26,1.1,'teal');cyl('Cell band',(x,0,.67),.27,.18,'cream')
+            cyl('Terminal cap',(x,0,1.53),.2,.08,'steel');cyl('Terminal post',(x,0,1.62),.07,.14,'gold',vertices=6)
+        rod('Jumper',(-.55,0,1.66),(.55,0,1.66),.035,'gold',8)
+        bolt(0,-.34,1.02,.62,'cyan')
+    elif id=='amplifier':
+        # An emitter pushing its field outward: larger area effects.
+        for r,z in [(1.3,.05),(.98,.08),(.66,.11)]:ring('Field ring',(0,0,z),r,.045,'cyan',(0,0,0))
+        cyl('Emitter base',(0,0,.22),.45,.3,'navy');cyl('Emitter column',(0,0,.62),.2,.55,'steel')
+        cone('Amplifier dish',(0,0,1.07),.12,.62,.38,'teal');ring('Dish rim',(0,0,1.26),.62,.05,'gold',(0,0,0))
+        blob('Field core',(0,0,1.28),.17,'cyan')
+        for a in [math.radians(d) for d in (-20,70,160,250)]:
+            c,s=math.cos(a),math.sin(a);cx,cy=c*1.5,s*1.5
+            bpy.ops.mesh.primitive_cone_add(vertices=3,radius1=.16,depth=.34,location=(cx,cy,.14),rotation=(0,math.pi/2,a))
+            finish(bpy.context.object,'Growth arrow','gold',.02)
     elif id=='boots':
         box('Tread body',(0,0,.55),(1.35,1.1,.7),'rubber',.24)
         for x in [-.55,-.27,0,.27,.55]:box('Tread grip',(x,-.01,.91),(.15,1.1,.14),'steel',.025)
@@ -165,7 +223,7 @@ def build(id):
         poly('Guard crest',crest(1.9),.16,'red',-.55);poly('Crest face',crest(1.35),.08,'cream',-.66)
         poly('Crest stripe',[(.6+x*1.35,(z-.35)*1.35+.3) for x,z in [(-.05,.6),(.05,.6),(.045,.2),(0,.08),(-.045,.2)]],.05,'gold',-.72)
 
-IDS=['saw','lightning','turret','burst','boots','magnet','armor','repair','refill','overclock','drone_collector','drone_repair','drone_guard']
+IDS=['saw','lightning','turret','burst','boots','magnet','armor','repair','refill','overclock','drone_collector','drone_repair','drone_guard','harpoon','slag','capacitor','amplifier']
 ONLY=set(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else IDS)
 for id in IDS:
     scene=bpy.data.scenes.new('Ability — '+id);bpy.context.window.scene=scene

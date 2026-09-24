@@ -12,6 +12,7 @@ import {
   type GameEvent,
 } from "./simulation";
 import { updateDiscovery } from "./discovery";
+import { clearArsenalEffects } from "./arsenal";
 import { DEFAULT_RUN_CONFIG, ROBOTS, type RunConfig } from "./progression";
 
 /** Workshop saves are local. Accept only known robots and bounded earned bonuses. */
@@ -149,6 +150,7 @@ export class CoopSession {
         p.phase = "lost";
         p.shots = [];
         p.turrets = []; // A disabled robot cannot leave suspended projectiles in the yard.
+        clearArsenalEffects(p.arsenal);
         const near =
           other.hp > 0 &&
           Math.hypot(other.player.x - p.player.x, other.player.z - p.player.z) <
@@ -215,6 +217,12 @@ export class CoopSession {
         events: [],
         shots: this.players.flatMap((a) => a.shots),
         turrets: this.players.flatMap((a) => a.turrets),
+        arsenal: {
+          ...p.arsenal,
+          harpoons: this.players.flatMap((a) => a.arsenal.harpoons),
+          shells: this.players.flatMap((a) => a.arsenal.shells),
+          puddles: this.players.flatMap((a) => a.arsenal.puddles),
+        },
         discovery: {
           ...p.discovery,
           points: [...p.discovery.points]

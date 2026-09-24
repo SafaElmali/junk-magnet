@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { createState, update, chooseUpgrade, ENTITY_LIMITS, type UpgradeId } from '../src/simulation';
+import { createState, update, chooseUpgrade, chooseSpecialization, ENTITY_LIMITS, type UpgradeId } from '../src/simulation';
+import { ARSENAL_LIMITS } from '../src/arsenal';
 
 // node --expose-gc --import tsx scripts/performance-simulation.ts
 // Protected player makes a sustained workload possible; this is not a survival score.
 assert.ok(global.gc, 'Run with --expose-gc');
 const output = process.env.PERF_OUTPUT ?? '.impeccable/review/performance';
-const priority: UpgradeId[] = ['lightning', 'burst', 'turret', 'saw', 'armor', 'magnet', 'boots', 'repair'];
+const priority: UpgradeId[] = ['lightning', 'burst', 'turret', 'saw', 'harpoon', 'slag', 'capacitor', 'amplifier', 'armor', 'magnet', 'boots', 'repair'];
 const state = createState();
 state.phase = 'playing';
 const timings: number[] = [];
 const samples: unknown[] = [];
 const peaks = { enemies: 0, pickups: 0, shots: 0, turrets: 0, events: 0 };
+const arsenalPeaks = { harpoons: 0, shells: 0, puddles: 0 };
 let nextSample = 0;
 let movement = { x: 0, z: 0 };
 global.gc();
@@ -19,7 +21,9 @@ const startHeapMiB = process.memoryUsage().heapUsed / 2 ** 20;
 const start = performance.now();
 const cpu = process.cpuUsage();
 for (let frame = 0; state.time < 12 * 60 && frame < 13 * 60 * 60; frame++) {
-  if (state.phase === 'upgrade') {
+  if (state.phase === 'upgrade' && state.specializationChoices.length)
+    assert.ok(chooseSpecialization(state, state.specializationChoices[frame % 2]));
+  else if (state.phase === 'upgrade') {
     const choice = priority.find(id => state.choices.includes(id)) ?? state.choices[0];
     assert.ok(choice);
     assert.ok(chooseUpgrade(state, choice));
@@ -46,6 +50,10 @@ for (let frame = 0; state.time < 12 * 60 && frame < 13 * 60 * 60; frame++) {
     peaks[key] = Math.max(peaks[key], state[key].length);
     assert.ok(state[key].length <= ENTITY_LIMITS[key], `${key} exceeds its cap`);
   }
+  for (const key of Object.keys(arsenalPeaks) as (keyof typeof arsenalPeaks)[]) {
+    arsenalPeaks[key] = Math.max(arsenalPeaks[key], state.arsenal[key].length);
+    assert.ok(state.arsenal[key].length <= ARSENAL_LIMITS[key], `${key} exceeds its cap`);
+  }
   state.events = [];
   if (state.time >= nextSample) {
     global.gc();
@@ -65,7 +73,7 @@ const result = {
   p95UpdateMs: timings[Math.floor(timings.length * .95)],
   p99UpdateMs: timings[Math.floor(timings.length * .99)],
   maxUpdateMs: timings.at(-1),
-  startHeapMiB, peaks, limits: ENTITY_LIMITS, level: state.level, kills: state.kills, samples,
+  startHeapMiB, peaks, limits: ENTITY_LIMITS, arsenalPeaks, arsenalLimits: ARSENAL_LIMITS, level: state.level, kills: state.kills, samples,
 };
 mkdirSync(output, { recursive: true });
 writeFileSync(`${output}/simulation.json`, JSON.stringify(result, null, 2) + '\n');

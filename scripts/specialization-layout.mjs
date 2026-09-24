@@ -69,7 +69,7 @@ try {
   for (const [width, height] of [[320, 568], [568, 320]]) {
     await page.setViewportSize({ width, height });
     for (const language of ["en", "tr", "de", "fr", "es", "pt"]) {
-      for (const weapon of ["saw", "lightning", "turret", "burst"]) {
+      for (const weapon of ["saw", "lightning", "turret", "burst", "harpoon", "slag"]) {
         await page.evaluate(({ language, weapon }) => window.renderSpecializationFixture(language, weapon), { language, weapon });
         await page.evaluate(() => document.fonts.ready);
         const bounds = await page.locator(".upgrade-sheet").evaluate(sheet => {
@@ -90,7 +90,7 @@ try {
     }
   }
   await fs.writeFile(`${output}/report.json`, JSON.stringify({ layoutOnly: true, report, failures, errors }, null, 2));
-  console.log(JSON.stringify({ fixtures: report.length, branches: 8, languages: 6, failures, errors }));
+  console.log(JSON.stringify({ fixtures: report.length, branches: 12, languages: 6, failures, errors }));
   assert.deepEqual(errors, []);
   assert.equal(failures.length, 0, `Layout overflow: see ${output}/report.json`);
 } finally { await browser.close(); }

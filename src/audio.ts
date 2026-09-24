@@ -97,11 +97,18 @@ export class AudioCues {
 }
 
 export function eventCue(event: GameEvent): Cue {
+  // Arsenal weapons reuse the closest existing sounds; elite kills chime like a reward.
   return event.kind === "collect"
     ? event.pickupKind === "xp"
       ? "xp"
       : "scrap"
-    : event.kind;
+    : event.kind === "harpoon"
+      ? "launch"
+      : event.kind === "slag"
+        ? "burst"
+        : event.kind === "kill" && event.elite
+          ? "reward"
+          : event.kind;
 }
 
 export class GameAudio {

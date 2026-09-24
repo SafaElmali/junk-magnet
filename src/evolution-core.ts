@@ -1,5 +1,11 @@
 import type { UpgradeId } from "./simulation";
-export type EvolutionId = "vortex" | "storm" | "fortress";
+export type EvolutionId =
+  | "vortex"
+  | "storm"
+  | "fortress"
+  | "reactor"
+  | "meltdown"
+  | "winch";
 export const EVOLUTIONS: Record<
   EvolutionId,
   {
@@ -38,9 +44,43 @@ export const EVOLUTIONS: Record<
     description:
       "Long-lived turrets fire powerful piercing rounds through three enemies.",
   },
+  reactor: {
+    name: "Pulse Reactor",
+    weapon: "burst",
+    support: "capacitor",
+    weaponRank: 5,
+    supportRank: 2,
+    description:
+      "Blasts come 20% faster and echo with more reach, sweeping nearby pickups to you.",
+  },
+  meltdown: {
+    name: "Meltdown",
+    weapon: "slag",
+    support: "amplifier",
+    weaponRank: 5,
+    supportRank: 2,
+    description:
+      "An extra shell and hotter slag that burns twice as long. Kills leave new puddles.",
+  },
+  winch: {
+    name: "Scrap Winch",
+    weapon: "harpoon",
+    support: "magnet",
+    weaponRank: 5,
+    supportRank: 2,
+    description:
+      "Two extra, harder hooks reach 10 m and drag enemies and pickups back to you.",
+  },
 };
 export function createEvolutions(): Record<EvolutionId, boolean> {
-  return { vortex: false, storm: false, fortress: false };
+  return {
+    vortex: false,
+    storm: false,
+    fortress: false,
+    reactor: false,
+    meltdown: false,
+    winch: false,
+  };
 }
 export function unlockEvolutions(
   upgrades: Record<UpgradeId, number>,

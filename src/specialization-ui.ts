@@ -11,6 +11,10 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Rail Sentry", "Double damage, 14 m range and +1 pierce. Fire intervals +60%."],
     burst_wave: ["Repulsion Wave", "+50% radius, double knockback. Damage −25%."],
     burst_crush: ["Core Crusher", "+120% damage. Radius −25%; weaker knockback."],
+    harpoon_volley: ["Hook Volley", "+2 hooks in a wider fan. Hook damage −40%."],
+    harpoon_anchor: ["Anchor Hook", "One heavy hook: +140% damage and 1.2 m knockback. No extra hooks."],
+    slag_cluster: ["Cluster Shells", "+1 shell and 10% wider puddles. Impact and burn damage −40%."],
+    slag_pool: ["Molten Pool", "One shell. Its pool is 25% wider, lasts 30% longer and slows enemies by 50%. Damage −30%."],
   },
   tr: {
     saw_reaper: ["Geniş Biçici", "Yörünge +0,6 m, bıçak hasarı +%50. Fırlatma hasarı −%25."],
@@ -21,6 +25,10 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Keskin Taret", "İki kat hasar, 14 m menzil, 1 ek delme. Atış aralığı +%60."],
     burst_wave: ["İtme Dalgası", "Etki yarıçapı +%50, iki kat itme. Hasar −%25."],
     burst_crush: ["Çekirdek Ezici", "Hasar +%120. Etki yarıçapı −%25; daha zayıf itme."],
+    harpoon_volley: ["Kanca Yaylımı", "Daha geniş bir yelpazede 2 ek kanca. Kanca hasarı −%40."],
+    harpoon_anchor: ["Çapa Kanca", "Tek ağır kanca: hasar +%140, 1,2 m geri itme. Ek kanca yok."],
+    slag_cluster: ["Salkım Mermi", "1 ek mermi, birikintiler %10 daha geniş. Çarpma ve yanma hasarı −%40."],
+    slag_pool: ["Erimiş Havuz", "Tek mermi. Havuz %25 daha geniş, %30 daha uzun sürer ve düşmanları %50 yavaşlatır. Hasar −%30."],
   },
   de: {
     saw_reaper: ["Weite Sense", "+0,6 m Umlauf, +50% Klingenschaden. Abschussschaden −25%."],
@@ -31,6 +39,10 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Scharfschützengeschütz", "Doppelter Schaden, 14 m Reichweite, +1 Durchschlag. Intervall +60%."],
     burst_wave: ["Abstoßungswelle", "+50% Radius, doppelter Rückstoß. Schaden −25%."],
     burst_crush: ["Kernbrecher", "+120% Schaden. Radius −25%; schwächerer Rückstoß."],
+    harpoon_volley: ["Hakensalve", "+2 Haken in breiterem Fächer. Hakenschaden −40%."],
+    harpoon_anchor: ["Ankerhaken", "Ein schwerer Haken: +140% Schaden, 1,2 m Rückstoß. Keine Zusatzhaken."],
+    slag_cluster: ["Streugranaten", "+1 Granate, 10% breitere Pfützen. Aufprall- und Brandschaden −40%."],
+    slag_pool: ["Glutbecken", "Eine Granate. Das Becken ist 25% breiter, hält 30% länger und bremst Gegner um 50%. Schaden −30%."],
   },
   fr: {
     saw_reaper: ["Grande faucheuse", "+0,6 m d’orbite, +50% de dégâts des lames. Dégâts de tir −25%."],
@@ -41,6 +53,10 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Sentinelle de précision", "Dégâts doubles, portée de 14 m, +1 perforation. Intervalle +60%."],
     burst_wave: ["Vague répulsive", "+50% de rayon, recul doublé. Dégâts −25%."],
     burst_crush: ["Broyeur central", "+120% de dégâts. Rayon −25% ; recul réduit."],
+    harpoon_volley: ["Salve de crochets", "+2 crochets en éventail plus large. Dégâts des crochets −40%."],
+    harpoon_anchor: ["Crochet d’ancrage", "Un seul crochet lourd : +140% de dégâts et 1,2 m de recul. Aucun crochet en plus."],
+    slag_cluster: ["Obus à fragmentation", "+1 obus et flaques 10% plus larges. Dégâts d’impact et de brûlure −40%."],
+    slag_pool: ["Bassin de fusion", "Un seul obus. Son bassin est 25% plus large, dure 30% de plus et ralentit de 50%. Dégâts −30%."],
   },
   es: {
     saw_reaper: ["Segadora amplia", "+0,6 m de órbita, +50% de daño de cuchillas. Daño de disparo −25%."],
@@ -51,6 +67,10 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Centinela de precisión", "Doble daño, alcance de 14 m, +1 perforación. Intervalo +60%."],
     burst_wave: ["Onda de repulsión", "+50% de radio, doble empuje. Daño −25%."],
     burst_crush: ["Triturador central", "+120% de daño. Radio −25%; menor empuje."],
+    harpoon_volley: ["Andanada de garfios", "+2 garfios en un abanico más amplio. Daño de garfio −40%."],
+    harpoon_anchor: ["Garfio ancla", "Un solo garfio pesado: +140% de daño y 1,2 m de empuje. Sin garfios extra."],
+    slag_cluster: ["Proyectiles de racimo", "+1 proyectil y charcos un 10% más amplios. Daño de impacto y quemadura −40%."],
+    slag_pool: ["Charco fundido", "Un solo proyectil. Su charco es un 25% más amplio, dura un 30% más y ralentiza un 50%. Daño −30%."],
   },
   pt: {
     saw_reaper: ["Ceifador amplo", "+0,6 m de órbita, +50% de dano das lâminas. Dano de disparo −25%."],
@@ -61,15 +81,20 @@ const copy: Record<Language, Copy> = {
     turret_sniper: ["Sentinela de precisão", "Dano duplo, alcance de 14 m, +1 perfuração. Intervalo +60%."],
     burst_wave: ["Onda de repulsão", "+50% de raio, empurrão duplo. Dano −25%."],
     burst_crush: ["Esmagador central", "+120% de dano. Raio −25%; empurrão menor."],
+    harpoon_volley: ["Salva de ganchos", "+2 ganchos em um leque mais amplo. Dano dos ganchos −40%."],
+    harpoon_anchor: ["Gancho âncora", "Um só gancho pesado: +140% de dano e 1,2 m de empurrão. Sem ganchos extras."],
+    slag_cluster: ["Projéteis de fragmentação", "+1 projétil e poças 10% mais largas. Dano de impacto e queimadura −40%."],
+    slag_pool: ["Poça derretida", "Um só projétil. A poça fica 25% maior, dura 30% mais e deixa inimigos 50% mais lentos. Dano −30%."],
   },
 };
+// Soft hyphens (­) let long single words wrap on phones instead of overflowing.
 const headings: Record<Language, [string, string]> = {
   en: ["WEAPON SPECIALIZATION", "Choose one permanent branch for this run."],
   tr: ["SİLAH UZMANLAŞMASI", "Bu tur için kalıcı bir dal seç."],
-  de: ["WAFFENSPEZIALISIERUNG", "Wähle einen dauerhaften Zweig für diesen Lauf."],
+  de: ["SPEZIALI­SIERUNG", "Wähle einen dauerhaften Waffenzweig für diesen Lauf."],
   fr: ["SPÉCIALISATION D’ARME", "Choisissez une branche permanente pour cette partie."],
-  es: ["ESPECIALIZACIÓN DE ARMA", "Elige una rama permanente para esta partida."],
-  pt: ["ESPECIALIZAÇÃO DE ARMA", "Escolha um ramo permanente para esta partida."],
+  es: ["ESPECIALI­ZACIÓN DE ARMA", "Elige una rama permanente para esta partida."],
+  pt: ["ESPECIALI­ZAÇÃO DE ARMA", "Escolha um ramo permanente para esta partida."],
 };
 export function specializationCopy(id: SpecializationId) { return copy[getLanguage()][id]; }
 export function specializationHeading() { return headings[getLanguage()]; }
