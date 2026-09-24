@@ -1,8 +1,10 @@
-import test from "node:test";
+import test, { mock } from "node:test";
 import assert from "node:assert/strict";
 import {
   initCrazyGames,
   onCrazyGamesMute,
+  requestRewardedAd,
+  rewardedAdsAvailable,
   setCrazyGamesPlaying,
 } from "./crazygames";
 import { loadProgress, PROGRESS_KEY } from "./progression";
@@ -20,11 +22,18 @@ const memory = (seed: Record<string, string> = {}) => {
     setItem: (key: string, value: string) => void data.set(key, value),
   };
 };
+type AdCallbacks = {
+  adStarted?: () => void;
+  adFinished?: () => void;
+  adError?: (error: { code?: string } | undefined) => void;
+};
 const fakeSdk = (
   environment: "local" | "crazygames" | "disabled",
   data: Pick<Storage, "getItem" | "setItem">,
+  adblock = false,
 ) => {
   const calls: string[] = [];
+  const ads: AdCallbacks[] = [];
   let listener: ((s: { muteAudio: boolean }) => void) | undefined;
   const game = {
     loadingStart: () => void calls.push("loadingStart"),
@@ -34,10 +43,18 @@ const fakeSdk = (
     settings: { muteAudio: true },
     addSettingsChangeListener: (l: typeof listener) => void (listener = l),
   };
-  const sdk = { init: async () => {}, environment, game, data };
+  const ad = {
+    requestAd: (_type: "rewarded", callbacks: AdCallbacks) => {
+      calls.push("requestAd");
+      ads.push(callbacks);
+    },
+    hasAdblock: async () => adblock,
+  };
+  const sdk = { init: async () => {}, environment, game, data, ad };
   return {
     sdk,
     calls,
+    ads,
     mute: (muted: boolean) => listener?.({ muteAudio: muted }),
   };
 };
@@ -129,4 +146,70 @@ test("CrazyGames saves progress in the data module and reports play transitions 
   onCrazyGamesMute((m) => muted.push(m));
   crazy.mute(false);
   assert.deepEqual(muted, [true, false], "current setting first, then changes");
+});
+
+test("rewarded ads stay off unless the build enables them", async () => {
+  const crazy = fakeSdk("crazygames", memory());
+  await initCrazyGames(crazy.sdk, { ads: false });
+  assert.equal(rewardedAdsAvailable(), false);
+  assert.equal(await requestRewardedAd(), "unavailable");
+  assert.equal(crazy.calls.includes("requestAd"), false);
+});
+
+test("a finished rewarded ad pauses play, mutes around the ad and grants the reward once", async () => {
+  const crazy = fakeSdk("crazygames", memory());
+  await initCrazyGames(crazy.sdk, { ads: true });
+  await Promise.resolve();
+  setCrazyGamesPlaying(true);
+  assert.equal(rewardedAdsAvailable(), true);
+  const hooks: string[] = [];
+  const result = requestRewardedAd({
+    started: () => hooks.push("started"),
+    ended: () => hooks.push("ended"),
+  });
+  assert.equal(rewardedAdsAvailable(), false, "one offer at a time");
+  assert.deepEqual(crazy.calls.slice(-2), ["gameplayStop", "requestAd"]);
+  crazy.ads[0].adStarted?.();
+  crazy.ads[0].adFinished?.();
+  crazy.ads[0].adError?.({ code: "other" });
+  assert.equal(await result, "rewarded");
+  assert.deepEqual(hooks, ["started", "ended"]);
+  assert.equal(rewardedAdsAvailable(), true);
+});
+
+test("unfilled ads can be retried, but Basic Launch and ad blockers end offers for the session", async () => {
+  const crazy = fakeSdk("crazygames", memory());
+  await initCrazyGames(crazy.sdk, { ads: true });
+  const unfilled = requestRewardedAd();
+  crazy.ads[0].adError?.({ code: "unfilled" });
+  assert.equal(await unfilled, "failed");
+  assert.equal(rewardedAdsAvailable(), true);
+  const disabled = requestRewardedAd();
+  crazy.ads[1].adError?.({ code: "adsDisabledBasicLaunch" });
+  assert.equal(await disabled, "failed");
+  assert.equal(rewardedAdsAvailable(), false);
+
+  const blocked = fakeSdk("crazygames", memory(), true);
+  await initCrazyGames(blocked.sdk, { ads: true });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(rewardedAdsAvailable(), false);
+  assert.equal(await requestRewardedAd(), "unavailable");
+});
+
+test("an ad request that never starts gives up instead of stranding the player", async () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    const crazy = fakeSdk("crazygames", memory());
+    await initCrazyGames(crazy.sdk, { ads: true });
+    const hooks: string[] = [];
+    const result = requestRewardedAd({ ended: () => hooks.push("ended") });
+    mock.timers.tick(15_000);
+    assert.equal(await result, "failed");
+    assert.deepEqual(hooks, [], "nothing started, so nothing to restore");
+    crazy.ads[0].adStarted?.();
+    crazy.ads[0].adFinished?.();
+    assert.equal(rewardedAdsAvailable(), true);
+  } finally {
+    mock.timers.reset();
+  }
 });
