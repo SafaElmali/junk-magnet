@@ -51,7 +51,7 @@ export const EVOLUTIONS: Record<
     weaponRank: 5,
     supportRank: 2,
     description:
-      "Blasts fire 20% more often and echo half a second later with more reach. Both pulses sweep nearby pickups to you.",
+      "Blasts come 20% faster and echo with more reach, sweeping nearby pickups to you.",
   },
   meltdown: {
     name: "Meltdown",
@@ -60,7 +60,7 @@ export const EVOLUTIONS: Record<
     weaponRank: 5,
     supportRank: 2,
     description:
-      "+1 shell. Slag burns twice as long and 50% hotter, and enemies that die in it burst into new puddles.",
+      "An extra shell and hotter slag that burns twice as long. Kills leave new puddles.",
   },
   winch: {
     name: "Scrap Winch",
@@ -69,7 +69,7 @@ export const EVOLUTIONS: Record<
     weaponRank: 5,
     supportRank: 2,
     description:
-      "+2 hooks and faster throws. Hooks reach 10 m, hit harder and drag struck enemies and pickups back to you.",
+      "Two extra, harder hooks reach 10 m and drag enemies and pickups back to you.",
   },
 };
 export function createEvolutions(): Record<EvolutionId, boolean> {

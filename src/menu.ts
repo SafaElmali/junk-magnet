@@ -6,7 +6,7 @@ import {
   robotPortrait,
   minutes,
 } from "./workshop";
-import { evolutionGuideMarkup } from "./evolutions";
+import { setupEvolutionGuide } from "./evolutions";
 import {
   getLanguage,
   t,
@@ -166,6 +166,7 @@ export function setupMenu(actions: {
   // Returning from the workshop restores focus to whichever control opened it.
   let workshopOpener = "menu-workshop";
   const workshop = setupWorkshop(el("menu-workshop-content"), refresh);
+  const evolutionGuide = setupEvolutionGuide(el("menu-evolutions"));
   let category: AbilityCategory | "All" = "All";
   let selected: UpgradeId = "saw";
   let sheet = 0;
@@ -305,13 +306,13 @@ export function setupMenu(actions: {
     );
     if (page === "abilities") renderLibrary();
     if (page === "workshop") workshop.refresh();
-    if (page === "evolutions")
-      el("menu-evolutions").innerHTML = evolutionGuideMarkup();
+    if (page === "evolutions") evolutionGuide.render();
   }
 
   function show(next: typeof page, focus = true) {
     const previous = page;
     if (next !== previous) track("menu_opened", { menu: next });
+    if (next === "evolutions" && previous !== "evolutions") evolutionGuide.reset();
     page = next;
     detailOpen = false;
     document
