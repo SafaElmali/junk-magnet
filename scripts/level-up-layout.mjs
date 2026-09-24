@@ -22,6 +22,11 @@ try {
     [320, 568],
     [844, 390],
     [568, 320],
+    // Short embeds such as the CrazyGames game frame.
+    [1046, 545],
+    [1280, 600],
+    [760, 501],
+    [640, 540],
   ]) {
     await page.setViewportSize({ width, height });
     for (const code of ["tr", "en", "de", "fr", "es", "pt"]) {
