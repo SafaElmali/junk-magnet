@@ -96,19 +96,29 @@ VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 
 ## Search and sharing metadata
 
-`/` is a static landing page (`index.html`, styled by `src/landing/`) with a
-**Play now** button for `/play/` and a link to the
+`/` is a static landing page (`index.html`) with a **Play now** button for
+`/play/` and a link to the
 [CrazyGames page](https://www.crazygames.com/game/junk-magnet). It carries the
 `VideoGame` JSON-LD. The game itself is `play/index.html`, served at `/play/` with
 its own canonical URL. The web build uses an absolute `/` base so `/play/` loads
 public assets from the site root; the CrazyGames build keeps a relative base.
-`/guide/` is a readable, JavaScript-free gameplay guide, linked from the game menu.
-All three pages are in `public/sitemap.xml`. Keep its facts in sync with
-`docs/gameplay.md`, especially progression costs, controls, and co-op availability.
+
+`/guide/` (`guide/index.html`) is a readable, JavaScript-free gameplay guide,
+linked from the game menu. Keep its facts in sync with `docs/gameplay.md` and the
+game's own copy (`src/ability-art.ts`, `src/specialization-ui.ts`,
+`src/evolution-core.ts`, `src/drone.ts`, `src/progression.ts`), especially
+progression costs, controls, and co-op availability. All three pages are in
+`public/sitemap.xml`.
+
+The landing page and guide share `src/site/site.css`; each page's own stylesheet
+imports it. Their images in `src/site/img/` are small WebP copies of
+`public/abilities/`, `public/discoveries/` and `public/robots/`, made with
+`cwebp -q 82 -alpha_q 90 -resize 192 0` (320 for robots, 640 for the hero robot).
+`gameplay.webp` is a real 1600×900 capture from a run.
 
 `public/og-image.png` is an exact copy of `art/cover.png`, the README promotional
-cover. If the cover changes, update that copy and the image dimensions in both
-HTML pages. The cover is artwork, not a gameplay screenshot. Production social
+cover. If the cover changes, update that copy and the image dimensions in all
+three HTML pages. The cover is artwork, not a gameplay screenshot. Production social
 cards use absolute `https://playjunkmagnet.com/og-image.png` URLs; previews need
 the production deployment to contain the image before remote unfurlers can load it.
 

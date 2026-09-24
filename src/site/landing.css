@@ -1,175 +1,6 @@
-/* playjunkmagnet.com landing page. Tokens and button bevels follow DESIGN.md and src/menu.css. */
-@import "@fontsource/barlow-condensed/latin-700.css";
-@import "@fontsource/barlow-condensed/latin-800.css";
-@import "@fontsource/dm-sans/latin-400.css";
-@import "@fontsource/dm-sans/latin-700.css";
-
-:root {
-  --ink: #173342;
-  --cream: #fff6e3;
-  --wordmark: #fff1ce;
-  --gold: #edbb53;
-  --teal: #3c9298;
-  --muted: #596964;
-  --body-ink: #43554f;
-  --card: #f0e4ca;
-  --night: #0c222b;
-  --on-dark: #c1cdb8;
-  --on-dark-muted: #91b4ac;
-  --gutter: max(16px, env(safe-area-inset-left), env(safe-area-inset-right));
-  /* Side padding that centers 1120px of content. */
-  --wrap: max(var(--gutter), calc((100% - 1120px) / 2));
-  color-scheme: light;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  background: var(--cream);
-  color: var(--ink);
-  font: 400 17px/1.6 "DM Sans", system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-img {
-  max-width: 100%;
-}
-a {
-  color: inherit;
-}
-a:focus-visible {
-  outline: 3px solid #287da2;
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-.topbar a:focus-visible,
-.hero a:focus-visible,
-.where a:focus-visible,
-.footer a:focus-visible {
-  outline-color: var(--gold);
-}
-h1,
-h2,
-h3 {
-  font-family: "Barlow Condensed", sans-serif;
-  text-wrap: balance;
-}
-p {
-  text-wrap: pretty;
-}
-.eyebrow {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-/* Brand and navigation */
-.brand {
-  color: var(--wordmark);
-  font: 800 24px/1 "Barlow Condensed", sans-serif;
-  letter-spacing: 0.02em;
-  text-decoration: none;
-}
-.brand span {
-  margin-left: 0.2em;
-  color: var(--gold);
-}
-.topbar {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: max(18px, env(safe-area-inset-top)) var(--wrap) 18px;
-}
-.topbar nav,
-.footer nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 24px;
-}
-.topbar nav a,
-.footer nav a {
-  color: #d9e2d3;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: none;
-  padding: 8px 0;
-}
-.topbar nav a:hover,
-.footer nav a:hover {
-  color: var(--gold);
-}
-
-/* Buttons: the in-game menu's bevelled arcade buttons. */
-.btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 58px;
-  padding: 8px 22px;
-  border-radius: 6px;
-  font: 700 24px/1 "Barlow Condensed", sans-serif;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    background-color 150ms,
-    border-color 150ms,
-    transform 150ms;
-}
-.btn svg {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-}
-.btn:active {
-  transform: translateY(2px);
-}
-.btn-play {
-  overflow: hidden;
-  background: var(--gold);
-  border: 1px solid #f4d58d;
-  border-bottom: 4px solid #a16734;
-  color: #172f38;
-  box-shadow: inset 0 2px #fff0bf;
-}
-.btn-play:hover {
-  background: #ffcf68;
-  border-color: #ffe4aa;
-  border-bottom-color: #a16734;
-}
-.btn-play::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, #fff7d98c 50%, transparent 65%);
-  transform: translateX(-120%);
-  pointer-events: none;
-}
-.btn-alt {
-  background: #2c484e;
-  border: 1px solid #61776d;
-  border-bottom: 4px solid #0a202a;
-  color: #f8edd4;
-  box-shadow: inset 0 1px #a5b6a72b;
-}
-.btn-alt:hover {
-  background: #3d6062;
-  border-color: #9db9a8;
-  border-bottom-color: #0a202a;
-}
-.btn-alt:hover svg {
-  color: var(--gold);
-}
+/* Landing page (index.html): hero with SCRAP-01's scrap orbit, run loop, features, where to play. */
+/* Imported rather than linked, so page rules always come after the shared ones. */
+@import "./site.css";
 
 /* Hero */
 .hero {
@@ -184,10 +15,6 @@ p {
   background:
     radial-gradient(circle at 72% 44%, #f2c8672b, transparent 38%),
     radial-gradient(ellipse at 50% 30%, #1b444a, #091e2a 88%);
-  color: var(--cream);
-}
-.hero .eyebrow {
-  color: var(--on-dark-muted);
 }
 .wordmark {
   margin: 16px 0 24px;
@@ -210,12 +37,6 @@ p {
   color: #e6e0cc;
   font-size: 21px;
   line-height: 1.45;
-}
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 32px;
 }
 .fine {
   margin: 16px 0 0;
@@ -303,25 +124,6 @@ p {
   filter: drop-shadow(0 2px 0 #091d27);
 }
 
-/* Content sections */
-.section {
-  padding: 88px var(--wrap);
-}
-.section h2 {
-  margin: 8px 0 32px;
-  font-size: clamp(40px, 5.5vw, 58px);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-}
-.shot {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin-bottom: 16px;
-  border-radius: 18px;
-  box-shadow: 0 12px 32px #503f2929;
-}
 .steps,
 .feature-grid {
   display: grid;
@@ -390,15 +192,6 @@ p {
 }
 
 /* Where to play: the closing call to action. */
-.where {
-  background:
-    radial-gradient(circle at 50% 0%, #f2c8671f, transparent 48%),
-    radial-gradient(ellipse at 50% 20%, #1b444a, #091e2a 90%);
-  color: var(--cream);
-}
-.where h2 {
-  color: var(--wordmark);
-}
 .where-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -431,29 +224,6 @@ p {
   font-size: 14px;
 }
 
-/* Footer */
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 32px;
-  padding: 36px var(--wrap) max(36px, env(safe-area-inset-bottom));
-  background: var(--night);
-  color: var(--on-dark-muted);
-}
-.footer p {
-  flex-basis: 100%;
-  margin: 0;
-  font-size: 13px;
-}
-
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .btn-play:hover::after {
-    transform: translateX(120%);
-    transition: transform 0.6s ease;
-  }
-}
 @media (prefers-reduced-motion: no-preference) {
   .orbit-piece {
     animation: orbit-depth 5s cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
@@ -468,11 +238,6 @@ p {
   }
   .hero-robot {
     animation: robot-bob 3.2s ease-in-out infinite alternate;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .btn {
-    transition: none;
   }
 }
 @keyframes orbit-sweep {
@@ -535,29 +300,11 @@ p {
   .where-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .section {
-    padding-block: 64px;
-  }
   .features {
     padding-top: 0;
   }
 }
 @media (max-width: 560px) {
-  body {
-    font-size: 16px;
-  }
-  .brand {
-    font-size: 21px;
-  }
-  .topbar nav {
-    gap: 4px 18px;
-  }
-  .actions {
-    flex-direction: column;
-  }
-  .btn {
-    width: 100%;
-  }
   .lede {
     font-size: 18px;
   }

@@ -30,7 +30,6 @@ for (const file of [
   "og-image.png",
   "sitemap.xml",
   "robots.txt",
-  "guide",
   "favicon.svg",
 ])
   rmSync(join(out, file), { recursive: true, force: true });
@@ -73,7 +72,7 @@ const mb = bytes / 1048576;
 // Limits and benchmarks: docs.crazygames.com/requirements/technical and
 // docs.crazygames.com/resources/basic-launch-metrics.
 assert.ok(all.includes(join(out, "index.html")), "Upload needs index.html");
-// CrazyGames forbids links out of the game, and the guide page is removed above.
+// CrazyGames forbids links out of the game, and the guide page is web-only.
 for (const file of all.filter((f) => /\.(html|js)$/.test(f)))
   assert.ok(
     !readFileSync(file, "utf8").includes("guide/"),

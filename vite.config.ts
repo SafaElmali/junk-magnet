@@ -46,7 +46,11 @@ export default defineConfig(({ mode }) => ({
   // public assets resolve from the site root. CrazyGames hosts the upload in a subfolder.
   base: mode === "crazygames" ? "./" : "/",
   build: mode === "crazygames" ? {} : {
-    rollupOptions: { input: { landing: page("./index.html"), play: page("./play/index.html") } },
+    // Site images are reused across pages and lazy-loaded, so keep them as files.
+    assetsInlineLimit: (file: string) => (file.includes("/src/site/img/") ? false : undefined),
+    rollupOptions: {
+      input: { landing: page("./index.html"), play: page("./play/index.html"), guide: page("./guide/index.html") },
+    },
   },
   plugins: [{
     name: "initial-loading-screen",
