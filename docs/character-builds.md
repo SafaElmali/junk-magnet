@@ -84,13 +84,13 @@ Other character builders use the same Blender-to-GLB workflow:
 | Characters | Command | Source |
 | --- | --- | --- |
 | Base robot, can body, and special enemy equipment | `npm run assets` | [Base asset builder](../scripts/build_assets.py) |
-| Scout and Volt, plus workshop portraits | `npm run assets:robots` | [Robot builder](../scripts/build_robot_assets.py), [model and portrait notes](../art/ROBOT-ASSETS.md) |
+| Scout, Volt and Magna, plus workshop portraits | `npm run assets:robots` (add `-- magna` to the Blender command to rebuild one robot) | [Robot builder](../scripts/build_robot_assets.py), [model and portrait notes](../art/ROBOT-ASSETS.md) |
 | Boss and miniboss | `npm run assets:bosses` | [Boss builder](../scripts/build_boss_assets.py) |
 | Helper drone | `npm run assets:drone` | [Drone builder](../scripts/build_drone_asset.py) |
 
 The robot-variant builder reads the existing base robot GLB for its portrait, so generate the base asset first when rebuilding everything from source.
 
-The playable robots, unlike the enemies, export separate moving parts: a rocking `body`, spinning wheels and tread links that run round the tracks. The [robot asset notes](../art/ROBOT-ASSETS.md#moving-parts) describe the naming the game relies on. For the September 24 wheel-animation change, only the base builder's common setup/helpers and robot section were executed to export `robot.glb`, followed by the full robot-variant build. As with the enemy change, `art/junk-magnet-assets.blend` was not regenerated.
+The playable robots, unlike the enemies, export separate moving parts: a rocking `body`, spinning wheels and tread links that run round the tracks. The [robot asset notes](../art/ROBOT-ASSETS.md#moving-parts) describe the naming the game relies on. For the September 24 wheel-animation change, only the base builder's common setup/helpers and robot section were executed to export `robot.glb`, followed by the full robot-variant build. As with the enemy change, `art/junk-magnet-assets.blend` was not regenerated. MAGNA was added on September 24 with a single-robot build (`-- magna`); a full rebuild reproduces the other robots with only float noise, so their committed files were kept. `robot-rig.ts` spins each wheel by its own radius, which MAGNA's mixed wheel sizes need.
 
 ## Checking a character change
 

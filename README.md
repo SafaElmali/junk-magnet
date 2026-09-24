@@ -8,10 +8,11 @@ Collect wreckage, build an orbit of scrap, and survive increasingly chaotic wave
 
 **[Play Junk Magnet](https://playjunkmagnet.com)**
 
-- **Build your scrap storm:** automatic weapons, thirteen abilities, eight weapon specializations, and three weapon evolutions.
+- **Build your scrap storm:** automatic weapons, seventeen abilities, twelve weapon specializations, and six weapon evolutions. Reroll or banish level-up choices you don't want.
 - **Bring a helper:** switch your drone between collecting, repair, and guard roles. Upgrade each role separately across three ranks. Collector rank 3 unlocks cluster pulls, Repair rank 3 stores one emergency heal per run, and Guard rank 3 unlocks slowing shots.
-- **Explore the yard:** bosses, supply chests, repair stations, and salvage contracts.
-- **Upgrade between runs:** three robots, permanent workshop upgrades, and locally saved progress.
+- **Explore the yard:** bosses, elite enemies, supply chests, repair stations, and salvage contracts. Survive to 15:00 and defeat the Scrap Colossus to clear the stage and unlock the Night Shift.
+- **Come back tomorrow:** a new Daily Shift challenge every day with a streak bonus, and thirty work orders that pay parts.
+- **Upgrade between runs:** four robots, eight permanent workshop upgrades, and locally saved progress.
 - **Play your way:** keyboard or touch, six languages, adjustable graphics, and reduced-motion support.
 
 Built with TypeScript, Three.js, Vite, and original Blender models. Co-op runs on Node.js and WebSockets.
@@ -32,10 +33,11 @@ Open [localhost:5184/play/](http://127.0.0.1:5184/play/) and choose **Play**. Th
 | Move | WASD, arrow keys, or drag on touch screens |
 | Attack | Automatic — collect scrap to reload |
 | Choose an upgrade | Click, tap, or keys 1–3 |
+| Reroll or banish a choice | R or X, or the buttons on the level-up sheet |
 | Change drone role | Q or tap the helper drone card |
 | Pause solo | Escape or the pause button |
 
-Solo pauses during upgrade selection; **co-op keeps running**. Workshop progress saves in your browser, but unfinished runs do not survive a reload.
+Solo pauses during upgrade selection; **co-op keeps running**. Workshop progress saves in your browser. An unfinished solo run survives a reload or a closed tab: choose **Continue** on the main menu.
 
 ## Play together
 
@@ -74,4 +76,4 @@ npm run build         # Type-check and production build
 
 [CrazyGames release](docs/crazygames.md): `npm run publish:crazygames`. [Agent-driven release](docs/crazygames-agent-release.md).
 
-This is a playable prototype; balancing and physical-device testing are ongoing. No accounts or ads; the CrazyGames build integrates the CrazyGames SDK for loading/gameplay events, cloud saves and muting. Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.
+This is a playable prototype; balancing and physical-device testing are ongoing. No accounts. The site has no ads. The CrazyGames build integrates the CrazyGames SDK for loading/gameplay events, cloud saves and muting, and can offer optional rewarded ads, which stay switched off until Full Launch ([details](docs/crazygames.md#rewarded-ads)). Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.

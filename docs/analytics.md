@@ -23,22 +23,27 @@ For deliberate local QA, set `VITE_ANALYTICS_DEV=true`. Set
 | `game_loaded`                | Assets and WebGL ready: `load_duration_ms`, `language`, `graphics_quality`, `input_type`                                       |
 | `game_load_failed`           | Boot fails: categorical `stage`, without raw exception contents                                                                |
 | `run_started`                | New solo run or first co-op snapshot: `run_id`, `mode`, `robot_id`, language, graphics and input; co-op includes `player_role` |
-| `run_completed`              | Defeat, once per player/run: `duration_seconds`, `kills`, `level`, `wave`, `scrap_launched`, `parts_earned`                    |
+| `run_resumed`                | A run restored after a reload continues from the main menu: run summary, language, graphics, input and `away_seconds`         |
+| `run_completed`              | Defeat or stage clear, once per player/run: run summary, `parts_earned` and `outcome` (`defeated` or `cleared`)                |
 | `run_abandoned`              | Explicit restart, co-op exit/disconnection, or switch to co-op: run summary and `reason`                                       |
-| `survival_milestone`         | Once per run at 30, 60, 180, 300 and 600 gameplay seconds: `milestone_seconds`                                                 |
+| `survival_milestone`         | Once per run at 30, 60, 180, 300, 600 and 900 (final boss) gameplay seconds: `milestone_seconds`                               |
 | `upgrade_selected`           | Accepted upgrade, observed from simulation or authoritative co-op snapshot: `upgrade_id`, `rank`, `level`                      |
 | `evolution_unlocked`         | Evolution first becomes active: `evolution_id` and run summary                                                                 |
 | `menu_opened`                | Menu changes: `menu`                                                                                                           |
 | `robot_selected`             | Successful selection: `robot_id`                                                                                               |
 | `robot_unlocked`             | Successful purchase: `robot_id`, `cost_parts`                                                                                  |
-| `workshop_upgrade_purchased` | Successful purchase: `upgrade_id`, new `rank`, `cost_parts`                                                                    |
+| `workshop_upgrade_purchased` | Successful purchase: `upgrade_id` (all eight workshop upgrades), new `rank`, `cost_parts`                                      |
+| `work_order_completed`       | Once per completed work order: `order_id`, `group`, `reward_parts`, `completed_count`, `run_id`                                |
+| `daily_shift_started`        | A Daily Shift run starts: `date`, `rule_id`, `streak`, `completed_today`                                                       |
+| `daily_shift_completed`      | A Daily Shift run ends: `date`, `rule_id`, `duration_seconds`, `best_seconds`, `first_today`, `reward_parts`, `streak`          |
+| `stage_selected`             | Stage picker choice: `stage_id`                                                                                                |
 | `coop_lobby_opened`          | Player opens Play Together                                                                                                     |
 | `coop_connection_attempted`  | Valid create/join request: `action`                                                                                            |
 | `coop_lobby_joined`          | First confirmed lobby response per connection: `action`, `player_role`                                                         |
 | `coop_connection_failed`     | One categorized failure per connection attempt: `action`, `reason`                                                             |
 | `setting_changed`            | Language or graphics selection: `setting`, `value`                                                                             |
 
-Run events and progression milestones include `run_id`, `mode` and `robot_id`.
+Run events and progression milestones include `run_id`, `mode`, `robot_id` and `stage`. Run summaries also carry `boss_kills`, `revives_used`, `rerolls_used` and `banishes_used`.
 Co-op counts **player-runs**: a two-player match produces a start for each player.
 No room codes or player coordinates are included in custom properties. Starting
 weapons are excluded from upgrade selections. Pausing and resuming preserve the
