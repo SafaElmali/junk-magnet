@@ -27,7 +27,7 @@ try {
     ]
       .map(
         (id, i) =>
-          `<button class="upgrade-choice"><span class="upgrade-icon"><img class="ability-art" src="./abilities/${id}.png"></span><span class="upgrade-text"><span class="upgrade-rank">YENİ YETENEK</span><strong>${["Zincir Şimşek", "Hurda Tareti", "Aşırı Güç"][i]}</strong><span class="upgrade-description">20 saniye boyunca +%25 hasar ve +%15 hareket hızı. Tekrar seçmek süreyi yeniler.</span></span><kbd>${i + 1}</kbd></button>`,
+          `<button class="upgrade-choice"><span class="upgrade-icon"><img class="ability-art" src="/abilities/${id}.png"></span><span class="upgrade-text"><span class="upgrade-name-row"><strong>${["Zincir Şimşek", "Hurda Tareti", "Aşırı Güç"][i]}</strong><span class="upgrade-rank">YENİ YETENEK</span></span><span class="upgrade-description">20 saniye boyunca +%25 hasar ve +%15 hareket hızı. Tekrar seçmek süreyi yeniler.</span></span><kbd>${i + 1}</kbd></button>`,
       )
       .join("");
   });
