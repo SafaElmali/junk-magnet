@@ -20,7 +20,8 @@ try {
       await page.waitForTimeout(300);
       const choice = priority.find(id => s.choices.includes(id)) ?? s.choices[0];
       levels.push({ time: s.time, level: s.level, choice });
-      await page.locator(`[data-upgrade="${choice}"]`).click();
+      // A rank-3 weapon offers its branches instead of upgrades; take the first.
+      await page.locator(choice ? `[data-upgrade="${choice}"]` : '[data-specialization]').first().click();
       continue;
     }
     const byDistance = (a, b) => Math.hypot(a.x - s.player.x, a.z - s.player.z) - Math.hypot(b.x - s.player.x, b.z - s.player.z);
