@@ -13,7 +13,8 @@ try {
   await page.waitForFunction(() => window.__JUNK_MAGNET__);
   await page.locator("#start").click();
   const read = () => page.evaluate(() => window.__JUNK_MAGNET__.snapshot());
-  for (let i = 0; i < 700; i++) {
+  // Early waves rarely finish the robot in under a minute; allow about three.
+  for (let i = 0; i < 2400; i++) {
     const s = await read();
     if (s.phase === "lost") break;
     if (s.phase === "upgrade") {
@@ -51,8 +52,9 @@ try {
     await page.locator("#result-kills").innerText(),
     String(lost.kills),
   );
-  const owned = Object.values(lost.upgrades).filter(
-    (rank, i) => i < 7 && rank > 0,
+  // Every ranked ability is listed; repeatable supplies are not.
+  const owned = Object.entries(lost.upgrades).filter(
+    ([id, rank]) => rank > 0 && !["repair", "refill", "overclock"].includes(id),
   ).length;
   assert.equal(await page.locator(".result-module").count(), owned);
   await page.screenshot({
