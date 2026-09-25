@@ -31,10 +31,24 @@ Release in batches, once or twice a week. The CrazyGames dashboard refreshes dai
 - Saves progress and settings in the SDK [Data Module](https://docs.crazygames.com/sdk/data/), which syncs across devices for signed-in players. Existing `junk-magnet-*` browser saves are copied in on first launch. If Progress Save is not enabled for the version, or an ad blocker removes the SDK, the game falls back to browser storage.
 - Reports `loadingStart`/`loadingStop` around asset loading and `gameplayStart`/`gameplayStop` whenever active play begins or ends (menus, pause, level-up choices and results stop it). The SDK itself throttles calls closer than about one second.
 - Follows the CrazyGames mute setting over the in-game sound settings.
+- Keeps an unfinished run's resume snapshot in browser storage under `junkmagnet-run-v1`, outside the `junk-magnet-` prefix that is copied into the Data Module, so mid-run saves never reach cloud storage.
+- Can offer optional rewarded ads, switched off by default (see [Rewarded ads](#rewarded-ads)).
 - Disables PostHog and co-op. Use the CrazyGames dashboard for metrics.
 - Leaves out the web-only guide page, removes the social image, sitemap, `robots.txt` and the favicon (the portal's uploader stalls on `favicon.svg`, and an embedded game shows no tab icon), and Draco-compresses the models (7.7 MB to 1.2 MB). The decoder is copied to `draco/`; the web build keeps uncompressed models and never loads it.
 
-The result is about 13.5 MB in 99 files, within the 50 MB, 1500-file and 20 MB benchmark sizes. The build fails if it exceeds a hard limit, lacks `index.html` or still links to the guide page (the menu's guide link is omitted in this build, since CrazyGames forbids links out of the game).
+The result is about 14.5 MB in 105 files, within the 50 MB, 1500-file and 20 MB benchmark sizes. The build fails if it exceeds a hard limit, lacks `index.html` or still links to the guide page (the menu's guide link is omitted in this build, since CrazyGames forbids links out of the game).
+
+## Rewarded ads
+
+The CrazyGames build can offer two optional rewarded ads: **watch an ad to revive** once per run when a run ends in defeat, before the run is recorded, and **watch an ad for double parts** once per run on the result screen. Both are solo only; the revive dialog ignores input for its first 400 ms, and closing the page while it is open counts as declining, so the run's parts are still banked. playjunkmagnet.com never shows ads.
+
+They ship switched off. CrazyGames disables ads during Basic Launch; the SDK answers every request with `adsDisabledBasicLaunch`, so the offers would only fail. After Full Launch, build with the flag:
+
+```sh
+VITE_CRAZYGAMES_ADS=true npm run publish:crazygames
+```
+
+`src/crazygames.ts` wraps the [SDK's rewarded ads](https://docs.crazygames.com/sdk/video-ads/). With the flag on, offers appear only while the SDK is active. They are hidden for the session after an ad blocker is detected or the SDK reports Basic Launch; `unfilled` and `adCooldown` errors allow a later try. A request that never starts gives up after 15 seconds. The game stops gameplay reporting and mutes its audio from `adStarted` until the ad ends, without changing the player's own sound settings, and grants the reward only after `adFinished`.
 
 ## Check the build
 
@@ -45,3 +59,11 @@ node scripts/crazygames-browser.mjs
 ```
 
 On localhost the SDK runs in `local` mode. The check verifies SDK loading and gameplay events through a play/pause/menu cycle, rendering with the compressed models, migration of an earlier browser save into the Data Module, settings written to the Data Module, no PostHog requests, no failed requests and no page errors.
+
+To check the rewarded-ad offers, build with the flag and run `scripts/ads-browser.mjs`. It replaces the SDK script with a fake one and plays real defeats to cover an accepted, declined and failed revive, double parts, audio muting during the ad, and both offers at five viewports in English and German. Against a normal build, `ADS=off` checks that neither offer appears:
+
+```sh
+VITE_CRAZYGAMES_ADS=true npm run build:crazygames
+npx vite preview --outDir dist-crazygames --host 127.0.0.1 --port 5320 --strictPort
+node scripts/ads-browser.mjs
+```
