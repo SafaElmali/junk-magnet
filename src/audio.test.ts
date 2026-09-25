@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { AudioCues, eventCue, GameAudio } from "./audio";
+import { AudioCues, eventCue, GameAudio, masterLevel } from "./audio";
+import { usePlatformStorage } from "./storage";
 import { createState, update, chooseUpgrade } from "./simulation";
 
 test("audio follows real upgrades once, including co-op snapshot replacements", () => {
@@ -111,4 +112,40 @@ test("volume controls clamp independently and preserve mute preferences", () => 
   assert.equal(audio.musicEnabled, true);
   audio.setVolume("sound", NaN);
   assert.equal(audio.effectsVolume, 100);
+});
+
+test("hidden tabs, the platform mute and a playing ad each silence the game", () => {
+  const none = { hidden: false, platformMuted: false, adMuted: false };
+  assert.equal(masterLevel(none), 0.75);
+  for (const key of ["hidden", "platformMuted", "adMuted"] as const)
+    assert.equal(masterLevel({ ...none, [key]: true }), 0, key);
+  assert.equal(masterLevel({ hidden: false, platformMuted: true, adMuted: true }), 0);
+});
+
+test("an ad mute lifts back to the platform mute and never changes the player's settings", async () => {
+  const saved = new Map<string, string>();
+  usePlatformStorage({
+    getItem: (key) => saved.get(key) ?? null,
+    setItem: (key, value) => void saved.set(key, value),
+  });
+  const audio = new GameAudio();
+  await audio.toggle(); // The player's own choice: sound effects off.
+  audio.setVolume("music", 30);
+  const preferences = saved.get("junk-magnet-audio-v2");
+  audio.setPlatformMuted(true);
+  audio.setAdMuted(true);
+  assert.equal(audio.diagnostics().level, 0);
+  audio.setAdMuted(false);
+  assert.equal(audio.diagnostics().adMuted, false);
+  assert.equal(audio.diagnostics().level, 0, "CrazyGames still mutes the game");
+  audio.setPlatformMuted(false);
+  assert.equal(audio.diagnostics().level, 0.75);
+  audio.setAdMuted(true);
+  assert.equal(audio.diagnostics().level, 0);
+  audio.setAdMuted(false);
+  assert.equal(audio.diagnostics().level, 0.75);
+  assert.equal(audio.enabled, false, "the player's mute survives the ad");
+  assert.equal(audio.musicEnabled, true);
+  assert.equal(audio.musicVolume, 30);
+  assert.equal(saved.get("junk-magnet-audio-v2"), preferences, "ad mutes are never saved");
 });

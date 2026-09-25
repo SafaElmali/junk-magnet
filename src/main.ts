@@ -8,8 +8,18 @@ import { initAnalytics, track } from "./analytics";
 import {
   crazyGamesLoaded,
   onCrazyGamesMute,
+  rewardedAdsAvailable,
   setCrazyGamesPlaying,
+  type RewardedAdResult,
 } from "./crazygames";
+import { AdOffers } from "./ad-offers";
+import {
+  adPlaying,
+  renderReviveOffer,
+  renderReward,
+  reviveOfferMarkup,
+  watchRewardedAd,
+} from "./ad-offers-view";
 import { createRunAnalytics } from "./run-analytics";
 import { ct } from "./coop-text";
 import "@fontsource/barlow-condensed/latin-700.css";
@@ -39,6 +49,7 @@ import { preloadAbilityArt } from "./ability-art";
 import { setupBuildInspector } from "./build-inspector";
 import {
   getRunConfig,
+  grantBonusParts,
   recordRun,
   ROBOTS,
   type RunConfig,
@@ -85,6 +96,7 @@ import {
   rerollChoices,
   banishChoice,
   canBanish,
+  revive,
   type UpgradeId,
   type Vec,
 } from "./simulation";
@@ -152,6 +164,7 @@ app.innerHTML = `
  <div id="result-orders" class="result-orders hidden"></div>
  <div class="result-actions"><button class="primary-btn" id="again"><span>ONE MORE SHIFT</span>${svg("reset")}</button><button id="result-menu" class="text-btn">${svg("home")}<span>MAIN MENU</span></button></div>
  </div></div>
+ ${reviveOfferMarkup}
 </main>
 <footer class="workbench"><div class="controls"><span><kbd>W</kbd><span class="key-row"><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><strong>MOVE</strong><i></i><strong>AUTO ATTACK</strong></div><p><span class="footer-dot"></span> ONE ROBOT. ENDLESS POTENTIAL.</p><span class="prototype-label">ENDLESS SURVIVAL <b>v0.2</b></span></footer>`;
 document.querySelectorAll("#help-content dl > div").forEach((step, index) => {
@@ -181,6 +194,13 @@ let stick: Vec = { x: 0, z: 0 },
   showedResult = false;
 const gameAudio = new GameAudio();
 onCrazyGamesMute((muted) => gameAudio.setPlatformMuted(muted));
+// Rewarded ads (CrazyGames build with VITE_CRAZYGAMES_ADS=true): a revive, then doubled parts.
+const adOffers = new AdOffers();
+const adContext = () => ({ solo: !coop.active, available: rewardedAdsAvailable() });
+const muteForAd = (muted: boolean) => gameAudio.setAdMuted(muted);
+// Taps and key presses from the last moment of play must not answer the revive offer.
+const OFFER_INPUT_GUARD_MS = 400;
+let reviveOfferReadyAt = 0;
 let shownUpgrade = "",
   shownLoadout = "",
   upgradeReadyAt = 0,
@@ -386,6 +406,11 @@ function startDaily() {
 }
 el("pause-menu").addEventListener("click", returnToMenu);
 el("result-menu").addEventListener("click", returnToMenu);
+el("revive-watch").addEventListener("click", () => void answerReviveOffer(true));
+el("revive-decline").addEventListener("click", () => void answerReviveOffer(false));
+el("result-reward").addEventListener("click", (e) => {
+  if ((e.target as Element).closest("#double-parts")) void doubleParts();
+});
 el("again").addEventListener("click", () => restart());
 el("restart").addEventListener("click", () => restart());
 el("resume").addEventListener("click", closeModal);
@@ -454,9 +479,17 @@ document.addEventListener(
 el("sound").addEventListener("click", toggleSound);
 el("music").addEventListener("click", toggleMusic);
 window.addEventListener("keydown", (e) => {
-  if (buildInspector.isOpen) return;
+  if (buildInspector.isOpen || adPlaying()) return;
   const target = e.target as HTMLElement;
   if (coop.lobbyOpen || ["INPUT", "TEXTAREA"].includes(target.tagName)) return;
+  if (reviveOfferOpen()) {
+    // Esc means no thanks; the offer's buttons handle Space and Enter themselves.
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (!e.repeat) void answerReviveOffer(false);
+    } else if (e.key === "Tab") trapFocus(e);
+    return;
+  }
   if (coop.active && !e.repeat) {
     const index = ["Digit1", "Digit2", "Digit3"].indexOf(e.code);
     const numpad = ["Numpad1", "Numpad2", "Numpad3"].indexOf(e.code);
@@ -590,16 +623,22 @@ document.addEventListener("visibilitychange", () => {
     else persistRun();
   } else requestFrame();
 });
-// Also covers closing the tab and back/forward-cache navigation.
-window.addEventListener("pagehide", persistRun);
+// Also covers closing the tab and back/forward-cache navigation. A run waiting on the
+// revive offer is banked as declined, so leaving never loses its parts.
+window.addEventListener("pagehide", () => {
+  if (reviveOfferOpen()) closeReviveOffer("declined");
+  persistRun();
+});
 function trapFocus(e: KeyboardEvent) {
   const panel = !el("upgrade").classList.contains("hidden")
     ? el("upgrade")
     : !el("modal").classList.contains("hidden")
       ? el("modal")
-      : !el("result").classList.contains("hidden")
-        ? el("result")
-        : null;
+      : reviveOfferOpen()
+        ? el("revive-offer")
+        : !el("result").classList.contains("hidden")
+          ? el("result")
+          : null;
   if (!panel) return;
   const buttons = [
     ...panel.querySelectorAll<HTMLButtonElement>("button:not([disabled])"),
@@ -1090,15 +1129,82 @@ function hud() {
 }
 /**
  * The run just ended in defeat or a stage clear: record it once, then show the result.
- * Anything that must happen before the run is banked belongs here, ahead of recordRun.
+ * Anything that must happen before the run is banked belongs here, ahead of bankRun.
+ * With rewarded ads available, a lost solo run first offers one revive (once per run).
  */
 function finishRun() {
   showedResult = true;
   buildInspector.close();
+  if (adOffers.offerRevive(runId, s, adContext())) openReviveOffer();
+  else bankRun();
+}
+/** Records the finished run once, then shows its result. */
+function bankRun() {
   const summary = summarizeRun(s, runId);
   runReceipt ??= summary && recordRun(summary);
   runAnalytics.complete(s, runReceipt?.earned ?? 0);
   renderResult();
+}
+const reviveOfferOpen = () => !el("revive-offer").classList.contains("hidden");
+function openReviveOffer() {
+  el("yard").classList.remove("is-playing");
+  keys.clear();
+  stopStick();
+  el("upgrade").classList.add("hidden");
+  renderReviveOffer();
+  el("revive-offer").classList.remove("hidden");
+  reviveOfferReadyAt = performance.now() + OFFER_INPUT_GUARD_MS;
+  el("revive-watch").focus({ preventScroll: true });
+}
+/** WATCH AD plays the ad; NO THANKS, Esc, a failed or unavailable ad go on to the result. */
+async function answerReviveOffer(watch: boolean) {
+  if (
+    !reviveOfferOpen() ||
+    adPlaying() ||
+    document.hidden ||
+    performance.now() < reviveOfferReadyAt
+  )
+    return;
+  const result = watch
+    ? await watchRewardedAd(el("revive-offer"), muteForAd)
+    : "declined";
+  // Leaving the page while the ad played already banked the run.
+  if (reviveOfferOpen()) closeReviveOffer(result);
+}
+function closeReviveOffer(result: RewardedAdResult | "declined") {
+  el("revive-offer").classList.add("hidden");
+  if (result !== "rewarded" || !revive(s, "external")) {
+    bankRun();
+    return;
+  }
+  // Back to the same run at half health; its next defeat goes straight to results.
+  showedResult = false;
+  keys.clear();
+  stopStick();
+  el("yard").classList.add("is-playing");
+  el("yard").focus({ preventScroll: true });
+  hud();
+  requestFrame();
+}
+/** WATCH AD · DOUBLE PARTS on the result: banks this run's parts a second time, once. */
+async function doubleParts() {
+  const receipt = runReceipt;
+  if (
+    !receipt ||
+    adPlaying() ||
+    document.hidden ||
+    adOffers.doubleParts(receipt, adContext()) !== "offer"
+  )
+    return;
+  adOffers.startDouble(receipt.runId);
+  const result = await watchRewardedAd(el("result"), muteForAd);
+  adOffers.finishDouble(
+    receipt.runId,
+    result === "rewarded"
+      ? grantBonusParts(receipt.runId, receipt.earned)
+      : null,
+  );
+  if (runReceipt === receipt && showedResult && runOver()) renderResult();
 }
 const CLEARED_STAMPS: Record<StageId, string> = {
   yard: "YARD CLEARED",
@@ -1107,9 +1213,11 @@ const CLEARED_STAMPS: Record<StageId, string> = {
 /** Draws the finished run; language changes redraw it without recording again. */
 function renderResult() {
   const won = s.phase === "won";
-  el("result-reward").textContent = t("+{parts} parts · Bank: {total}", {
-    parts: runReceipt?.earned ?? 0,
-    total: runReceipt?.parts ?? 0,
+  renderReward(el("result-reward"), {
+    earned: runReceipt?.earned ?? 0,
+    bank: runReceipt?.parts ?? 0,
+    bonus: runReceipt ? adOffers.bonus(runReceipt.runId) : 0,
+    offer: adOffers.doubleParts(runReceipt, adContext()),
   });
   renderResultOrders(el("result-orders"), runReceipt);
   document.querySelector(".result-unit")!.textContent = ROBOTS.find(
@@ -1369,7 +1477,10 @@ function applyLanguage() {
   shownLoadout = "";
   shownUpgrade = "";
   shownGoal = "";
-  if (showedResult && runOver()) renderResult();
+  if (showedResult && runOver()) {
+    if (reviveOfferOpen()) renderReviveOffer();
+    else renderResult();
+  }
   hud();
 }
 function chooseLanguage(next: Language) {

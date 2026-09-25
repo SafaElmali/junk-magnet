@@ -57,6 +57,17 @@ const priority = new Set<Cue>([
 ]);
 const preferenceKey = "junk-magnet-audio-v2";
 
+/**
+ * Master output: a hidden tab, the host platform's mute (CrazyGames) and a playing
+ * rewarded ad each silence the game on their own. None of them touches the player's
+ * saved sound and music settings, so every mute lifts back to those preferences.
+ */
+export const masterLevel = (mutes: {
+  hidden: boolean;
+  platformMuted: boolean;
+  adMuted: boolean;
+}) => (mutes.hidden || mutes.platformMuted || mutes.adMuted ? 0 : 0.75);
+
 /** Snapshot counters also work with co-op's deserialized states; never replay old rewards. */
 export class AudioCues {
   private previous?: ReturnType<AudioCues["snapshot"]>;
@@ -131,6 +142,8 @@ export class GameAudio {
   private hidden = false;
   /** Host platform mute (CrazyGames) overrides the player's own settings. */
   private platformMuted = false;
+  /** A rewarded ad is playing; independent of the platform mute. */
+  private adMuted = false;
   private mode: "menu" | "playing" | "paused" | "upgrade" | "lost" | "won" =
     "menu";
   private cues = new AudioCues();
@@ -261,6 +274,22 @@ export class GameAudio {
     this.updateMix();
   }
 
+  /** Silences the game while a rewarded ad plays; the platform mute still applies after. */
+  setAdMuted(muted: boolean) {
+    if (muted === this.adMuted) return;
+    this.adMuted = muted;
+    if (muted) this.stopEffects();
+    this.updateMix();
+  }
+
+  private get mutes() {
+    return {
+      hidden: this.hidden,
+      platformMuted: this.platformMuted,
+      adMuted: this.adMuted,
+    };
+  }
+
   setHidden(hidden: boolean) {
     this.hidden = hidden;
     this.updateMix();
@@ -292,11 +321,7 @@ export class GameAudio {
     if (!context || !this.master) return;
     const now = context.currentTime;
     this.effects?.gain.setTargetAtTime(this.effectsVolume / 100, now, 0.025);
-    this.master.gain.setTargetAtTime(
-      !this.hidden && !this.platformMuted ? 0.75 : 0,
-      now,
-      0.025,
-    );
+    this.master.gain.setTargetAtTime(masterLevel(this.mutes), now, 0.025);
     for (const name of ["menu", "yard"] as const) {
       const buffer = this.buffers.get(name);
       if (
@@ -417,6 +442,11 @@ export class GameAudio {
       state: this.context?.state ?? "locked",
       mode: this.mode,
       hidden: this.hidden,
+      platformMuted: this.platformMuted,
+      adMuted: this.adMuted,
+      /** Target master level; the live gain follows within ~0.1 s. */
+      level: masterLevel(this.mutes),
+      gain: this.master ? Math.round(this.master.gain.value * 100) / 100 : null,
       loaded: this.buffers.size,
       failed: [...this.failures],
       voices: this.voices.size,

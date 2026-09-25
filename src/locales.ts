@@ -5,6 +5,7 @@ import { arsenalLocales } from "./arsenal-locales";
 import { runRulesLocales } from "./run-rules-locales";
 import { metaLocales } from "./meta-locales";
 import { robotLocales } from "./robot-locales";
+import { adLocales } from "./ad-locales";
 // Original UI translations. English source copy is the stable lookup key.
 export const locales: Record<string, Record<string, string>> = {
   de: {
@@ -1075,4 +1076,5 @@ for (const language of ["tr", "de", "fr", "es", "pt"])
     runRulesLocales[language],
     metaLocales[language],
     robotLocales[language],
+    adLocales[language],
   );

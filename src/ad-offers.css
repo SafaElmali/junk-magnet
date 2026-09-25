@@ -1,0 +1,230 @@
+/* Rewarded-ad offers (CrazyGames build only): a revive on defeat, doubled parts on the result. */
+
+/* The revive offer is a small version of the pause panel. */
+#revive-offer {
+  background: #0c2026b0;
+  backdrop-filter: blur(5px);
+}
+#revive-offer .modal-card {
+  position: relative;
+  max-width: 400px;
+  padding: 24px 28px 28px;
+  border: 1px solid #708b79;
+  border-top: 4px solid #edbd58;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #29474c, #142f38 80%);
+  color: #fff1d0;
+  text-align: left;
+  box-shadow:
+    0 28px 90px #06181b80,
+    inset 0 1px #ffffff0a;
+}
+.ad-offer-badge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 16px;
+  border: 1px solid #6d8272;
+  border-radius: 8px;
+  background: #ffffff06;
+  color: #edbd58;
+}
+.ad-offer-badge svg {
+  width: 22px;
+  height: 22px;
+}
+#revive-offer .modal-card h2 {
+  font-size: clamp(32px, 6vw, 44px);
+  line-height: 1;
+  margin: 0 0 8px;
+  letter-spacing: 0.01em;
+}
+#revive-offer #revive-offer-copy {
+  color: #b9c6b5;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 22px;
+}
+.ad-offer-actions {
+  display: grid;
+  gap: 10px;
+}
+#revive-offer #revive-watch {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  border: 1px solid #ffe5a0;
+  border-radius: 6px;
+  background: #edbd58;
+  color: #17343b;
+  font-size: 22px;
+  box-shadow: 0 3px 0 #a87730;
+}
+#revive-offer #revive-watch:hover {
+  background: #ffcf70;
+}
+#revive-decline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 10px 8px;
+  border: 1px solid #617b70;
+  border-radius: 6px;
+  background: #ffffff04;
+  color: #d4ddc9;
+  font:
+    700 16px/1.15 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.025em;
+}
+#revive-decline:hover {
+  background: #ffffff0e;
+  border-color: #c4d1b8;
+}
+#revive-offer button:focus-visible,
+#result .result-double:focus-visible {
+  outline: 2px solid #fff3cf;
+  outline-offset: 4px;
+}
+
+/* While the ad plays, the offer stays in place but reads as busy. */
+.ad-offer.is-waiting .modal-card,
+#result.is-waiting .modal-card {
+  cursor: progress;
+}
+.ad-offer.is-waiting button,
+#result.is-waiting .result-double {
+  opacity: 0.6;
+}
+
+/* Double parts: a secondary action beside the reward line, so the primary stays ONE MORE SHIFT. */
+#result .result-reward.has-ad-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  margin-bottom: 6px;
+}
+#result .result-double {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid #c7a65390;
+  border-radius: 6px;
+  background: #edbd5812;
+  color: #edc366;
+  font:
+    700 15px/1.1 "Barlow Condensed",
+    sans-serif;
+  letter-spacing: 0.03em;
+}
+#result .result-double svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+#result .result-double:hover {
+  background: #edbd5826;
+  border-color: #edbd58;
+}
+.result-double-note {
+  color: #b9c6b5;
+  font-size: 11px;
+}
+
+@media (max-width: 380px) {
+  #revive-offer .modal-card {
+    padding: 20px 18px 22px;
+  }
+  /* Keeps longer labels (WERBUNG ANSEHEN) on one line beside the icon. */
+  #revive-offer #revive-watch {
+    gap: 10px;
+    padding: 12px 14px;
+    font-size: 19px;
+    text-align: left;
+  }
+}
+@media (max-width: 520px) and (max-height: 650px) {
+  #result .result-reward.has-ad-offer {
+    gap: 4px 10px;
+  }
+  #result .result-double {
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 14px;
+  }
+}
+@media (max-height: 500px) and (min-width: 521px) {
+  #revive-offer {
+    padding: 66px 16px 12px;
+  }
+  #revive-offer .modal-card {
+    max-width: 600px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    align-items: start;
+  }
+  .ad-offer-badge {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 10px;
+  }
+  .ad-offer-badge svg {
+    width: 17px;
+    height: 17px;
+  }
+  #revive-offer .modal-card h2 {
+    font-size: 30px;
+  }
+  #revive-offer #revive-offer-copy {
+    font-size: 12px;
+    margin: 0;
+  }
+  .ad-offer-actions {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+    gap: 8px;
+  }
+  #revive-offer #revive-watch {
+    min-height: 48px;
+    padding: 8px 12px;
+    font-size: 20px;
+  }
+  #revive-decline {
+    min-height: 44px;
+    padding: 6px;
+    font-size: 14px;
+  }
+  /* The reward sits in the left column, left-aligned, beside the goals. */
+  #result .result-reward.has-ad-offer {
+    justify-content: flex-start;
+    gap: 4px 8px;
+  }
+  #result .result-double {
+    min-height: 30px;
+    padding: 3px 8px;
+    font-size: 13px;
+  }
+}
+@media (min-width: 521px) and (max-height: 340px) {
+  /* The shortest landscape screens already keep one goal line; the offer takes its place
+     and the reward row spans both columns, so the button stays beside the parts. */
+  #result .result-reward.has-ad-offer {
+    grid-column: 1 / -1;
+  }
+  #result .result-reward.has-ad-offer ~ .result-orders {
+    display: none;
+  }
+}
