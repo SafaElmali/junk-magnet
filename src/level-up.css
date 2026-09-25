@@ -414,6 +414,8 @@
   #upgrade .upgrade-text strong {
     font-size: 21px;
     overflow-wrap: anywhere;
+    /* Long German names such as Kondensatorbank break at a syllable, not a letter. */
+    hyphens: auto;
   }
   #upgrade .upgrade-rank {
     font-size: 8px;
