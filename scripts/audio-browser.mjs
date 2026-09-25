@@ -130,7 +130,7 @@ try {
     assert.ok(await page.evaluate(() => window.__audioRms() < 0.0001));
     await page.locator("#menu-music").click();
     await page.waitForFunction(() => window.__audioRms() > 0.001);
-    for (let i = 0; i < 6; i++) await page.locator("#menu-music-down").click();
+    for (let i = 0; i < 5; i++) await page.locator("#menu-music-down").click();
     assert.equal((await state()).audio.musicVolume, 0);
     assert.ok(await page.locator("#menu-music-down").isDisabled());
     await page.waitForTimeout(1800);
