@@ -1650,6 +1650,17 @@
     letter-spacing: 0.01em;
     overflow-wrap: anywhere;
   }
+  /* A cleared stage's best time is always 15:00 or more; keep it inside half the width. */
+  .stage-status.is-record {
+    gap: 2px;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .stage-status svg {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
   #intro .menu-actions .menu-button {
     gap: 6px;
     padding: 8px 6px;
