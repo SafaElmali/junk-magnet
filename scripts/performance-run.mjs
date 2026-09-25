@@ -77,7 +77,8 @@ for (const quality of (process.env.PERF_QUALITIES ?? 'high,performance').split('
         await page.waitForTimeout(280);
         const priority = ['turret', 'lightning', 'burst', 'saw', 'armor', 'magnet', 'boots', 'repair'];
         const choice = priority.find(id => s.choices.includes(id)) ?? s.choices[0];
-        await page.locator(`[data-upgrade="${choice}"]`).click();
+        // A rank-3 weapon offers its branches instead of upgrades; take the first.
+        await page.locator(choice ? `[data-upgrade="${choice}"]` : '[data-specialization]').first().click();
       } else if (s.phase === 'lost') {
         await keys();
         await page.locator('#again').click();
