@@ -104,7 +104,7 @@ try {
       await page.locator('[data-page="next"]').click();
       await check("next page");
     }
-    assert.equal(seen.size, 13);
+    assert.equal(seen.size, 17);
     for (const category of ["Weapons", "Support", "Supplies", "All"]) {
       await page.locator(`[data-filter="${category}"]`).click();
       await check(category);
