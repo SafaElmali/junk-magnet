@@ -30,8 +30,9 @@ try {
         "armor",
         "repair",
       ];
-      const id = order.find((id) => state.choices.includes(id));
-      await page.locator(`[data-upgrade="${id}"]`).click();
+      // Other abilities take the first card; a weapon branch takes the first branch.
+      const id = order.find((id) => state.choices.includes(id)) ?? state.choices[0];
+      await page.locator(id ? `[data-upgrade="${id}"]` : "[data-specialization]").first().click();
     }
     if (i % 40 === 0)
       console.log(`real play ${Math.floor(state.time)}s, hp ${state.hp}`);
@@ -44,8 +45,9 @@ try {
     await page.locator("#result-kills").innerText(),
     String(lost.kills),
   );
-  const owned = Object.values(lost.upgrades).filter(
-    (rank, i) => i < 7 && rank > 0,
+  // Every ranked ability is listed; repeatable supplies are not.
+  const owned = Object.entries(lost.upgrades).filter(
+    ([id, rank]) => rank > 0 && !["repair", "refill", "overclock"].includes(id),
   ).length;
   assert.equal(await page.locator(".result-module").count(), owned);
   await page.screenshot({
@@ -56,10 +58,12 @@ try {
   );
   assert.equal(stored.completedRuns, 1);
   assert.equal(
-    stored.parts,
+    lost.receipt.earned,
     lost.earnedParts + Math.floor(lost.kills / 10) + Math.floor(lost.time / 30),
   );
-  assert.equal(lost.receipt.earned, stored.parts);
+  // Work orders completed by this first run are banked on top.
+  const orders = lost.receipt.orders.reduce((sum, order) => sum + order.reward, 0);
+  assert.equal(stored.parts, lost.receipt.earned + orders);
   assert.ok(
     (await page.locator("#result-reward").innerText()).includes(
       String(stored.parts),
