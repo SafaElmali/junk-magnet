@@ -85,7 +85,7 @@ try {
   await noScriptPage.goto(url);
   assert.equal(await noScriptPage.locator("#loading").isVisible(), false);
   assert.equal(await noScriptPage.locator(".game-intro").isVisible(), true);
-  assert.equal(await noScriptPage.locator('a[href="./guide/"]').isVisible(), true);
+  assert.equal(await noScriptPage.locator('a[href="/guide/"]').isVisible(), true);
   assert.equal(await noScriptPage.locator("#app").evaluate((el) => getComputedStyle(el).overflow), "auto");
   await noScriptPage.close();
 

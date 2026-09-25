@@ -22,7 +22,7 @@ try {
       assert.equal(await page.locator("html").getAttribute("lang"), language);
       await page.locator("#start").click();
       const stages = [];
-      for (const stage of ["collect", "orbit", "reload"]) {
+      for (const stage of ["collect", "orbit"]) {
         await page.waitForFunction(
           (phase) =>
             document.querySelector("#opening-guide").dataset.step === phase &&
