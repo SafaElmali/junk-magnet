@@ -38,7 +38,7 @@ try {
     await page.waitForFunction(() =>
       document.querySelector("#load-meter")?.getAttribute("aria-valuenow") === "90",
     );
-    assert.equal(requested.size, 13, "all unique icons preload, including later pages");
+    assert.equal(requested.size, 17, "all unique icons preload, including later pages");
     assert.equal(await page.locator("#loading").isVisible(), true);
     assert.equal(await page.locator("#intro").isVisible(), false);
     release();

@@ -140,9 +140,16 @@ try {
         await page.locator("#menu-abilities").click();
         await check("abilities with evolution entry");
         await page.locator("#menu-evolutions-open").click();
-        assert.equal(await page.locator(".evolution-recipe").count(), 3);
+        let recipes = await page.locator(".evolution-recipe").count();
         await check("evolution recipes");
         await shot("evolutions");
+        // Compact screens page the six recipes two or three at a time.
+        while (await page.locator('[data-evolution-page="next"]:not([disabled])').count()) {
+          await page.locator('[data-evolution-page="next"]').click();
+          recipes += await page.locator(".evolution-recipe").count();
+          await check("evolution recipes next page");
+        }
+        assert.equal(recipes, 6);
         await page.locator("#menu-back").click();
         assert.equal(await page.locator("#menu-library").isVisible(), true);
         await page.locator("#menu-back").click();
