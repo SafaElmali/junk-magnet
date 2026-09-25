@@ -142,10 +142,10 @@ async function menuPages(language, viewport) {
     assert.equal(await page.locator("#menu-orders-new").innerText(), "2");
     assert.equal(await page.locator("#menu-orders > span").innerText(), copy[language].orders);
     assert.equal(await page.locator(".stage-option").count(), 2);
-    assert.equal(await page.locator('[data-stage="night"]').getAttribute("aria-disabled"), "true");
+    assert.equal(await page.locator('#menu-stage [data-stage="night"]').getAttribute("aria-disabled"), "true");
     // Players can still tap the locked option; it keeps the Scrapyard selected.
-    await page.locator('[data-stage="night"]').click({ force: true });
-    assert.equal(await page.locator('[data-stage="yard"]').getAttribute("aria-pressed"), "true");
+    await page.locator('#menu-stage [data-stage="night"]').click({ force: true });
+    assert.equal(await page.locator('#menu-stage [data-stage="yard"]').getAttribute("aria-pressed"), "true");
     assert.notEqual((await saved(page)).stage, "night");
     await page.locator("#start").focus();
     const cycle = [];
@@ -321,10 +321,10 @@ async function stageFlow() {
   const cleared = { ...fixture, clearedStages: ["yard"], stageBest: { yard: 900 } };
   const { page, errors } = await openPage("en", [844, 390], cleared);
   try {
-    assert.equal(await page.locator('[data-stage="night"]').getAttribute("aria-disabled"), null);
-    await page.locator('[data-stage="night"]').click();
+    assert.equal(await page.locator('#menu-stage [data-stage="night"]').getAttribute("aria-disabled"), null);
+    await page.locator('#menu-stage [data-stage="night"]').click();
     assert.equal((await saved(page)).stage, "night");
-    assert.equal(await page.locator('[data-stage="night"]').getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator('#menu-stage [data-stage="night"]').getAttribute("aria-pressed"), "true");
     await page.locator("#start").click();
     await page.waitForFunction(() => window.__JUNK_MAGNET__.snapshot().time > 0.2);
     assert.equal((await snapshot(page)).robot.stage, "night");
@@ -343,7 +343,7 @@ async function stageFlow() {
     assert.ok(s.time < 1);
     await page.reload();
     await page.waitForFunction(() => window.__JUNK_MAGNET__);
-    assert.equal(await page.locator('[data-stage="night"]').getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator('#menu-stage [data-stage="night"]').getAttribute("aria-pressed"), "true");
     assert.deepEqual(errors, []);
     return { flow: "stage picker", pass: true, checks: ["Night Shift selected, saved, used by PLAY; Daily Shift ends a paused run on the Scrapyard"] };
   } finally {

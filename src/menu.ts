@@ -520,8 +520,9 @@ export function setupMenu(actions: {
     actions.daily();
   });
   el("menu-stage").addEventListener("click", (event) => {
+    // #app carries the run's data-stage too, so a click between options must not reach it.
     const button = (event.target as Element).closest<HTMLButtonElement>(
-      "[data-stage]",
+      "button[data-stage]",
     );
     const id = button?.dataset.stage as StageId | undefined;
     if (!id || button!.getAttribute("aria-pressed") === "true") return;
