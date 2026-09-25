@@ -11,7 +11,7 @@ Collect wreckage, build an orbit of scrap, and survive increasingly chaotic wave
 - **Build your scrap storm:** automatic weapons, seventeen abilities, twelve weapon specializations, and six weapon evolutions. Reroll or banish level-up choices you don't want.
 - **Bring a helper:** switch your drone between collecting, repair, and guard roles. Upgrade each role separately across three ranks. Collector rank 3 unlocks cluster pulls, Repair rank 3 stores one emergency heal per run, and Guard rank 3 unlocks slowing shots.
 - **Explore the yard:** bosses, elite enemies, supply chests, repair stations, and salvage contracts. Survive to 15:00 and defeat the Scrap Colossus to clear the stage and unlock the Night Shift.
-- **Come back tomorrow:** a new Daily Shift challenge every day with a streak bonus, and thirty work orders that pay parts.
+- **Come back tomorrow:** a new Daily Shift challenge every day with a streak bonus, and 31 work orders that pay parts.
 - **Upgrade between runs:** four robots, eight permanent workshop upgrades, and locally saved progress.
 - **Play your way:** keyboard or touch, six languages, adjustable graphics, and reduced-motion support.
 

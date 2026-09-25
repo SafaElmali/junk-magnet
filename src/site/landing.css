@@ -294,8 +294,15 @@
 .features {
   padding-top: 0;
 }
+/* Three cards about the run, then two wider ones about coming back to it. */
 .feature-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.feature-grid li {
+  grid-column: span 2;
+}
+.feature-grid li:nth-child(n + 4) {
+  grid-column: span 3;
 }
 .feature-grid li > img {
   display: block;
@@ -303,17 +310,19 @@
   height: 96px;
   margin: -6px 0 10px -8px;
 }
-.robot-trio {
+/* The four robots in a row, SCRAP-01 and MAGNA in front. */
+.robot-group {
   display: flex;
   height: 96px;
   margin: -6px 0 10px -10px;
 }
-.robot-trio img {
+.robot-group img {
   width: 92px;
   height: 92px;
   margin-right: -26px;
 }
-.robot-trio img:nth-child(2) {
+.robot-group img:nth-child(2),
+.robot-group img:nth-child(3) {
   position: relative;
   z-index: 1;
 }
@@ -400,6 +409,14 @@
   .feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .feature-grid li,
+  .feature-grid li:nth-child(n + 4) {
+    grid-column: auto;
+  }
+  /* Five cards: the robot lineup takes the last row. */
+  .feature-grid li:last-child {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 860px) {
   .hero {
@@ -474,19 +491,42 @@
     padding: 20px 20px 22px 14px;
   }
   .feature-grid li > img,
-  .robot-trio {
+  .robot-group {
     grid-row: span 2;
     width: 88px;
     height: 88px;
     margin: -4px 0 0;
   }
-  .robot-trio {
-    align-items: center;
+  /* A huddle: VOLT at the back, SCOUT and MAGNA either side, SCRAP-01 in front. */
+  .robot-group {
+    position: relative;
   }
-  .robot-trio img {
-    width: 52px;
-    height: 52px;
-    margin-right: -34px;
+  .robot-group img {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    margin: 0;
+  }
+  .robot-group img:nth-child(1) {
+    left: -11px;
+    top: 16px;
+    z-index: 1;
+  }
+  .robot-group img:nth-child(2) {
+    position: absolute;
+    left: 14px;
+    top: 34px;
+    z-index: 2;
+  }
+  .robot-group img:nth-child(3) {
+    position: absolute;
+    left: 39px;
+    top: 16px;
+  }
+  .robot-group img:nth-child(4) {
+    left: 14px;
+    top: -10px;
+    z-index: 0;
   }
   .feature-grid h3,
   .feature-grid p {

@@ -113,7 +113,7 @@
   margin-bottom: 28px;
   color: var(--body-ink);
 }
-:where(.guide) :where(li, .spec > div, .controls > div, .workshop-info > div) p,
+:where(.guide) :where(li, .spec > div, .controls > div, .panels > div) p,
 :where(.controls) dd {
   color: var(--body-ink);
   font-size: 15.5px;
@@ -133,7 +133,7 @@
 .roles li,
 .discoveries li,
 .robots li,
-.workshop-info > div {
+.panels > div {
   border-radius: 12px;
   background: var(--card);
 }
@@ -158,9 +158,6 @@
 }
 .controls > div {
   padding: 20px 22px;
-}
-.controls > div:first-child {
-  grid-column: 1 / -1;
 }
 .controls dt {
   font: 700 24px/1.05 "Barlow Condensed", sans-serif;
@@ -249,7 +246,7 @@ kbd {
   margin: 32px 0 12px;
   font-size: 28px;
 }
-.group:first-of-type {
+.intro + .group {
   margin-top: 0;
 }
 .group span {
@@ -269,6 +266,8 @@ kbd {
 .abilities li {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
+  /* The description row takes any extra height, so it stays under the name. */
+  grid-template-rows: auto 1fr;
   align-items: start;
   gap: 4px 14px;
   padding: 16px 18px 18px 12px;
@@ -281,6 +280,11 @@ kbd {
 .abilities h4 {
   margin-top: 4px;
   font-size: 22px;
+}
+/* Workshop upgrade prices span the card, so three ranks fit on one line. */
+.abilities .ranks {
+  grid-column: 1 / -1;
+  margin-top: 12px;
 }
 
 /* Specializations */
@@ -372,6 +376,9 @@ kbd {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
+.robots {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .roles li,
 .discoveries li,
 .robots li {
@@ -426,22 +433,29 @@ kbd {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.workshop-info {
+/* Text-only cards in pairs: elites and the final boss, stages, Daily Shift, work orders, parts. */
+.panels {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 12px;
+  margin: 12px 0;
 }
-.workshop-info > div {
+.panels > div {
   padding: 20px 22px 22px;
 }
-.workshop-info h3 {
+.panels h3 {
   margin-bottom: 10px;
   font-size: 24px;
 }
-.workshop-info p + p,
+.panels p + p,
 .earn + p {
   margin-top: 12px;
+}
+.panels p + .earn {
+  margin-top: 8px;
+}
+.abilities + .panels {
+  margin-top: 32px;
 }
 .ranks {
   display: flex;
@@ -545,6 +559,12 @@ kbd {
   justify-content: center;
 }
 
+/* Four robots side by side need room for their 150px portraits. */
+@media (max-width: 1100px) {
+  .robots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 1000px) {
   .guide-layout {
     grid-template-columns: minmax(0, 1fr);
@@ -623,7 +643,7 @@ kbd {
 @media (max-width: 700px) {
   .controls,
   .beats,
-  .workshop-info {
+  .panels {
     grid-template-columns: minmax(0, 1fr);
   }
   .spec {

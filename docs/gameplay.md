@@ -54,7 +54,7 @@ The **Daily Shift** is one challenge per calendar day, the same for everyone tha
 
 ## Work orders
 
-Thirty permanent goals pay 935 parts in total, in six groups: Survival, Combat, Builds, Explorer, Robots and Daily. They include surviving 2, 5 and 10 minutes, clearing each stage, kill and level targets, bosses and elites, evolutions, discoveries, finishing a shift with every robot, and Daily Shift streaks. Orders are checked when a run ends; their rewards are banked automatically and listed on the result screen, which also shows the next goal, today's Daily Shift and the next workshop purchase. The **Work orders** page shows progress for the rest.
+Thirty-one permanent goals pay 950 parts in total, in six groups: Survival, Combat, Builds, Explorer, Robots and Daily. They include surviving 2, 5 and 10 minutes, clearing each stage, kill and level targets, bosses and elites, evolutions, discoveries, finishing a shift with every robot, and Daily Shift streaks. Orders are checked when a run ends; their rewards are banked automatically and listed on the result screen, which also shows the next goal, today's Daily Shift and the next workshop purchase. The **Work orders** page shows progress for the rest.
 
 ## Workshop and saves
 
