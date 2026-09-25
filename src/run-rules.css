@@ -45,6 +45,23 @@
   line-height: 24px;
   font-variant-numeric: tabular-nums;
 }
+/* Phones: the goal sits under the timer and spare revives under the kill count. */
+@media (max-width: 520px) {
+  .in-run .timer-panel {
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .in-run .timer-goal:not(.hidden) {
+    font-size: 12px;
+  }
+  .in-run .revive-chip:not(.hidden) {
+    position: absolute;
+    top: 26px;
+    right: 0;
+    margin: 0;
+  }
+}
 /* Cues sit above the robot; short frames move them under it, clear of the HUD. */
 .run-cue {
   position: absolute;

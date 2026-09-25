@@ -524,13 +524,24 @@
   border-color: #edbd58;
 }
 
-/* At phone widths, the complete build sits below the pause hit area. */
-@media (max-width: 360px) {
+/* At phone widths, the complete build sits below the pause hit area in rows of
+   seven, and the boss bar moves below a second row. */
+@media (max-width: 520px) {
   .in-run .ability-loadout {
     top: calc(max(14px, env(safe-area-inset-top)) + 80px);
+    max-width: 284px;
   }
   .in-run .boss-hud {
     top: calc(max(14px, env(safe-area-inset-top)) + 140px);
+  }
+  .in-run:has(#ability-loadout > :nth-child(8)) .boss-hud {
+    top: calc(max(14px, env(safe-area-inset-top)) + 187px);
+  }
+}
+/* Wider frames keep a long build on the top row, clear of the pause button. */
+@media (min-width: 521px) {
+  .in-run .ability-loadout {
+    right: calc(max(12px, env(safe-area-inset-right)) + 60px);
   }
 }
 
