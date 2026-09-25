@@ -26,7 +26,7 @@ Git lists the link as untracked, since the ignore rule matches only a directory;
 npm run publish:crazygames -- --save
 ```
 
-The script builds, uploads, fills the form, clicks **Save** once it is enabled, prints `Saved. QA tool: <url>` and closes its browser, which frees the session for step 2. Build and upload take a few minutes, so run it in the background and read its output. While uploading it logs `Still uploading after N s (M requests)…` every 15 seconds; if the request count stops rising, the upload has stalled.
+The script builds, uploads, fills the form, clicks **Save** once it is enabled, then **Go to QA**, prints `Saved. QA tool: <url>` and closes its browser, which frees the session for step 2. Build and upload take a few minutes, so run it in the background and read its output. While uploading it logs `Still uploading after N s (M requests)…` every 15 seconds; if the request count stops rising, the upload has stalled.
 
 On failure the script exits with an error and leaves a screenshot in `.crazygames-session/`:
 
@@ -34,7 +34,8 @@ On failure the script exits with an error and leaves a screenshot in `.crazygame
 | --- | --- | --- |
 | The game dashboard did not load after 3 reloads. | `dashboard.png` | Check the screenshot; the portal may be down. Rerun later. |
 | Upload did not finish in 10 minutes. | `upload-timeout.png` | Nothing was saved. A file may be stalling the uploader, as `favicon.svg` once did; find it and rerun. |
-| Clicked Save, but the QA tool did not open within 2 minutes | `save.png` | Look in Game Versions for the new draft and open it with **Submit update**. |
+| Clicked Save, but the draft was not saved within 2 minutes | `save.png` | Saving can report an error such as "Failed to fetch" and still create a draft. Look in Game Versions before rerunning; open a new draft with **Submit update**. |
+| Saved, but Go to QA did not open the QA tool within 1 minute | `save.png` | Open the new draft from Game Versions with **Submit update**. |
 | A Playwright timeout on a form control | none | The portal changed its form; update the selector in `scripts/publish-crazygames.mjs`. |
 
 ## 2. Play the build in the QA tool

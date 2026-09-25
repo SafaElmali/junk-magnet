@@ -91,24 +91,34 @@ await page
   .setChecked(true);
 console.log(`Form filled. Screenshot: ${await screenshot("upload")}`);
 
-// Saving creates a draft and opens it in the QA tool on crazygames.com/preview.
+// Saving creates a draft and turns Save into "Go to QA", which opens the draft
+// in the QA tool on crazygames.com/preview in this tab. (Until September 2026
+// the portal opened the QA tool straight after Save; both are handled.)
+const goToQA = page.getByRole("button", { name: /^Go to QA/ });
+const inQATool = (url) => url.pathname.startsWith("/preview/");
 const saveVersion = async () => {
   await save.click();
-  const opened = await page
-    .waitForURL((url) => url.pathname.startsWith("/preview/"), {
-      timeout: minutes(2),
-      waitUntil: "commit",
-    })
-    .then(
-      () => true,
-      () => false,
-    );
-  if (opened) console.log(`Saved. QA tool: ${page.url()}`);
+  const saved = await Promise.race([
+    goToQA.waitFor({ timeout: minutes(2) }).then(() => "draft"),
+    page
+      .waitForURL(inQATool, { timeout: minutes(2), waitUntil: "commit" })
+      .then(() => "qa-tool"),
+  ]).catch(() => null);
+  if (saved === "draft") {
+    await goToQA.click();
+    await page
+      .waitForURL(inQATool, { timeout: minutes(1), waitUntil: "commit" })
+      .catch(() => {});
+  }
+  if (inQATool(new URL(page.url())))
+    console.log(`Saved. QA tool: ${page.url()}`);
   else {
     process.exitCode = 1;
     console.error(
-      "Clicked Save, but the QA tool did not open within 2 minutes; check " +
-        `Game Versions for the draft. Screenshot: ${await screenshot("save")}`,
+      (saved
+        ? "Saved, but Go to QA did not open the QA tool within 1 minute; "
+        : "Clicked Save, but the draft was not saved within 2 minutes; ") +
+        `check Game Versions for the draft. Screenshot: ${await screenshot("save")}`,
     );
   }
 };
