@@ -83,7 +83,7 @@ Verify the public deployment with:
 npm run verify:deployment
 ```
 
-The check loads the landing page (including its Play and CrazyGames links), the
+The check loads the landing page (including its Play and GitHub links), the
 game page, a built asset, backend health, and two real WebSocket
 clients; they create and join a room, start a shared simulation, and leave.
 `GAME_URL` and `COOP_URL` can point this same check at a preview or local server.
@@ -105,7 +105,7 @@ VITE_COOP_ENABLED=true VITE_COOP_URL=ws://127.0.0.1:8797/coop npm run dev
 
 `/` is a static landing page (`index.html`) with a **Play now** button for
 `/play/` and a link to the
-[CrazyGames page](https://www.crazygames.com/game/junk-magnet). It carries the
+[GitHub repository](https://github.com/SafaElmali/junk-magnet). It carries the
 `VideoGame` JSON-LD. The game itself is `play/index.html`, served at `/play/` with
 its own canonical URL. The web build uses an absolute `/` base so `/play/` loads
 public assets from the site root; the CrazyGames build keeps a relative base.
