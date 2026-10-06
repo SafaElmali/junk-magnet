@@ -1,16 +1,18 @@
 # Game analytics
 
-Junk Magnet uses PostHog for explicit game events. The default public token connects
-production builds to [Junk Magnet](https://us.posthog.com/) in
-your PostHog organization. The [Game Analytics dashboard](https://us.posthog.com/)
-contains ten validated charts. Its timezone is UTC.
+Junk Magnet supports PostHog for explicit game events. Analytics is disabled by
+default; the repository contains no production project token or private dashboard links.
 
-Override the public token with `VITE_POSTHOG_KEY` and its ingestion endpoint with
-`VITE_POSTHOG_HOST` before building if needed. Copy `.env.example` to `.env` for local configuration; Vite embeds
-these values at build time, so changing them requires a rebuild. Never use a
-personal API key in a `VITE_` variable.
+To enable it for your deployment, set `VITE_POSTHOG_KEY` to your own public project
+token in your hosting provider's build environment. Set `VITE_POSTHOG_HOST` to your
+project's ingestion endpoint (US Cloud is the default). Copy `.env.example` to
+`.env` for local configuration. Vite embeds these values at build time, so changes
+require a rebuild. Never use a personal API key in a `VITE_` variable.
 
-Tracking is disabled with an explicitly empty token, on localhost, and in Vite development.
+The [chart definitions](posthog-charts.json) can be used to create a dashboard in
+your own project. They assume UTC and filter to `environment=production`.
+
+Tracking is disabled with a missing, empty or whitespace-only token, on localhost, and in Vite development.
 For deliberate local QA, set `VITE_ANALYTICS_DEV=true`. Set
 `VITE_ANALYTICS_DISABLED=true` to disable tracking entirely. All captures include
 `app`, `analytics_version`, and `environment`. The dashboard definitions in

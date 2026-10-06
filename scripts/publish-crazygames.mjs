@@ -8,9 +8,15 @@ import { chromium, expect } from "@playwright/test";
 import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
+import { loadEnvFile } from "node:process";
 
-const GAME =
-  "https://developer.crazygames.com/games/YOUR_CRAZYGAMES_GAME_ID";
+if (existsSync(".env")) loadEnvFile();
+const gameId = process.env.CRAZYGAMES_GAME_ID?.trim();
+if (!gameId)
+  throw new Error(
+    "Set CRAZYGAMES_GAME_ID in your environment or .env before publishing.",
+  );
+const GAME = `https://developer.crazygames.com/games/${encodeURIComponent(gameId)}`;
 const build = resolve("dist-crazygames");
 if (!existsSync(`${build}/index.html`))
   throw new Error("Missing dist-crazygames/. Run npm run build:crazygames.");

@@ -12,13 +12,15 @@ Ask the developer before:
 
 ## Before you start
 
-Work from an up-to-date `main`. The portal session lives in the main checkout's `.crazygames-session/`. From a git worktree, link it instead of logging in again:
+Work from an up-to-date `main`. Set `CRAZYGAMES_GAME_ID` in the environment or an
+ignored `.env` file. The portal session lives in the main checkout's `.crazygames-session/`. From a git worktree, link it instead of logging in again:
 
 ```sh
 ln -s "$(git rev-parse --path-format=absolute --git-common-dir)/../.crazygames-session" .crazygames-session
 ```
 
-Git lists the link as untracked, since the ignore rule matches only a directory; remove it when you are done. If the session has expired, the script waits for a login in its browser window. The developer has to do that; agents don't enter passwords.
+The session directory and worktree symlink are both gitignored; remove the link
+when you are done. If the session has expired, the script waits for a login in its browser window. The developer has to do that; agents don't enter passwords.
 
 ## 1. Upload and save
 

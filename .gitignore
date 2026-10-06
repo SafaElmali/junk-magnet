@@ -1,7 +1,7 @@
 node_modules/
 dist/
 dist-crazygames/
-.crazygames-session/
+.crazygames-session
 .netlify/
 .wrangler/
 *.blend1
@@ -9,3 +9,6 @@ dist-crazygames/
 .env
 .env.*
 !.env.example
+.impeccable/review/
+research/
+art/blender-build.log

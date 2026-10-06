@@ -2,6 +2,7 @@
   "name": "junk-magnet",
   "version": "0.2.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5184 --strictPort",

@@ -6,6 +6,10 @@ Junk Magnet is in CrazyGames **Basic Launch** (started 23 September 2026, ends 1
 
 ## Release
 
+Set `CRAZYGAMES_GAME_ID` to your own game ID from the developer portal, either in
+your shell environment or an ignored `.env` file. The publishing script loads
+`.env` and refuses to open the portal without this setting.
+
 ```sh
 npm run publish:crazygames
 ```

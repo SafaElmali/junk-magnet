@@ -31,10 +31,8 @@ export type AnalyticsEvent =
 let enabled = false;
 
 export function initAnalytics() {
-  // Public ingestion token for the configured project, safe in client bundles.
-  const key =
-    import.meta.env.VITE_POSTHOG_KEY ??
-    "";
+  // Analytics is opt-in. Only use a public project token in browser bundles.
+  const key = import.meta.env.VITE_POSTHOG_KEY?.trim();
   const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(
     location.hostname,
   );

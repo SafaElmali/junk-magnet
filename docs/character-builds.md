@@ -17,15 +17,13 @@ This document records the enemy redesign introduced in commit `9965376`, along w
 | TypeScript and Three.js | Loaded the GLBs, rendered repeated enemies with instancing, and animated their movement. |
 | Vite, Playwright, and Google Chrome | Served the local game and checked the actual browser rendering on desktop and simulated mobile viewports. |
 
-The enemy meshes were authored from geometry and material definitions in this repository. This redesign did not use downloaded character models, image-to-3D services, or AI-generated textures. The preview images below are browser screenshots of the actual models in a controlled scene.
+The enemy meshes were authored from geometry and material definitions in this repository. This redesign did not use downloaded character models, image-to-3D services, or AI-generated textures. Renderer screenshots can be regenerated with the browser checks described below and remain in the ignored local review directory.
 
 ## What was wrong with the old enemies?
 
 The blue rectangle was the spitter's nozzle. The brown charger's two cream rectangles represented horns. These were separate `BoxGeometry` attachments in [ExpansionView](../src/expansion-view.ts), rather than detailed parts of the Blender model. The warden also used rectangular shield blocks.
 
 The replacement keeps the scrapyard can silhouette and gives each attachment a recognizable shape. Large optics and mechanical details also make the shared body easier to read from the game's elevated camera.
-
-![Spitter, charger, and warden in the desktop renderer](../.impeccable/review/enemies-desktop.png)
 
 ## How the enemy meshes were modeled
 
@@ -53,8 +51,6 @@ Before export, the script joins parts that share a material. Each asset is expor
 The meshes have no skeletal animation for this enemy workflow. The renderer applies facing, bounce, lean, and hit squash with object transforms. Equipment follows the same transforms as its body so it stays attached during movement and damage feedback.
 
 For mobile, `YardScene.mobileModels()` constructs a simpler can body directly from Three.js primitives. Its face, lid, vents, and arms were updated to match the Blender design. The charger, spitter, and warden still use the Blender equipment GLBs. Changes to the shared body therefore need a matching edit to the mobile version.
-
-![The matching mobile versions](../.impeccable/review/enemies-mobile.png)
 
 ## Rebuilding the assets
 

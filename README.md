@@ -77,3 +77,9 @@ npm run build         # Type-check and production build
 [CrazyGames release](docs/crazygames.md): `npm run publish:crazygames`. [Agent-driven release](docs/crazygames-agent-release.md).
 
 This is a playable prototype; balancing and physical-device testing are ongoing. No accounts. The site has no ads. The CrazyGames build integrates the CrazyGames SDK for loading/gameplay events, cloud saves and muting, and can offer optional rewarded ads, which stay switched off until Full Launch ([details](docs/crazygames.md#rewarded-ads)). Third-party licenses are in [public/licenses](public/licenses/); [cover provenance](art/COVER-PROMPT.md) documents the generated promotional artwork.
+
+## License
+
+Original project code and assets are available under the [MIT License](LICENSE).
+Third-party fonts, audio and libraries retain their respective licenses in
+[public/licenses](public/licenses/).

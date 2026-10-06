@@ -27,7 +27,7 @@ node scripts/mobile-regressions.mjs
 node scripts/survival-browser.mjs
 ```
 
-The scripts open the game at `/play/`; set `GAME_URL` to a game page URL to test elsewhere. Additional scripts cover menus, abilities, workshop portraits, discovery feedback, and co-op. See [verification notes](../VERIFICATION.md) for measured results and limitations. For co-op checks, use the [Node server](multiplayer.md) instead of Vite preview on 5185.
+The scripts open the game at `/play/`; set `GAME_URL` to a game page URL to test elsewhere. Additional scripts cover menus, abilities, workshop portraits, discovery feedback, and co-op. Screenshots and reports are generated locally under `.impeccable/review/`, which is gitignored. Create the directory with `mkdir -p .impeccable/review` before running older checks that do not create it. See [verification notes](../VERIFICATION.md) for measured results and limitations. For co-op checks, use the [Node server](multiplayer.md) instead of Vite preview on 5185.
 
 ### Performance checks
 
@@ -39,7 +39,7 @@ PERF_QUALITIES=high,performance,default PERF_OUTPUT=.impeccable/review/performan
 node --expose-gc --import tsx scripts/performance-simulation.ts
 ```
 
-The browser benchmark measures CPU, process RSS, JavaScript heap, and frame timing in an isolated Chrome session. `default` tests a fresh player's Balanced setting; saved quality choices remain unchanged. Idle scenes should render zero additional frames. The regression check covers pause/resume, upgrades, resizing, quality changes, and live co-op. The simulation check runs twelve simulated minutes without rendering. `GAME_URL` changes the server address and `PERF_OUTPUT` changes the output directory. See the [before/after report](../.impeccable/review/performance-after/README.md) for results and measurement limits.
+The browser benchmark measures CPU, process RSS, JavaScript heap, and frame timing in an isolated Chrome session. `default` tests a fresh player's Balanced setting; saved quality choices remain unchanged. Idle scenes should render zero additional frames. The regression check covers pause/resume, upgrades, resizing, quality changes, and live co-op. The simulation check runs twelve simulated minutes without rendering. `GAME_URL` changes the server address and `PERF_OUTPUT` changes the output directory. Generated reports stay local; see [verification notes](../VERIFICATION.md) for historical results and measurement limits.
 
 ## Editable assets
 

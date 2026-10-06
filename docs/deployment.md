@@ -4,7 +4,7 @@
 | --- | --- |
 | Landing page | https://playjunkmagnet.com |
 | Game | https://playjunkmagnet.com/play/ |
-| Website hosting | Netlify project `playjunkmagnet` (`YOUR_NETLIFY_SITE_ID`) |
+| Website hosting | Netlify |
 | Multiplayer | Cloudflare Worker `junk-magnet-coop`, https://coop.playjunkmagnet.com |
 | Repository | `SafaElmali/junk-magnet`, branch `main` |
 | DNS / registrar | Cloudflare |
@@ -51,8 +51,10 @@ Netlify is connected to the GitHub repository and builds `main` using
 `netlify.toml`. Cloudflare deployment configuration lives in `wrangler.jsonc`.
 The GitHub `Verify` workflow checks the frontend, Node co-op, and Worker runtime.
 
-For a manual backend deployment, authenticate Wrangler to the domain's Cloudflare
-account, then run:
+For your own deployment, update the Worker name, routes and allowed origins in
+`wrangler.jsonc`, and the co-op URL in `netlify.toml`. Set `CLOUDFLARE_ACCOUNT_ID`
+in your local or CI environment to your account ID; account identifiers are not
+stored in the repository. Authenticate Wrangler, then run:
 
 ```sh
 npm ci
@@ -62,13 +64,18 @@ npm run test:worker
 npm run deploy:coop
 ```
 
-For a manual website deployment, authenticate Netlify and link the project:
+For a manual website deployment, authenticate Netlify and select your own site:
 
 ```sh
-netlify link --id YOUR_NETLIFY_SITE_ID
+netlify link
 VITE_COOP_URL=wss://coop.playjunkmagnet.com/coop npm run build
 netlify deploy --prod --dir dist
 ```
+
+Analytics is off unless `VITE_POSTHOG_KEY` is set in the build environment. Keep
+your public project token in Netlify's production-context environment variables,
+scoped to builds, to enable it only on your production site. See
+[analytics setup](analytics.md). Local builds and forks do not inherit this value.
 
 Verify the public deployment with:
 
