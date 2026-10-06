@@ -20,6 +20,20 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Verify served website and optional co-op
+        env:
+          PORT: "5185"
+          GAME_URL: http://127.0.0.1:5185
+        run: |
+          npm run serve > /tmp/junk-magnet-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:5185/health > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run verify:deployment
+          VERIFY_COOP=true npm run verify:deployment
       - run: npm run build:worker
       - run: npm run test:coop
       - run: npm run test:worker

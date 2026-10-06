@@ -5,7 +5,7 @@
 | Landing page | https://playjunkmagnet.com |
 | Game | https://playjunkmagnet.com/play/ |
 | Website hosting | Netlify |
-| Multiplayer | Cloudflare Worker `junk-magnet-coop`, https://coop.playjunkmagnet.com |
+| Multiplayer (optional, disabled in production) | Cloudflare Worker `junk-magnet-coop` |
 | Repository | `SafaElmali/junk-magnet`, branch `main` |
 | DNS / registrar | Cloudflare |
 
@@ -14,7 +14,8 @@
 Co-op is temporarily hidden while performance issues are being fixed. The client
 only exposes it when `VITE_COOP_ENABLED=true` at build time; production explicitly
 sets this to `false` in `netlify.toml`. To restore it, change that value to `true`
-and redeploy. The backend remains available for development and testing.
+and redeploy after deploying the backend and verifying its custom domain. The
+backend can also run locally for development and testing.
 
 Netlify builds and serves `dist/`. `netlify.toml` supplies `VITE_COOP_URL` at build
 time, so browsers connect directly to `wss://coop.playjunkmagnet.com/coop`.
@@ -83,9 +84,17 @@ Verify the public deployment with:
 npm run verify:deployment
 ```
 
-The check loads the landing page (including its Play and GitHub links), the
-game page, a built asset, backend health, and two real WebSocket
-clients; they create and join a room, start a shared simulation, and leave.
+The default check loads the landing page (including its Play and GitHub links),
+the game page, and a built asset. Co-op is disabled on the production website,
+so its separately deployed backend is not required for this check.
+
+After deploying a co-op backend, also verify its health endpoint and two real
+WebSocket clients that create and join a room, start a simulation, and leave:
+
+```sh
+VERIFY_COOP=true npm run verify:deployment
+```
+
 `GAME_URL` and `COOP_URL` can point this same check at a preview or local server.
 Production browser origins are explicitly listed in `wrangler.jsonc`; arbitrary
 Netlify deploy previews cannot connect to production co-op.

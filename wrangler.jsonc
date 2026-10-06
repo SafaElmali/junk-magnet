@@ -2,7 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "junk-magnet-coop",
   "main": "worker/index.ts",
-  "account_id": "YOUR_CLOUDFLARE_ACCOUNT_ID",
   "compatibility_date": "2026-09-20",
   "workers_dev": false,
   "preview_urls": false,

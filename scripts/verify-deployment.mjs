@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { WebSocket } from "ws";
 
 const base = new URL(process.env.GAME_URL ?? "https://playjunkmagnet.com");
+const verifyCoop = process.env.VERIFY_COOP === "true";
 const backend = new URL(
   process.env.COOP_URL ??
     (base.hostname === "127.0.0.1" || base.hostname === "localhost"
@@ -10,11 +11,6 @@ const backend = new URL(
 );
 const request = (path) =>
   fetch(new URL(path, base), { signal: AbortSignal.timeout(20_000) });
-const health = await fetch(new URL("/health", backend), {
-  signal: AbortSignal.timeout(20_000),
-});
-assert.equal(health.status, 200, "Health endpoint must respond");
-assert.deepEqual(await health.json(), { ok: true });
 const landing = await request("/");
 assert.equal(landing.status, 200, "Landing page must respond");
 const landingHtml = await landing.text();
@@ -28,6 +24,19 @@ assert.match(html, /Junk Magnet/);
 const asset = html.match(/src="([^"]+\.js)"/);
 assert.ok(asset, "Page must load a built JavaScript asset");
 assert.equal((await request(asset[1])).status, 200, "Built asset must respond");
+
+if (!verifyCoop) {
+  console.log(
+    `PASS ${base.origin}: landing page, game page, and built asset. Co-op skipped; use VERIFY_COOP=true to include it.`,
+  );
+  process.exit(0);
+}
+
+const health = await fetch(new URL("/health", backend), {
+  signal: AbortSignal.timeout(20_000),
+});
+assert.equal(health.status, 200, "Health endpoint must respond");
+assert.deepEqual(await health.json(), { ok: true });
 
 const socketUrl = new URL("/coop", backend);
 socketUrl.protocol = backend.protocol === "https:" ? "wss:" : "ws:";
