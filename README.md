@@ -26,7 +26,7 @@ npm ci
 npm run dev
 ```
 
-Open [localhost:5184/play/](http://127.0.0.1:5184/play/) and choose **Play**. The landing page, with Play and CrazyGames links, is at [localhost:5184](http://127.0.0.1:5184).
+Open [localhost:5184/play/](http://127.0.0.1:5184/play/) and choose **Play**. The landing page, with Play and GitHub links, is at [localhost:5184](http://127.0.0.1:5184).
 
 | Action | Control |
 | --- | --- |
